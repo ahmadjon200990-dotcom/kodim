@@ -1,0 +1,65 @@
+// Desktop ilovasining barcha o'zbekcha matnlari.
+export const uz = {
+  login: {
+    code: "Imtihon kodi",
+    codePlaceholder: "6 xonali kod",
+    name: "Ism va familiya",
+    namePlaceholder: "Masalan: Ali Valiyev",
+    submit: "Kirish",
+    joining: "Kirilmoqda…",
+    badCode: "Kod 6 ta raqamdan iborat bo'lishi kerak",
+    badName: "Ism va familiyangizni to'liq yozing",
+    connecting: "Serverga ulanmoqda…",
+  },
+  lobby: {
+    title: "Kutish xonasi",
+    wait: "O'qituvchi imtihonni boshlashini kuting",
+    joined: (n: number) => `Kirganlar: ${n} ta o'quvchi`,
+    you: "Siz:",
+  },
+  submitted: {
+    title: "Ishingiz topshirildi",
+    text: "Natijani o'qituvchingiz e'lon qiladi.",
+  },
+  top: {
+    submit: "Topshirish",
+    confirmTitle: "Ishni topshirasizmi?",
+    confirmText: "Topshirgandan keyin ishni o'zgartirib bo'lmaydi.",
+    confirmYes: "Ha, topshirish",
+    timeLeft: "Qolgan vaqt",
+  },
+  tree: {
+    title: "Fayllar",
+    newFile: "Yangi fayl",
+    newFolder: "Yangi papka",
+    refresh: "Yangilash",
+    rename: "Nomini o'zgartirish",
+    delete: "O'chirish",
+    newFileName: "Yangi fayl nomi",
+    newFolderName: "Yangi papka nomi",
+    renameTitle: "Yangi nom",
+    deleteTitle: "O'chirasizmi?",
+    deleteText: (name: string) => `"${name}" butunlay o'chiriladi.`,
+    readonly: "faqat o'qish",
+    empty: "Papka bo'sh",
+  },
+  editor: {
+    welcome: "Chapdagi fayllar panelidan faylni oching",
+    readonly: "Bu fayl faqat o'qish uchun",
+    locked: "Imtihon vaqti tugagan",
+    close: "Yopish",
+  },
+  panel: {
+    terminal: "Terminal",
+    terminalSoon: "Terminal tez orada",
+  },
+  status: {
+    offline: "Server bilan aloqa uzildi — qayta ulanmoqda. Ishingiz kompyuterda saqlanmoqda.",
+    online: "Ulangan",
+    saved: "Avtosaqlash yoqilgan",
+  },
+  dialog: {
+    ok: "OK",
+    cancel: "Bekor qilish",
+  },
+} as const;

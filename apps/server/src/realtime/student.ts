@@ -89,8 +89,13 @@ async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): P
   const attemptId = attempt.id;
   const previousDeviceId = attempt.deviceId;
 
-  // Bitta ish — bitta faol ulanish: eski ulanishlarni uzamiz.
-  nsp.in(rooms.attempt(attemptId)).disconnectSockets(true);
+  // Bitta ish — bitta faol ulanish: eski ulanishlarni uzamiz (shu socket qayta join qilsa, o'zini emas).
+  nsp.in(rooms.attempt(attemptId)).except(socket.id).disconnectSockets(true);
+  const prev = socket.data;
+  if (prev.attemptId && prev.examId && prev.attemptId !== attemptId) {
+    await socket.leave(rooms.attempt(prev.attemptId));
+    await socket.leave(rooms.exam(prev.examId));
+  }
   await socket.join([rooms.exam(exam.id), rooms.attempt(attemptId)]);
   socket.data = { attemptId, examId: exam.id };
 

@@ -311,7 +311,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 - [x] 0. Monorepo asosi
 - [x] 1. Server: ma'lumotlar bazasi, auth, imtihon API, seed
 - [x] 2. Server: socket (kutish xonasi, boshlash, timer, sync, eventlar)
-- [ ] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
+- [x] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
 - [ ] 4. Desktop: terminal + ichki brauzer + Go Live
 - [ ] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
 - [ ] 6. Desktop: kuzatuv (fokus, jarayonlar, buyruqlar, fayl watcher, katta qo'shish)
@@ -348,4 +348,14 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Ma'lum: vaqt tugab 15 s ichida vaqt qo'shilsa, o'quvchi baribir topshiriladi (klient allaqachon qulflangan).
 - Nom (A): `BRAND` = `{ id: "kodim", name: "Kodim", panelName: "Kodim Panel", slogan, domain: "kodim.uz", appId: "uz.kodim.desktop" }`. UI'dagi har qanday nom shu yerdan olinadi.
 - Xavfsizlik (B): `student:join` da majburiy `deviceId`; `Attempt.deviceId` (migratsiya `attempt_device_id`). Mavjud ishga boshqa qurilmadan kirish → `DEVICE_CHANGED` (DANGER) — ism bo'yicha ham, token bo'yicha ham (token nusxalangan bo'lishi mumkin). Boshlangandan keyin yangi o'quvchi → `LATE_JOIN` (INFO). Ikkalasi server-only. Smoke test kengaytirildi va o'tdi.
-- Keyingi qadam: 3-bosqich (desktop: Electron oyna, kirish, kutish, ish maydoni, Monaco, saqlash).
+- 3-bosqich tayyor (desktop asosi): Electron 44 + electron-vite 6 (Vite 8) + React 19 + Monaco 0.57 (lokal, worker'lar bundle'da).
+  - Ishga tushirish: server ishlab turganda `pnpm dev:desktop` (HMR) yoki `pnpm start:desktop` (build + preview). Server manzili build vaqtida `SERVER_URL` (standart `http://localhost:8080`).
+  - Tuzilma: `src/main` (index — oyna va `app://` protokoli; session — socket, kutish, ish, avtosync, topshirish; workspace — fayl tizimi; store — `userData/kodim.json`: deviceId, oxirgi ism, kod→token; ipc), `src/preload` (faqat `window.kodim` API), `src/common/api.ts` (IPC shartnomasi), `src/renderer` (Login, Lobby, Workspace, Submitted; FileTree, TopBar, EditorPane, Dialog).
+  - Desktop package.json da `type: module` YO'Q — electron-vite main/preload'ni CJS qiladi (sandbox preload uchun shart). `@exam-ide/shared` manbadan bundle qilinadi (alias). Renderer `app://kodim/` dan yuklanadi, production'da qat'iy CSP (`connect-src 'self'` — renderer tarmoqqa chiqmaydi, socket main'da).
+  - Socket main process'da; avtosync har 5 s: ish papkasini skanerlaydi (ignore/readonly/1 MB/binar/300 cheklovlari), sha1 bo'yicha faqat o'zgarganlar + o'chirilganlar, 5 MB li bo'laklarda. Editor diskka 400 ms debounce bilan avtosaqlaydi, Ctrl+S darhol.
+  - Qayta kirish: ish papkasi bo'sh bo'lsa server snapshot'i yoziladi; bo'sh bo'lmasa mahalliy fayllar qoladi (yangiroq), faqat `savollar.md`/`dizaynlar/` qayta yoziladi. Socket qayta ulanganda token bilan jim qayta join.
+  - `exam:ended` → qulflash (IPC yozish rad etiladi, Monaco readOnly) → oxirgi sync → "Topshirildi". `before-quit` → `socket.disconnect()` (APP_CLOSED).
+  - Fayllar daraxti har 3 s yangilanadi (terminal yaratgan fayllar ko'rinsin; 6-bosqichda chokidar bilan almashtiriladi).
+  - Sinov (CDP orqali real Electron oynasida): kirish → kutish (lobby:count) → start → ish maydoni, faqat-o'qish himoyasi (yozish/qayta nomlash/o'chirish rad), editor → disk → server sync, ilovani qayta ochib tiklash, Topshirish → qulflash → SUBMITTED.
+  - Server tuzatishi: shu socket qayta `student:join` qilsa o'zini uzib yubormaydi (`except(socket.id)`), boshqa ishga o'tsa eski xonalardan chiqadi.
+- Keyingi qadam: 5-bosqich (himoya), keyin 4-bosqich (terminal, ichki brauzer).
