@@ -87,7 +87,7 @@ Exam      id, teacherId, title, code (6 raqam, nullable, faqat LOBBY/RUNNING da 
           allowedPackages Json // ["react","react-dom","vite",...] — boshqasi o'rnatilsa ogohlantirish
           createdAt
 Task      id, examId, order, title, description (markdown), type: EXERCISE | FIGMA, figmaUrl?, expectedOutput?
-Attempt   id, examId, studentName, token (unique), status: JOINED | WORKING | SUBMITTED | ANNULLED,
+Attempt   id, examId, studentName, token (unique), deviceId?, status: JOINED | WORKING | SUBMITTED | ANNULLED,
           extraMinutes Int @default(0), connected Boolean, lastSeenAt, submittedAt?,
           files Json           // oxirgi snapshot: [{path, content}]
           aiScore Int?, aiResult Json?, aiError String?,
@@ -168,6 +168,10 @@ Har bir hodisa serverga `Event` sifatida yuboriladi va o'qituvchi paneliga real 
 | `DISCONNECTED` / `RECONNECTED` | socket uzildi (>10 s) / qayta ulandi | WARN / INFO |
 | `APP_CLOSED` | ilova yopildi (`before-quit` + server tomonda disconnect) | DANGER |
 | `AI_INJECTION` | AI baholashda kod ichida AI'ga ko'rsatma topildi (server yaratadi) | DANGER |
+| `DEVICE_CHANGED` | mavjud ishga (ism yoki token bo'yicha) boshqa `deviceId` dan kirildi (server yaratadi) | DANGER |
+| `LATE_JOIN` | yangi o'quvchi imtihon boshlangandan keyin kirdi, `minutesAfterStart` bilan (server yaratadi) | INFO |
+
+**Qurilma ID:** desktop ilova `userData` da bir marta tasodifiy `deviceId` yaratadi va har `student:join` da yuboradi; `Attempt.deviceId` da saqlanadi (oxirgi qurilma).
 
 **Taqiqlangan dasturlar ro'yxati** (sozlanadigan, `shared` da): `chrome.exe, msedge.exe, firefox.exe, opera.exe, brave.exe, yandex.exe, telegram.exe, discord.exe, whatsapp.exe, code.exe, cursor.exe, windsurf.exe, chatgpt.exe, claude.exe, anydesk.exe, teamviewer.exe, rustdesk.exe, obs64.exe`. Imtihon boshlanishida ochiq bo'lganlari ham bir marta xabar qilinadi.
 
@@ -343,4 +347,5 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Tekshiruv: `pnpm --filter @exam-ide/server smoke` (server ishlab turganda; `SMOKE_URL`) — 2 o'quvchi + o'qituvchi, join → start → sync → event → extend → uzilish/qayta kirish → finish → SUBMITTED; 1 daqiqalik timer bilan avtomatik tugash; APP_CLOSED va erta topshirish. Hammasi o'tdi.
   - Ma'lum: vaqt tugab 15 s ichida vaqt qo'shilsa, o'quvchi baribir topshiriladi (klient allaqachon qulflangan).
 - Nom (A): `BRAND` = `{ id: "kodim", name: "Kodim", panelName: "Kodim Panel", slogan, domain: "kodim.uz", appId: "uz.kodim.desktop" }`. UI'dagi har qanday nom shu yerdan olinadi.
+- Xavfsizlik (B): `student:join` da majburiy `deviceId`; `Attempt.deviceId` (migratsiya `attempt_device_id`). Mavjud ishga boshqa qurilmadan kirish → `DEVICE_CHANGED` (DANGER) — ism bo'yicha ham, token bo'yicha ham (token nusxalangan bo'lishi mumkin). Boshlangandan keyin yangi o'quvchi → `LATE_JOIN` (INFO). Ikkalasi server-only. Smoke test kengaytirildi va o'tdi.
 - Keyingi qadam: 3-bosqich (desktop: Electron oyna, kirish, kutish, ish maydoni, Monaco, saqlash).

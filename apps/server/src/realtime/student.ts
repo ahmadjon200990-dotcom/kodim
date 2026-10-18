@@ -74,17 +74,20 @@ async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): P
       byName = true;
     }
   }
+  const created = !attempt;
   attempt ??= await prisma.attempt.create({
     data: {
       examId: exam.id,
       studentName: input.name.replace(/\s+/g, " "),
       token: randomBytes(24).toString("base64url"),
+      deviceId: input.deviceId,
       // Imtihon boshlangandan keyin kirgan o'quvchi darhol ishlaydi.
       status: exam.status === "RUNNING" ? "WORKING" : "JOINED",
       files: exam.status === "RUNNING" ? buildInitialFiles(exam, exam.tasks) : [],
     },
   });
   const attemptId = attempt.id;
+  const previousDeviceId = attempt.deviceId;
 
   // Bitta ish — bitta faol ulanish: eski ulanishlarni uzamiz.
   nsp.in(rooms.attempt(attemptId)).disconnectSockets(true);
@@ -94,7 +97,23 @@ async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): P
   clearTimeout(disconnectTimers.get(attemptId));
   disconnectTimers.delete(attemptId);
   const wasReported = reportedDisconnect.delete(attemptId);
-  attempt = await prisma.attempt.update({ where: { id: attemptId }, data: { connected: true, lastSeenAt: new Date() } });
+  attempt = await prisma.attempt.update({
+    where: { id: attemptId },
+    data: { connected: true, lastSeenAt: new Date(), deviceId: input.deviceId },
+  });
+
+  if (created && exam.status === "RUNNING" && exam.startedAt) {
+    const minutesAfterStart = Math.round((Date.now() - exam.startedAt.getTime()) / 60_000);
+    await recordEvent(attemptId, "LATE_JOIN", { minutesAfterStart });
+  }
+  if (!created && previousDeviceId && previousDeviceId !== input.deviceId) {
+    // Shu ish boshqa kompyuterdan davom ettirilmoqda.
+    await recordEvent(attemptId, "DEVICE_CHANGED", {
+      byName,
+      previousDeviceId,
+      deviceId: input.deviceId,
+    });
+  }
 
   const working = attempt.status === "WORKING" && exam.status === "RUNNING";
   if (working && (wasReported || byName)) {

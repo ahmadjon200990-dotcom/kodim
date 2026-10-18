@@ -34,10 +34,19 @@ export const EVENT_SEVERITY: Record<EventType, EventSeverity> = {
   APP_CLOSED: "DANGER",
   AI_INJECTION: "DANGER",
   TERMINAL_COMMAND: "INFO",
+  DEVICE_CHANGED: "DANGER",
+  LATE_JOIN: "INFO",
 };
 
 /** Bu turlarni faqat server yaratadi; klient yuborsa rad etiladi. */
-export const SERVER_ONLY_EVENT_TYPES: readonly EventType[] = ["DISCONNECTED", "RECONNECTED", "APP_CLOSED", "AI_INJECTION"];
+export const SERVER_ONLY_EVENT_TYPES: readonly EventType[] = [
+  "DISCONNECTED",
+  "RECONNECTED",
+  "APP_CLOSED",
+  "AI_INJECTION",
+  "DEVICE_CHANGED",
+  "LATE_JOIN",
+];
 
 // ---------- Kirish payloadlari (server zod bilan tekshiradi) ----------
 
@@ -45,6 +54,8 @@ export const StudentJoinInput = z.object({
   code: z.string().trim().regex(/^\d{6}$/),
   name: z.string().trim().min(2).max(60),
   token: z.string().min(1).max(200).optional(),
+  /** Desktop ilova userData da bir marta yaratadigan doimiy qurilma ID si. */
+  deviceId: z.string().trim().min(8).max(100),
 });
 export type StudentJoinInput = z.input<typeof StudentJoinInput>;
 

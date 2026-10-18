@@ -39,6 +39,8 @@ export const EventType = z.enum([
   "APP_CLOSED",
   "AI_INJECTION",
   "TERMINAL_COMMAND",
+  "DEVICE_CHANGED",
+  "LATE_JOIN",
 ]);
 export type EventType = z.infer<typeof EventType>;
 

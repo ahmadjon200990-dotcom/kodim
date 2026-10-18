@@ -55,14 +55,14 @@ function student(): StudentSocket {
   return io(`${BASE}/student`, { transports: ["websocket"], reconnection: false });
 }
 
-function join(s: StudentSocket, code: string, name: string, token?: string) {
+function join(s: StudentSocket, code: string, name: string, deviceId: string, token?: string) {
   return new Promise<AckResult<StudentJoinOk>>((resolve) =>
-    s.emit("student:join", { code, name, ...(token && { token }) }, resolve),
+    s.emit("student:join", { code, name, deviceId, ...(token && { token }) }, resolve),
   );
 }
 
-async function joinOk(s: StudentSocket, code: string, name: string, token?: string): Promise<StudentJoinOk> {
-  const res = await join(s, code, name, token);
+async function joinOk(s: StudentSocket, code: string, name: string, deviceId: string, token?: string): Promise<StudentJoinOk> {
+  const res = await join(s, code, name, deviceId, token);
   if (!res.ok) throw new Error(`join ${name}: ${res.error}`);
   return res;
 }
@@ -109,13 +109,13 @@ async function mainFlow(token: string, teacher: TeacherSocket) {
 
   const s1 = student();
   const s2 = student();
-  const bad = await join(s1, "000000", "Ali Valiyev");
+  const bad = await join(s1, "000000", "Ali Valiyev", "device-ali-1");
   check(!bad.ok, `noto'g'ri kod rad etildi (${bad.ok ? "" : bad.error})`);
 
   const lobbyTwo = waitFor<{ attempts: unknown[] }>(teacher, "lobby:update", 5000, (p) => p.attempts.length === 2);
   const countTwo = waitFor<{ joinedCount: number }>(s1, "lobby:count", 5000, (p) => p.joinedCount === 2);
-  const j1 = await joinOk(s1, exam.code, "Ali Valiyev");
-  const j2 = await joinOk(s2, exam.code, "Vali Aliyev");
+  const j1 = await joinOk(s1, exam.code, "Ali Valiyev", "device-ali-1");
+  const j2 = await joinOk(s2, exam.code, "Vali Aliyev", "device-vali-1");
   check(j1.state.phase === "LOBBY" && j2.state.phase === "LOBBY", "ikkala o'quvchi kutish xonasida");
   await lobbyTwo;
   check(true, "o'qituvchiga lobby:update (2 o'quvchi)");
@@ -123,7 +123,7 @@ async function mainFlow(token: string, teacher: TeacherSocket) {
   check(true, "o'quvchiga lobby:count = 2");
 
   const dup = student();
-  const dupRes = await join(dup, exam.code, "  ali   valiyev ");
+  const dupRes = await join(dup, exam.code, "  ali   valiyev ", "device-dup-1");
   check(!dupRes.ok, "band ism bilan ikkinchi kirish rad etildi");
   dup.disconnect();
 
@@ -135,6 +135,14 @@ async function mainFlow(token: string, teacher: TeacherSocket) {
   const paths = st1.files.map((f) => f.path);
   check(paths.includes("savollar.md") && paths.includes("index.html"), `exam:started fayllari: ${paths.join(", ")}`);
   check(paths.some((p) => p.startsWith("dizaynlar/")), "dizaynlar/ papkasi bor");
+
+  const lateNew = waitFor<{ event: { type: string; severity: string } }>(teacher, "event:new", 5000, (p) => p.event.type === "LATE_JOIN");
+  const late1 = student();
+  const lateJoin = await joinOk(late1, exam.code, "Kech Keluvchi", "device-late-1");
+  const lj = await lateNew;
+  check(lateJoin.state.phase === "WORKING" && Boolean(lateJoin.state.files?.length), "kech kirgan o'quvchi darhol WORKING, fayllari bilan");
+  check(lj.event.severity === "INFO", "kech kirish → LATE_JOIN (INFO)");
+  late1.disconnect();
 
   const syncRes = await s1.emitWithAck("attempt:sync", {
     files: [
@@ -178,14 +186,17 @@ async function mainFlow(token: string, teacher: TeacherSocket) {
 
   const s2b = student();
   const reconnected = waitFor<{ event: { type: string; details: unknown } }>(teacher, "event:new", 5000, (p) => p.event.type === "RECONNECTED");
-  const j2b = await joinOk(s2b, exam.code, "Vali Aliyev"); // token yo'q — ism bo'yicha
+  const deviceChanged = waitFor<{ event: { type: string; severity: string } }>(teacher, "event:new", 5000, (p) => p.event.type === "DEVICE_CHANGED");
+  const j2b = await joinOk(s2b, exam.code, "Vali Aliyev", "device-vali-2"); // token yo'q — ism bo'yicha, boshqa kompyuter
   const rc = await reconnected;
+  const dc = await deviceChanged;
+  check(dc.event.severity === "DANGER", "boshqa qurilmadan ism bo'yicha kirish → DEVICE_CHANGED (DANGER)");
   check(j2b.attemptId === j2.attemptId && j2b.state.phase === "WORKING", "ism bo'yicha o'sha ishga qaytdi (WORKING)");
   check(Boolean(j2b.state.files?.length) && JSON.stringify(rc.event.details).includes("byName"), "fayllar tiklandi, RECONNECTED (byName)");
 
   const s1b = student();
   const oldKicked = waitFor<string>(s1, "disconnect", 5000);
-  const j1b = await joinOk(s1b, exam.code, "Ali Valiyev", j1.token);
+  const j1b = await joinOk(s1b, exam.code, "Ali Valiyev", "device-ali-1", j1.token);
   await oldKicked;
   check(j1b.attemptId === j1.attemptId, "token bo'yicha qayta kirish, eski ulanish uzildi");
   check(j1b.state.files?.some((f) => f.path === "src/new.js") === true, "snapshot'da sync qilingan fayl bor");
@@ -219,7 +230,7 @@ async function timerFlow(token: string) {
   console.log("\n== Timer: 1 daqiqalik imtihon, time:sync va avtomatik tugash");
   const exam = await createOpenExam(token, "Smoke: timer", 1, false);
   const s = student();
-  await joinOk(s, exam.code, "Timer Test");
+  await joinOk(s, exam.code, "Timer Test", "device-timer-1");
   const gotSync = waitFor<{ endsAt: string }>(s, "time:sync", 35_000);
   const ended = waitFor<void>(s, "exam:ended", 70_000);
   await api("POST", `/exams/${exam.id}/start`, token);
@@ -241,7 +252,7 @@ async function submitFlow(token: string, teacher: TeacherSocket) {
   const watch = await teacher.emitWithAck("exam:watch", { examId: exam.id });
   check(watch.ok, "[submit] exam:watch");
   const s = student();
-  const j = await joinOk(s, exam.code, "Erta Topshiruvchi");
+  const j = await joinOk(s, exam.code, "Erta Topshiruvchi", "device-erta-1");
   await api("POST", `/exams/${exam.id}/start`, token);
   await sleep(300);
   const closed = waitFor<{ event: { type: string } }>(teacher, "event:new", 5000, (p) => p.event.type === "APP_CLOSED");
@@ -250,7 +261,7 @@ async function submitFlow(token: string, teacher: TeacherSocket) {
   check(true, "[submit] ilova yopilishi → APP_CLOSED");
   const s2 = student();
   const back = waitFor<{ event: { type: string } }>(teacher, "event:new", 5000, (p) => p.event.type === "RECONNECTED");
-  await joinOk(s2, exam.code, "Erta Topshiruvchi", j.token);
+  await joinOk(s2, exam.code, "Erta Topshiruvchi", "device-erta-1", j.token);
   await back;
   check(true, "[submit] qayta ochilganda RECONNECTED");
   const ended = waitFor<void>(s2, "exam:ended", 3000);

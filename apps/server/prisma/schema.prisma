@@ -112,6 +112,8 @@ model Attempt {
   exam            Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   studentName     String
   token           String        @unique
+  /// Desktop ilova userData dagi doimiy qurilma identifikatori
+  deviceId        String?
   status          AttemptStatus @default(JOINED)
   extraMinutes    Int           @default(0)
   connected       Boolean       @default(false)
