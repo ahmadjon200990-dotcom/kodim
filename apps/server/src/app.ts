@@ -8,6 +8,10 @@ import { authRoutes } from "./routes/auth.js";
 import { teacherRoutes } from "./routes/teachers.js";
 import { examRoutes } from "./routes/exams.js";
 import { attemptRoutes } from "./routes/attempts.js";
+import { createRealtime } from "./realtime/io.js";
+import { registerStudentHandlers } from "./realtime/student.js";
+import { registerTeacherHandlers } from "./realtime/teacher.js";
+import { startRuntime } from "./services/runtime.js";
 import { uz } from "./uz.js";
 
 export async function buildApp() {
@@ -38,6 +42,12 @@ export async function buildApp() {
   await app.register(teacherRoutes);
   await app.register(examRoutes);
   await app.register(attemptRoutes);
+
+  const realtime = createRealtime(app);
+  registerStudentHandlers(realtime.students, app.log);
+  registerTeacherHandlers(realtime.teachers, app);
+  const stopRuntime = startRuntime(app.log);
+  app.addHook("onClose", async () => stopRuntime());
 
   return app;
 }

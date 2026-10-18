@@ -4,8 +4,10 @@ import { prisma } from "../db.js";
 import { getOwnedExam } from "../lib/access.js";
 import { requireAuth } from "../lib/auth.js";
 import { HttpError, IdParams } from "../lib/http.js";
+import { attemptEndsAt } from "../services/attempts.js";
 import { openExamWithCode } from "../services/exam-code.js";
-import { finishExam } from "../services/exam-lifecycle.js";
+import { notifyAttempt, notifyExam } from "../services/notify.js";
+import { finishExamNow, sendTimeSync, startExam } from "../services/runtime.js";
 import { uz } from "../uz.js";
 
 function examData(input: ExamInput) {
@@ -102,20 +104,16 @@ export async function examRoutes(app: FastifyInstance) {
     const { id } = IdParams.parse(req.params);
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "DRAFT") throw new HttpError(409, uz.examMustBeDraft);
-    return openExamWithCode(id);
+    const opened = await openExamWithCode(id);
+    notifyExam(opened);
+    return opened;
   });
 
   app.post("/api/exams/:id/start", async (req) => {
     const { id } = IdParams.parse(req.params);
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "LOBBY") throw new HttpError(409, uz.examMustBeLobby);
-    const startedAt = new Date();
-    const endsAt = new Date(startedAt.getTime() + exam.durationMin * 60_000);
-    const [, started] = await prisma.$transaction([
-      prisma.attempt.updateMany({ where: { examId: id, status: "JOINED" }, data: { status: "WORKING" } }),
-      prisma.exam.update({ where: { id }, data: { status: "RUNNING", startedAt, endsAt } }),
-    ]);
-    return started;
+    return startExam(id);
   });
 
   app.post("/api/exams/:id/extend", async (req) => {
@@ -129,21 +127,35 @@ export async function examRoutes(app: FastifyInstance) {
         data: { extraMinutes: { increment: input.minutes } },
       });
       if (updated.count === 0) throw new HttpError(404, uz.attemptNotInExam);
-      return prisma.attempt.findUniqueOrThrow({
+      const attempt = await prisma.attempt.findUniqueOrThrow({
         where: { id: input.attemptId },
         select: { id: true, extraMinutes: true },
       });
+      const endsAt = attemptEndsAt(exam.endsAt, attempt.extraMinutes);
+      if (endsAt) sendTimeSync(attempt.id, endsAt);
+      await notifyAttempt(attempt.id);
+      return attempt;
     }
-    return prisma.exam.update({
+    const updated = await prisma.exam.update({
       where: { id },
       data: { endsAt: new Date(exam.endsAt.getTime() + input.minutes * 60_000) },
     });
+    const working = await prisma.attempt.findMany({
+      where: { examId: id, status: "WORKING" },
+      select: { id: true, extraMinutes: true },
+    });
+    for (const a of working) {
+      const endsAt = attemptEndsAt(updated.endsAt, a.extraMinutes);
+      if (endsAt) sendTimeSync(a.id, endsAt);
+    }
+    notifyExam(updated);
+    return updated;
   });
 
   app.post("/api/exams/:id/finish", async (req) => {
     const { id } = IdParams.parse(req.params);
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "RUNNING") throw new HttpError(409, uz.examMustBeRunning);
-    return finishExam(id, exam.aiEnabled);
+    return finishExamNow(id, req.log);
   });
 }

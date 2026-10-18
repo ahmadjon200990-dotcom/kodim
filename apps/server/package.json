@@ -10,7 +10,8 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "build": "prisma generate && tsc",
     "migrate": "prisma migrate dev",
-    "seed": "pnpm --filter @exam-ide/shared build && tsx src/seed.ts"
+    "seed": "pnpm --filter @exam-ide/shared build && tsx src/seed.ts",
+    "smoke": "tsx src/dev/socket-smoke.ts"
   },
   "dependencies": {
     "@exam-ide/shared": "workspace:*",
@@ -19,10 +20,12 @@
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "fastify": "^5.12.7",
+    "socket.io": "^4.8.4",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "prisma": "^6.19.3",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15"
   }
 }

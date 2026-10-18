@@ -80,7 +80,9 @@ Exam      id, teacherId, title, code (6 raqam, nullable, faqat LOBBY/RUNNING da 
           starterFiles  Json   // CUSTOM bo'lsa: [{path, content}]
           referenceFiles Json  // namuna yechim: [{path, content}]
           criteria Json        // [{name, weight, description}]  weight lar yig'indisi = 100
-          aiEnabled Boolean, aiModel String,
+          aiEnabled Boolean,
+          aiModel String       // daraja: "DEFAULT" (Tejamkor) | "STRONG" (Kuchli);
+                               // aniq model nomi baholashda env'dan: AI_MODEL_DEFAULT / AI_MODEL_STRONG
           allowedPackages Json // ["react","react-dom","vite",...] — boshqasi o'rnatilsa ogohlantirish
           createdAt
 Task      id, examId, order, title, description (markdown), type: EXERCISE | FIGMA, figmaUrl?, expectedOutput?
@@ -88,7 +90,10 @@ Attempt   id, examId, studentName, token (unique), status: JOINED | WORKING | SU
           extraMinutes Int @default(0), connected Boolean, lastSeenAt, submittedAt?,
           files Json           // oxirgi snapshot: [{path, content}]
           aiScore Int?, aiResult Json?, aiError String?,
-          teacherScore Int?, teacherComment String?, gradedBy: AI | TEACHER | NONE,
+          teacherScore Int?, teacherComment String?,
+          teacherCriteria Json? // o'qituvchi tahrirlagan mezonlar: [{name, weight, score, comment}]
+                                // (aiResult o'zgarmaydi; teacherScore berilmasa = mezonlar yig'indisi)
+          gradedBy: AI | TEACHER | NONE,
           createdAt
 Event     id, attemptId, type, severity: INFO | WARN | DANGER, details Json, createdAt
 Penalty   id, attemptId, points Int, reason String, eventId?, teacherId, createdAt
@@ -300,7 +305,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 
 - [x] 0. Monorepo asosi
 - [x] 1. Server: ma'lumotlar bazasi, auth, imtihon API, seed
-- [ ] 2. Server: socket (kutish xonasi, boshlash, timer, sync, eventlar)
+- [x] 2. Server: socket (kutish xonasi, boshlash, timer, sync, eventlar)
 - [ ] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
 - [ ] 4. Desktop: terminal + ichki brauzer + Go Live
 - [ ] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
@@ -323,7 +328,17 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - REST: auth, me, teachers (ADMIN), exams CRUD + open/start/extend/finish, attempts ro'yxati/batafsil, penalties, annul/unannul, grade. `regrade` va `export.xlsx` hali yo'q (8 va 9-bosqich).
   - Kod generatori: `Exam.code` @unique, tugaganda null — takrorlanmaslik DB darajasida (`services/exam-code.ts`).
   - Qarorlar (sodda yechim): `bcrypt` o'rniga `bcryptjs` (native build kerak emas, algoritm bir xil); `Exam.aiModel` = daraja (`DEFAULT|STRONG`), aniq model nomi grading paytida env'dan olinadi; `Attempt.teacherCriteria Json?` maydoni qo'shildi (o'qituvchi tahrirlagan mezonlar, AI natijasi buzilmasin); imtihonni faqat DRAFT holatida tahrirlash mumkin; o'qituvchi faqat o'z imtihonlarini ko'radi, admin — hammasini.
-  - `finish` hozir darhol SUBMITTED + GRADING/FINISHED qiladi (`services/exam-lifecycle.ts`); 2-bosqichda `exam:ended` + 15 s kutish shu yerga qo'shiladi. Vaqt tugaganda avtomatik tugash ham 2-bosqichda.
   - pnpm 11: build skriptlarga ruxsat `pnpm-workspace.yaml` → `allowBuilds` da (prisma, esbuild).
   - Curl bilan sinaldi: login, me, 401/403, mezon yig'indisi validatsiyasi, imtihon yaratish → open (kod) → start → extend → finish, teachers CRUD, penalty, grade, annul/unannul, yakuniy ball.
-- Keyingi qadam: 2-bosqich (Socket.io: /student, /teacher, timer, sync, eventlar).
+- 2-bosqich tayyor (Socket.io):
+  - Event nomlari va payloadlar: `packages/shared/src/events.ts` (`StudentClientToServer`, `StudentServerToClient`, `TeacherClientToServer`, `TeacherServerToClient` — kalitlar = event nomlari). Ish papkasi qoidalari (read-only, ignore ro'yxati, sync limitlari): `shared/src/workspace.ts`.
+  - Server: `realtime/io.ts` (namespace'lar, xonalar `exam:<id>`, `attempt:<id>`, `watch:<id>`), `realtime/student.ts`, `realtime/teacher.ts` (JWT `handshake.auth.token`), `services/runtime.ts` (timer), `services/notify.ts` (o'qituvchiga jonli xabarlar, `recordEvent`), `services/workspace.ts` + `templates.ts` (boshlang'ich fayllar, `savollar.md`, `dizaynlar/*.md`).
+  - Timer: har 1 s tick bazadan RUNNING imtihonlarni o'qiydi; o'quvchi vaqti (`endsAt + extraMinutes`) tugasa → `exam:ended` → 15 s → SUBMITTED. Hamma topshirgach va `endsAt` o'tgach → GRADING (AI yoqilgan) yoki FINISHED, kod bo'shatiladi. `finish` endpoint `endsAt=now` qilib xuddi shu yo'ldan o'tadi; `attempt:submit` ham. Har 30 s `time:sync`; `extend` darhol `time:sync` yuboradi. Server qayta ishga tushsa holat bazadan tiklanadi.
+  - `attempt:sync {files, deleted}` — faqat o'zgarganlar; har fayl alohida tekshiriladi va `rejected[]` qaytariladi (IGNORED, READONLY, TOO_LARGE >1 MB, BINARY, TOO_MANY_FILES >300, INVALID_PATH). Socket `maxHttpBufferSize` 25 MB.
+  - Qayta kirish: token → bo'lmasa ism (katta-kichik harf/bo'shliq farqsiz) → yangi. Ism band bo'lsa (jonli ulanish bor) rad etiladi. Yangi ulanish eski ulanishni uzadi. `DISCONNECTED` uzilish 10 s dan oshsa; klient `socket.disconnect()` qilsa (ilova yopildi) darhol `APP_CLOSED`; keyin qayta kirsa yoki ism bo'yicha topilsa `RECONNECTED`.
+  - `event:report {type, details, eventId?}`: daraja `EVENT_SEVERITY` dan (serverda), `DISCONNECTED/RECONNECTED/APP_CLOSED/AI_INJECTION` ni klient yubora olmaydi; `eventId` bilan mavjud eventni yangilash (FOCUS_LOST davomiyligi) — panelga o'sha id bilan `event:new` qayta keladi.
+  - Rejadan qo'shimcha (zarur bo'lgani uchun): o'quvchiga `lobby:count`, o'qituvchiga `exam:update` (holat/vaqt o'zgarishi). Imtihon boshlangandan keyin kirgan yangi o'quvchi darhol WORKING bo'ladi. REST `GET /exams/:id/attempts` endi `AttemptSummary[]` qaytaradi (socket bilan bir xil shakl).
+  - Desktop uchun eslatma (3-bosqich): ilova yopilganda `socket.disconnect()` chaqirsin (APP_CLOSED shu orqali); `exam:ended` kelganda oxirgi sync'ni yuborsin.
+  - Tekshiruv: `pnpm --filter @exam-ide/server smoke` (server ishlab turganda; `SMOKE_URL`) — 2 o'quvchi + o'qituvchi, join → start → sync → event → extend → uzilish/qayta kirish → finish → SUBMITTED; 1 daqiqalik timer bilan avtomatik tugash; APP_CLOSED va erta topshirish. Hammasi o'tdi.
+  - Ma'lum: vaqt tugab 15 s ichida vaqt qo'shilsa, o'quvchi baribir topshiriladi (klient allaqachon qulflangan).
+- Keyingi qadam: 3-bosqich (desktop: Electron oyna, kirish, kutish, ish maydoni, Monaco, saqlash).

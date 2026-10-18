@@ -6,6 +6,8 @@ import { prisma } from "../db.js";
 import { getOwnedAttempt, getOwnedExam } from "../lib/access.js";
 import { requireAuth } from "../lib/auth.js";
 import { HttpError, IdParams } from "../lib/http.js";
+import { listAttemptSummaries } from "../services/attempts.js";
+import { notifyAttempt } from "../services/notify.js";
 import { uz } from "../uz.js";
 
 export async function attemptRoutes(app: FastifyInstance) {
@@ -14,21 +16,7 @@ export async function attemptRoutes(app: FastifyInstance) {
   app.get("/api/exams/:id/attempts", async (req) => {
     const { id } = IdParams.parse(req.params);
     await getOwnedExam(req.teacher, id);
-    const attempts = await prisma.attempt.findMany({
-      where: { examId: id },
-      omit: { files: true, aiResult: true, token: true },
-      include: {
-        penalties: { select: { points: true } },
-        _count: { select: { events: { where: { severity: { in: ["WARN", "DANGER"] } } } } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-    return attempts.map(({ penalties, _count, ...a }) => ({
-      ...a,
-      penaltyTotal: sumPenalties(penalties),
-      warningCount: _count.events,
-      finalScore: computeFinalScore({ ...a, penalties }),
-    }));
+    return listAttemptSummaries(id);
   });
 
   app.get("/api/attempts/:id", async (req) => {
@@ -62,6 +50,7 @@ export async function attemptRoutes(app: FastifyInstance) {
         teacherId: req.teacher.id,
       },
     });
+    await notifyAttempt(id);
     return reply.code(201).send(penalty);
   });
 
@@ -71,6 +60,7 @@ export async function attemptRoutes(app: FastifyInstance) {
     if (!penalty) throw new HttpError(404, uz.penaltyNotFound);
     await getOwnedAttempt(req.teacher, penalty.attemptId);
     await prisma.penalty.delete({ where: { id } });
+    await notifyAttempt(penalty.attemptId);
     return reply.code(204).send();
   });
 
@@ -78,7 +68,9 @@ export async function attemptRoutes(app: FastifyInstance) {
     const { id } = IdParams.parse(req.params);
     const attempt = await getOwnedAttempt(req.teacher, id);
     if (attempt.status === "ANNULLED") throw new HttpError(409, uz.alreadyAnnulled);
-    return prisma.attempt.update({ where: { id }, data: { status: "ANNULLED" }, omit: { files: true, token: true } });
+    const updated = await prisma.attempt.update({ where: { id }, data: { status: "ANNULLED" }, omit: { files: true, token: true } });
+    await notifyAttempt(id);
+    return updated;
   });
 
   app.post("/api/attempts/:id/unannul", async (req) => {
@@ -87,7 +79,9 @@ export async function attemptRoutes(app: FastifyInstance) {
     if (attempt.status !== "ANNULLED") throw new HttpError(409, uz.notAnnulled);
     // Imtihon hali davom etsa va o'quvchi topshirmagan bo'lsa — ishlashda davom etadi.
     const status = attempt.submittedAt || attempt.exam.status !== "RUNNING" ? "SUBMITTED" : "WORKING";
-    return prisma.attempt.update({ where: { id }, data: { status }, omit: { files: true, token: true } });
+    const updated = await prisma.attempt.update({ where: { id }, data: { status }, omit: { files: true, token: true } });
+    await notifyAttempt(id);
+    return updated;
   });
 
   app.put("/api/attempts/:id/grade", async (req) => {
@@ -110,7 +104,7 @@ export async function attemptRoutes(app: FastifyInstance) {
 
     // teacherScore: null — o'qituvchi bahosi olib tashlanadi, AI bahosi (bo'lsa) qaytadi.
     const clearing = teacherScore === null;
-    return prisma.attempt.update({
+    const updated = await prisma.attempt.update({
       where: { id },
       data: {
         ...(teacherScore !== undefined && { teacherScore }),
@@ -121,5 +115,7 @@ export async function attemptRoutes(app: FastifyInstance) {
       },
       omit: { files: true, token: true },
     });
+    await notifyAttempt(id);
+    return updated;
   });
 }

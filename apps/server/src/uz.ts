@@ -21,6 +21,10 @@ export const uz = {
   codeGenerationFailed: "Imtihon kodi yaratib bo'lmadi, qayta urinib ko'ring",
   alreadyAnnulled: "Ish allaqachon bekor qilingan",
   notAnnulled: "Ish bekor qilinmagan",
+  badExamCode: "Kod noto'g'ri yoki imtihon hozir faol emas",
+  nameTaken: "Bu ism bilan o'quvchi allaqachon kirgan. Ismingizni to'liqroq yozing",
+  studentNotJoined: "Avval imtihonga kiring",
+  notWorking: "Ish hozir qabul qilinmaydi",
   unknownCriterion: (name: string) => `Imtihonda "${name}" mezoni yo'q`,
   criterionOverWeight: (name: string, weight: number) => `"${name}" mezoni bo'yicha ball ${weight} dan oshmasligi kerak`,
 } as const;
