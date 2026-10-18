@@ -37,6 +37,12 @@ export interface KodimApi {
   getLastName(): Promise<string>;
   join(code: string, name: string): Promise<Result>;
   submit(): Promise<Result>;
+  /** Ichki clipboard (tizim clipboard'i ishlatilmaydi). */
+  clipboard: {
+    write(text: string): Promise<void>;
+    /** Ichki matnni qaytaradi; tizim clipboard'ida tashqi matn bo'lsa PASTE_BLOCKED yuboriladi. */
+    paste(source: "editor" | "input" | "terminal"): Promise<string>;
+  };
   fs: {
     list(dir: string): Promise<FsEntry[]>;
     read(path: string): Promise<string>;
@@ -54,6 +60,8 @@ export const IPC = {
   lastName: "store:last-name",
   join: "session:join",
   submit: "session:submit",
+  clipboardWrite: "clipboard:write",
+  clipboardPaste: "clipboard:paste",
   fsList: "fs:list",
   fsRead: "fs:read",
   fsWrite: "fs:write",

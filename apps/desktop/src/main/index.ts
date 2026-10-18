@@ -1,9 +1,11 @@
 import { join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { app, BrowserWindow, net, protocol } from "electron";
+import { app, BrowserWindow, Menu, net, protocol } from "electron";
 import { BRAND } from "@exam-ide/shared";
 import { IPC } from "../common/api";
+import { clearSystemClipboardOnce } from "./clipboard";
 import { registerIpc } from "./ipc";
+import { hardenApp, hardenDefaultSession, hardenWindow } from "./protection";
 import { ExamSession } from "./session";
 
 // Renderer `app://` sxemasidan yuklanadi: file:// dan xavfsizroq va Monaco worker'lari bir xil origin'da ishlaydi.
@@ -14,10 +16,19 @@ protocol.registerSchemesAsPrivileged([
 app.setName(BRAND.name);
 app.setAppUserModelId(BRAND.appId);
 
+// Ikkinchi nusxa yoki production'da debug flaglari bilan ishga tushirish — darhol chiqish.
+if (!hardenApp()) app.exit(0);
+Menu.setApplicationMenu(null);
+
+const devUrl = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined;
+const isAppUrl = (url: string) => url.startsWith("app://kodim/") || (devUrl !== undefined && url.startsWith(devUrl));
+
 let mainWindow: BrowserWindow | null = null;
 
 const session = new ExamSession({
   onStateChange: (state) => mainWindow?.webContents.send(IPC.state, state),
+  // Imtihon boshlanganda tizim clipboard'i bir marta tozalanadi.
+  onWorking: () => clearSystemClipboardOnce(),
 });
 
 function registerAppProtocol(): void {
@@ -46,9 +57,11 @@ function createWindow(): void {
       nodeIntegration: false,
       sandbox: true,
       spellcheck: false,
+      devTools: !app.isPackaged,
     },
   });
   mainWindow = win;
+  hardenWindow(win, isAppUrl);
   win.once("ready-to-show", () => {
     win.maximize();
     win.show();
@@ -57,14 +70,14 @@ function createWindow(): void {
     mainWindow = null;
   });
 
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
-  if (!app.isPackaged && devUrl) void win.loadURL(devUrl);
+  if (devUrl) void win.loadURL(devUrl);
   else void win.loadURL("app://kodim/index.html");
 }
 
 registerIpc(session, () => mainWindow?.webContents ?? null);
 
 void app.whenReady().then(() => {
+  hardenDefaultSession();
   registerAppProtocol();
   createWindow();
 });

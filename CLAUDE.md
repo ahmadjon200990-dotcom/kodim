@@ -313,7 +313,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 - [x] 2. Server: socket (kutish xonasi, boshlash, timer, sync, eventlar)
 - [x] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
 - [ ] 4. Desktop: terminal + ichki brauzer + Go Live
-- [ ] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
+- [x] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
 - [ ] 6. Desktop: kuzatuv (fokus, jarayonlar, buyruqlar, fayl watcher, katta qo'shish)
 - [ ] 7. Panel: kirish, imtihon yaratish, kutish/jonli kuzatuv, jarimalar
 - [ ] 8. AI baholash
@@ -358,4 +358,12 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Fayllar daraxti har 3 s yangilanadi (terminal yaratgan fayllar ko'rinsin; 6-bosqichda chokidar bilan almashtiriladi).
   - Sinov (CDP orqali real Electron oynasida): kirish → kutish (lobby:count) → start → ish maydoni, faqat-o'qish himoyasi (yozish/qayta nomlash/o'chirish rad), editor → disk → server sync, ilovani qayta ochib tiklash, Topshirish → qulflash → SUBMITTED.
   - Server tuzatishi: shu socket qayta `student:join` qilsa o'zini uzib yubormaydi (`except(socket.id)`), boshqa ishga o'tsa eski xonalardan chiqadi.
-- Keyingi qadam: 5-bosqich (himoya), keyin 4-bosqich (terminal, ichki brauzer).
+- 5-bosqich tayyor (himoya):
+  - `src/main/protection.ts`: single instance lock (ikkinchi nusxa birinchisini fokuslab chiqadi), `Menu.setApplicationMenu(null)`, `setContentProtection(true)`, production'da `devTools: false` + `devtools-opened` yopiladi, packaged ilova `--inspect`/`--remote-debugging-*` bilan ishga tushirilsa chiqadi, F5/F12/Ctrl+R/Ctrl+Shift+I/J/C/R `before-input-event` da bloklanadi, `setWindowOpenHandler` deny, `will-navigate`/`will-redirect` faqat `app://kodim/`, `<webview>` yo'q, default session'da barcha ruxsatlar rad (shu jumladan `navigator.clipboard`) va yuklab olish bloklangan.
+  - Ichki clipboard: `src/main/clipboard.ts` (xotirada). Monaco: `editorClipboard.ts` — Ctrl+C/X/V, Ctrl+Insert, Shift+Insert, Shift+Delete qayta yozilgan, Monaco'ning standart kontekst menyusi o'chirilib, o'z menyumiz (Kesish/Nusxalash/Qo'yish/Hammasini belgilash). Input/textarea: `guard.ts` capture bosqichida `copy/cut/paste` (`execCommand("insertText")`). Drag & drop hujjat darajasida bloklangan, Monaco `dropIntoEditor`/`dragAndDrop` o'chiq.
+  - Tizim clipboard'i imtihon boshlanganda bir marta `clipboard.clear()`; ilova unga hech qachon yozmaydi. Paste paytida tizim clipboard'ida ichkidan farqli matn bo'lsa → `PASTE_BLOCKED` (INFO, `{source, length}` — matnning o'zi yuborilmaydi; har bir tashqi matn bir marta). Electron 44 da `clipboard.readText()` asinxron.
+  - Faqat-o'qish: Monaco `readOnly`, fayllar panelida o'chirish/qayta nomlash yo'q, IPC darajasida rad, fayl tizimida read-only atribut (`chmod 0o444`). Watcher bilan tiklash va `READONLY_TAMPER` — 6-bosqichda.
+  - Main'da `session.reportEvent(type, details)` — aloqa yo'q bo'lsa navbatda turadi, qayta join'dan keyin yuboriladi (6-bosqichda kuzatuv shu orqali).
+  - Real ilovada sinaldi: start'da clipboard tozalandi; tashqi matn bilan Ctrl+V → hech narsa qo'shilmadi + `PASTE_BLOCKED`; ichki Ctrl+A/C/V ishladi va tizim clipboard'i o'zgarmadi; input paste ichki matnni qo'ydi; drag/drop `defaultPrevented`; `navigator.clipboard` → NotAllowedError; `window.open` → null; tashqi `location.href` bloklandi; oyna display affinity = `0x11` (WDA_EXCLUDEFROMCAPTURE); ikkinchi nusxa 2 s da chiqdi; `savollar.md` va `dizaynlar/*.md` read-only atributli.
+  - 10-bosqich uchun: electron-builder'da Electron fuses (RunAsNode, EnableNodeCliInspectArguments o'chirish) sozlansin.
+- Keyingi qadam: 4-bosqich (terminal, ichki brauzer, Go Live).

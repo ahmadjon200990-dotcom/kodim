@@ -492,6 +492,21 @@ h1 {
   color: var(--muted);
 }
 
+.context-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.context-key {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.context-item:hover .context-key {
+  color: inherit;
+}
+
 .context-sep {
   height: 1px;
   background: #454545;

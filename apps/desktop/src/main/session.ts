@@ -1,6 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 import { isReadonlyPath, STUDENT_NAMESPACE, SYNC_LIMITS } from "@exam-ide/shared";
 import type {
+  EventType,
   FileEntry,
   StudentClientToServer,
   StudentJoinOk,
@@ -50,6 +51,9 @@ export class ExamSession {
   private syncTimer: NodeJS.Timeout | null = null;
   private syncing: Promise<void> | null = null;
   private lastAttemptId: string | null = null;
+  /** Serverda tasdiqlangan join bormi (eventlar shundan keyin yuboriladi). */
+  private joined = false;
+  private pendingEvents: { type: EventType; details: Record<string, unknown> }[] = [];
 
   constructor(private readonly hooks: SessionHooks) {
     this.socket = io(`${__SERVER_URL__}${STUDENT_NAMESPACE}`, {
@@ -62,7 +66,10 @@ export class ExamSession {
       // Uzilishdan keyin o'sha ishga jim qayta kiramiz.
       if (this.creds) void this.rejoin();
     });
-    this.socket.on("disconnect", () => this.set({ connected: false }));
+    this.socket.on("disconnect", () => {
+      this.joined = false;
+      this.set({ connected: false });
+    });
     this.socket.on("lobby:count", ({ joinedCount }) => this.set({ joinedCount }));
     this.socket.on("time:sync", (t) => this.set(this.timeState(t)));
     this.socket.on("exam:started", (p) => {
@@ -98,8 +105,10 @@ export class ExamSession {
     }
     if (!res.ok) return res;
     this.creds = { code, name };
+    this.joined = true;
     store.saveSession(code, { token: res.token, attemptId: res.attemptId, name });
     await this.apply(res);
+    this.flushEvents();
     return { ok: true };
   }
 
@@ -208,6 +217,21 @@ export class ExamSession {
     await this.syncing;
     await this.sync();
     this.set({ screen: "submitted" });
+  }
+
+  /** Qoidabuzarlik/kuzatuv eventi. Aloqa bo'lmasa navbatda turadi va qayta ulanganda yuboriladi. */
+  reportEvent(type: EventType, details: Record<string, unknown> = {}): void {
+    if (this.state.locked) return;
+    if (this.pendingEvents.length >= 200) this.pendingEvents.shift();
+    this.pendingEvents.push({ type, details: { ...details, at: new Date().toISOString() } });
+    this.flushEvents();
+  }
+
+  private flushEvents(): void {
+    if (!this.joined || !this.socket.connected) return;
+    for (const e of this.pendingEvents.splice(0)) {
+      this.socket.emit("event:report", { type: e.type, details: e.details }, () => {});
+    }
   }
 
   /** Ilova yopilganda: server buni APP_CLOSED deb biladi. */

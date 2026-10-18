@@ -48,6 +48,10 @@ export const uz = {
     readonly: "Bu fayl faqat o'qish uchun",
     locked: "Imtihon vaqti tugagan",
     close: "Yopish",
+    cut: "Kesish",
+    copy: "Nusxalash",
+    paste: "Qo'yish",
+    selectAll: "Hammasini belgilash",
   },
   panel: {
     terminal: "Terminal",

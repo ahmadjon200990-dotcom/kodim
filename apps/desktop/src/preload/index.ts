@@ -12,6 +12,10 @@ const api: KodimApi = {
   getLastName: () => ipcRenderer.invoke(IPC.lastName),
   join: (code, name) => ipcRenderer.invoke(IPC.join, code, name),
   submit: () => ipcRenderer.invoke(IPC.submit),
+  clipboard: {
+    write: (text) => ipcRenderer.invoke(IPC.clipboardWrite, text),
+    paste: (source) => ipcRenderer.invoke(IPC.clipboardPaste, source),
+  },
   fs: {
     list: (dir) => ipcRenderer.invoke(IPC.fsList, dir),
     read: (path) => ipcRenderer.invoke(IPC.fsRead, path),

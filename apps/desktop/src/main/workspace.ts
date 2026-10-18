@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { app } from "electron";
 import { IGNORED_DIRS, isIgnoredPath, isReadonlyPath, SYNC_LIMITS } from "@exam-ide/shared";
@@ -73,10 +73,14 @@ export class Workspace {
     await mkdir(this.root, { recursive: true });
     const fresh = await this.isEmpty();
     for (const f of files) {
-      if (!fresh && !isReadonlyPath(f.path)) continue;
+      const readonly = isReadonlyPath(f.path);
+      if (!fresh && !readonly) continue;
       const abs = this.abs(f.path);
       await mkdir(dirname(abs), { recursive: true });
+      // Faqat-o'qish fayllari: yozishdan oldin atributni olib, keyin qaytaramiz (Windows'da read-only atribut).
+      if (readonly) await chmod(abs, 0o666).catch(() => undefined);
       await writeFile(abs, f.content, "utf8");
+      if (readonly) await chmod(abs, 0o444);
     }
   }
 
