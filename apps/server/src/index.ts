@@ -1,4 +1,5 @@
-// Vaqtinchalik kirish nuqtasi — keyingi bosqichlarda almashtiriladi.
-import { BRAND } from "@exam-ide/shared";
+import { env } from "./env.js";
+import { buildApp } from "./app.js";
 
-export const appName = `${BRAND.name} server`;
+const app = await buildApp();
+await app.listen({ port: env.PORT, host: env.HOST });

@@ -299,7 +299,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 ## 10. Holat (har bosqichdan keyin yangilanadi)
 
 - [x] 0. Monorepo asosi
-- [ ] 1. Server: ma'lumotlar bazasi, auth, imtihon API, seed
+- [x] 1. Server: ma'lumotlar bazasi, auth, imtihon API, seed
 - [ ] 2. Server: socket (kutish xonasi, boshlash, timer, sync, eventlar)
 - [ ] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
 - [ ] 4. Desktop: terminal + ichki brauzer + Go Live
@@ -316,4 +316,14 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
 - Paketlar: `@exam-ide/shared`, `@exam-ide/server`, `@exam-ide/desktop`, `@exam-ide/panel`. Ilovalarda hozircha faqat `src/index.ts` stub va `tsc` build bor — freymvorklar (Fastify, Electron, Vite) o'z bosqichida qo'shiladi.
 - `shared`: `brand.ts` (nom shu yerda), `events.ts`, `types.ts` (bo'sh). `exports.types` → `src/index.ts`, shuning uchun typecheck uchun shared'ni oldin build qilish shart emas; runtime uchun `dist/`. Shared ichida importlar `.js` kengaytma bilan yoziladi.
 - pnpm 11 skriptlardan oldin avtomatik o'rnatish tekshiruvini qiladi — normal holat.
-- Keyingi qadam: 1-bosqich (server: Prisma, auth, imtihon API, seed).
+- 1-bosqich tayyor (server):
+  - Prisma 6 + SQLite (`apps/server/prisma/schema.prisma`, migratsiya `init`). Baza: `apps/server/prisma/data.db`. Lokal `.env` — `apps/server/.env` (git'da yo'q, namuna: root `.env.example`).
+  - Ishga tushirish: `pnpm seed`, `pnpm dev:server` (tsx watch) yoki `pnpm -r build` + `node apps/server/dist/index.js`. Demo o'qituvchi: `demo@exam-ide.local` / `demo12345`; admin — `.env` dagi `ADMIN_EMAIL/ADMIN_PASSWORD`.
+  - `shared`: enumlar, zod sxemalar (`ExamInput`, `GradeInput`, `AiResult`, ...), `computeFinalScore`, `DEFAULT_ALLOWED_PACKAGES`.
+  - REST: auth, me, teachers (ADMIN), exams CRUD + open/start/extend/finish, attempts ro'yxati/batafsil, penalties, annul/unannul, grade. `regrade` va `export.xlsx` hali yo'q (8 va 9-bosqich).
+  - Kod generatori: `Exam.code` @unique, tugaganda null — takrorlanmaslik DB darajasida (`services/exam-code.ts`).
+  - Qarorlar (sodda yechim): `bcrypt` o'rniga `bcryptjs` (native build kerak emas, algoritm bir xil); `Exam.aiModel` = daraja (`DEFAULT|STRONG`), aniq model nomi grading paytida env'dan olinadi; `Attempt.teacherCriteria Json?` maydoni qo'shildi (o'qituvchi tahrirlagan mezonlar, AI natijasi buzilmasin); imtihonni faqat DRAFT holatida tahrirlash mumkin; o'qituvchi faqat o'z imtihonlarini ko'radi, admin — hammasini.
+  - `finish` hozir darhol SUBMITTED + GRADING/FINISHED qiladi (`services/exam-lifecycle.ts`); 2-bosqichda `exam:ended` + 15 s kutish shu yerga qo'shiladi. Vaqt tugaganda avtomatik tugash ham 2-bosqichda.
+  - pnpm 11: build skriptlarga ruxsat `pnpm-workspace.yaml` → `allowBuilds` da (prisma, esbuild).
+  - Curl bilan sinaldi: login, me, 401/403, mezon yig'indisi validatsiyasi, imtihon yaratish → open (kod) → start → extend → finish, teachers CRUD, penalty, grade, annul/unannul, yakuniy ball.
+- Keyingi qadam: 2-bosqich (Socket.io: /student, /teacher, timer, sync, eventlar).

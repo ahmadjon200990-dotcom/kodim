@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TeacherRole {
+  ADMIN
+  TEACHER
+}
+
+enum ExamStatus {
+  DRAFT
+  LOBBY
+  RUNNING
+  GRADING
+  FINISHED
+}
+
+enum ExamTemplate {
+  EMPTY
+  HTML
+  REACT_VITE
+  CUSTOM
+}
+
+enum TaskType {
+  EXERCISE
+  FIGMA
+}
+
+enum AttemptStatus {
+  JOINED
+  WORKING
+  SUBMITTED
+  ANNULLED
+}
+
+enum GradedBy {
+  AI
+  TEACHER
+  NONE
+}
+
+enum EventSeverity {
+  INFO
+  WARN
+  DANGER
+}
+
+model Teacher {
+  id           String      @id @default(cuid())
+  name         String
+  email        String      @unique
+  passwordHash String
+  role         TeacherRole @default(TEACHER)
+  createdAt    DateTime    @default(now())
+  exams        Exam[]
+  penalties    Penalty[]
+}
+
+model Exam {
+  id              String       @id @default(cuid())
+  teacherId       String
+  teacher         Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title           String
+  /// 6 xonali kod; faqat LOBBY/RUNNING holatida band, keyin null.
+  code            String?      @unique
+  status          ExamStatus   @default(DRAFT)
+  durationMin     Int
+  startedAt       DateTime?
+  endsAt          DateTime?
+  template        ExamTemplate @default(EMPTY)
+  /// [{path, content}]
+  starterFiles    Json
+  /// [{path, content}]
+  referenceFiles  Json
+  /// [{name, weight, description}]
+  criteria        Json
+  aiEnabled       Boolean      @default(true)
+  /// AiModelTier: DEFAULT | STRONG
+  aiModel         String       @default("DEFAULT")
+  /// ["react", ...]
+  allowedPackages Json
+  createdAt       DateTime     @default(now())
+  tasks           Task[]
+  attempts        Attempt[]
+
+  @@index([teacherId])
+}
+
+model Task {
+  id             String   @id @default(cuid())
+  examId         String
+  exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  order          Int
+  title          String
+  description    String
+  type           TaskType
+  figmaUrl       String?
+  expectedOutput String?
+
+  @@index([examId, order])
+}
+
+model Attempt {
+  id              String        @id @default(cuid())
+  examId          String
+  exam            Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentName     String
+  token           String        @unique
+  status          AttemptStatus @default(JOINED)
+  extraMinutes    Int           @default(0)
+  connected       Boolean       @default(false)
+  lastSeenAt      DateTime      @default(now())
+  submittedAt     DateTime?
+  /// oxirgi snapshot: [{path, content}]
+  files           Json
+  aiScore         Int?
+  aiResult        Json?
+  aiError         String?
+  teacherScore    Int?
+  teacherComment  String?
+  /// o'qituvchi tahrirlagan mezonlar: [{name, weight, score, comment}]
+  teacherCriteria Json?
+  gradedBy        GradedBy      @default(NONE)
+  createdAt       DateTime      @default(now())
+  events          Event[]
+  penalties       Penalty[]
+
+  @@index([examId])
+}
+
+model Event {
+  id        String        @id @default(cuid())
+  attemptId String
+  attempt   Attempt       @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  type      String
+  severity  EventSeverity
+  details   Json
+  createdAt DateTime      @default(now())
+  penalties Penalty[]
+
+  @@index([attemptId, createdAt])
+}
+
+model Penalty {
+  id        String   @id @default(cuid())
+  attemptId String
+  attempt   Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  points    Int
+  reason    String
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([attemptId])
+}

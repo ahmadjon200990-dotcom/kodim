@@ -9,7 +9,9 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seed": "pnpm --filter @exam-ide/server seed",
+    "dev:server": "pnpm --filter @exam-ide/server dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
