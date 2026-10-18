@@ -7,3 +7,4 @@ allowBuilds:
   prisma: true
   esbuild: true
   electron: true
+  node-pty: true
