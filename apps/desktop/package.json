@@ -1,0 +1,13 @@
+{
+  "name": "@exam-ide/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@exam-ide/shared": "workspace:*"
+  }
+}

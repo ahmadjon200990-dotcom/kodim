@@ -1,0 +1,21 @@
+node_modules/
+dist/
+out/
+build/
+release/
+*.tsbuildinfo
+.vite/
+
+# muhit
+.env
+.env.*
+!.env.example
+
+# ma'lumotlar bazasi
+*.db
+*.db-journal
+
+# loglar va tizim fayllari
+*.log
+.DS_Store
+Thumbs.db
