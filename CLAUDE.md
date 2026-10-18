@@ -2,7 +2,8 @@
 
 > Bu fayl loyihaning yagona "haqiqat manbai". Har bir ishni boshlashdan oldin shu faylni to'liq o'qi.
 > Rejadan tashqari funksiya qo'shma. Arxitekturani o'zgartirish kerak bo'lsa, avval foydalanuvchidan so'ra.
-> Loyiha nomi hali tanlanmagan. Kodda vaqtincha `exam-ide` nomidan foydalan, keyin bitta joydan o'zgartiriladigan qilib qo'y (`packages/shared/src/brand.ts`).
+> Loyiha nomi: **Kodim** (o'quvchi ilovasi), **Kodim Panel** (o'qituvchi paneli), shior "Har bir qator — o'zingniki.", domen `kodim.uz`.
+> Ko'rinadigan barcha nomlar faqat `packages/shared/src/brand.ts` dan olinadi. Ichki paket nomlari (`@exam-ide/*`) va repo papkasi `exam-ide` o'zgarmaydi.
 
 ---
 
@@ -341,4 +342,5 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Desktop uchun eslatma (3-bosqich): ilova yopilganda `socket.disconnect()` chaqirsin (APP_CLOSED shu orqali); `exam:ended` kelganda oxirgi sync'ni yuborsin.
   - Tekshiruv: `pnpm --filter @exam-ide/server smoke` (server ishlab turganda; `SMOKE_URL`) — 2 o'quvchi + o'qituvchi, join → start → sync → event → extend → uzilish/qayta kirish → finish → SUBMITTED; 1 daqiqalik timer bilan avtomatik tugash; APP_CLOSED va erta topshirish. Hammasi o'tdi.
   - Ma'lum: vaqt tugab 15 s ichida vaqt qo'shilsa, o'quvchi baribir topshiriladi (klient allaqachon qulflangan).
+- Nom (A): `BRAND` = `{ id: "kodim", name: "Kodim", panelName: "Kodim Panel", slogan, domain: "kodim.uz", appId: "uz.kodim.desktop" }`. UI'dagi har qanday nom shu yerdan olinadi.
 - Keyingi qadam: 3-bosqich (desktop: Electron oyna, kirish, kutish, ish maydoni, Monaco, saqlash).

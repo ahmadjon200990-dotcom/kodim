@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import { ZodError } from "zod";
+import { BRAND } from "@exam-ide/shared";
 import { env } from "./env.js";
 import { HttpError } from "./lib/http.js";
 import { authRoutes } from "./routes/auth.js";
@@ -37,7 +38,7 @@ export async function buildApp() {
     return reply.code(500).send({ error: uz.internal });
   });
 
-  app.get("/api/health", async () => ({ ok: true }));
+  app.get("/api/health", async () => ({ ok: true, name: BRAND.name }));
   await app.register(authRoutes);
   await app.register(teacherRoutes);
   await app.register(examRoutes);

@@ -1,4 +1,4 @@
-// Vaqtinchalik kirish nuqtasi — keyingi bosqichlarda almashtiriladi.
+// Vaqtinchalik kirish nuqtasi — 7-bosqichda almashtiriladi.
 import { BRAND } from "@exam-ide/shared";
 
-export const appName = `${BRAND.name} panel`;
+export const appName = BRAND.panelName;
