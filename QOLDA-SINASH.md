@@ -5,6 +5,16 @@ ogohlantirishni tekshirishni ko'rsatadi. Barchasi bitta kompyuterda sinaladi (2-
 ikkinchi nusxasini ochib bo'lmaydi — single instance; shuning uchun 2-o'quvchini boshqa kompyuterda yoki
 VM'da oching, yoki bitta o'quvchi bilan sinang).
 
+Bitta kompyuterda 2-o'quvchi o'rniga soxta o'quvchi skriptidan foydalanish mumkin (server build qilingan bo'lsin):
+
+```bash
+node apps/server/dist/dev/fake-student.js 123456 "Vali Aliyev"
+```
+
+Skript ulangan holda turadi; terminalga `close` yozsangiz — ilova yopilgandek (APP_CLOSED), `quit` — internet
+uzilgandek (10 s dan keyin DISCONNECTED). Xuddi shu ism bilan boshqa `deviceId` (3-argument) bilan qayta kirsa —
+DEVICE_CHANGED; imtihon boshlangandan keyin yangi ism bilan kirsa — LATE_JOIN.
+
 ## 0. Tayyorgarlik (bir marta)
 
 ```bash
@@ -13,9 +23,17 @@ pnpm seed
 ```
 
 Seed quyidagilarni yaratadi:
-- **Admin:** `apps/server/.env` dagi `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
-- **Demo o'qituvchi:** `demo@exam-ide.local` / `demo12345`.
+- **Admin:** `apps/server/.env` dagi `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`admin@kodim.uz`).
+- **Demo o'qituvchi:** `demo@kodim.uz` / `demo12345`.
 - **Demo imtihon:** "Demo: JavaScript va Figma" (1 JS mashq + 1 Figma topshiriq).
+
+Bazada eski sinov imtihonlari bo'lsa va toza boshlamoqchi bo'lsangiz (barcha ma'lumot o'chadi):
+
+```bash
+pnpm --filter @exam-ide/server exec prisma migrate reset --force
+```
+
+So'ng yana `pnpm seed`.
 
 ## 1. Serverni ishga tushirish
 
@@ -39,7 +57,7 @@ Dev'da panel `http://localhost:5273`, build'da esa `http://localhost:8080` da oc
 
 ## 2. O'qituvchi panelida imtihonni tayyorlash
 
-1. Brauzerda panelni oching (`http://localhost:8080`), `demo@exam-ide.local` / `demo12345` bilan kiring.
+1. Brauzerda panelni oching (`http://localhost:8080`), `demo@kodim.uz` / `demo12345` bilan kiring.
 2. **Imtihonlar** ro'yxatida demo imtihon turibdi. Xohlasangiz **Yangi imtihon** bilan o'zingiznikini yarating
    (mezonlar yig'indisi 100 bo'lishini tekshiring — 100 bo'lmasa saqlanmaydi).
 3. Demo imtihonda **Ochish** tugmasini bosing → **6 xonali kod** chiqadi. Bu sahifa — jonli kuzatuv.

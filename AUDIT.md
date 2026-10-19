@@ -34,41 +34,51 @@ yoki chalg'ituvchi holat; **KICHIK** — sayqal.
   o'quvchilarni qaytaradi, eventlar tarixini emas. Socket qisqa uzilib qayta ulansa, o'sha paytdagi eventlar
   (sinovda `npm i lodash` → UNKNOWN_PACKAGE) panelga hech qachon kelmaydi; sahifani yangilasa oqim bo'm-bo'sh
   ("Hozircha ogohlantirish yo'q", bazada esa 20+ event). Bu "ba'zi ogohlantirishlar kelmayapti" muammosining
-  asosiy sababi. *Kerak:* watch javobida oxirgi eventlar, qayta ulanishda birlashtirish. — ⏳
+  asosiy sababi. *Kerak:* watch javobida oxirgi eventlar, qayta ulanishda birlashtirish. — tuzatildi ✅ (`exam:watch` oxirgi 300 eventni qaytaradi, panel id bo'yicha birlashtiradi; sinov: sahifa eventlardan keyin ochildi — 7 ta ogohlantirish tarixdan ko'rindi)
 - **A2. Imtihon boshlanganda yozish uchun fayl ochilmaydi.** Faqat `savollar.md` (faqat o'qish) ochiladi, fokus
   terminalga ketadi. *Kerak:* `savollar.md` + asosiy fayl (index.html / script.js / src/App.jsx) ochilsin, kursor
-  asosiy faylda. — ⏳
+  asosiy faylda. — tuzatildi ✅ (`savollar.md` + asosiy fayl ochiladi, faol tab — asosiy fayl; avtomatik ochilgan terminal fokusni olmaydi; sinov: `index.html` faol, fokus editorda)
 - **A3. AI yoqilgan imtihon GRADING holatida abadiy qoladi va o'chirib bo'lmaydi.** AI baholash (8-bosqich) hali
   yo'q, lekin `aiEnabled` standart `true`. Natijada imtihonlar ro'yxati "Baholanmoqda" bilan to'ladi.
-  *Kerak:* grader yo'qligida imtihon FINISHED ga o'tsin, o'quvchilarda "AI hali ulanmagan" belgisi. — ⏳
+  *Kerak:* grader yo'qligida imtihon FINISHED ga o'tsin, o'quvchilarda "AI hali ulanmagan" belgisi. — tuzatildi ✅ (`AI_GRADER_READY=false` bo'lsa FINISHED + `aiError`; server ishga tushganda osilib qolganlar ham tuzatiladi; sinov: 12 ta GRADING → FINISHED, o'chirish 204)
 
 ### MUHIM
 - **B1. Panel formasi xatolari umumiy:** "Kiritilgan ma'lumotlar noto'g'ri" — qaysi maydon ekani yo'q; server
   `issues` ichida esa inglizcha matn ("Too small: expected number to be >=1"). *Kerak:* maydon nomi + oddiy
-  o'zbekcha sabab. — ⏳
+  o'zbekcha sabab. — tuzatildi ✅ (`shared/src/zod-uz.ts` — global o'zbekcha xabarlar; panel `lib/errors.ts` maydon nomi bilan: "Imtihon nomi: to'ldirilishi shart", "1-topshiriq, nomi: to'ldirilishi shart")
 - **B2. Desktop ilova VS Code'ga o'xshamaydi:** Activity Bar, fayl ikonkalari, breadcrumbs, status bar
-  (qator:ustun, til, vaqt), o'lchamni sudrab o'zgartirish, F2/Delete, Emmet, Ctrl+P yo'q. — ⏳
+  (qator:ustun, til, vaqt), o'lchamni sudrab o'zgartirish, F2/Delete, Emmet, Ctrl+P yo'q. — **keyingi sessiya (desktop dizayni)**
 - **B3. Seed va konfiguratsiyada eski nom:** `demo@exam-ide.local`, `admin@exam-ide.local`; Excel `creator`
-  qattiq yozilgan. *Kerak:* `@kodim.uz`, nom `BRAND` dan. — ⏳
+  qattiq yozilgan. *Kerak:* `@kodim.uz`, nom `BRAND` dan. — tuzatildi ✅ (`demo@kodim.uz`, `admin@kodim.uz` — seed, `.env.example`, lokal `.env`, smoke, hujjatlar; Excel `creator` = `BRAND.name`)
 - **B4. Panelda brauzerning `confirm/prompt/alert` oynalari** (Boshlash, Tugatish, Bekor qilish, Boshqa jarima)
   — eski ko'rinish, ba'zi muhitlarda (sinovdagi ichki brauzer) bloklanib, "Boshlash" ishlamay qoldi.
-  *Kerak:* o'z modal oynalari va toast xabarlar. — ⏳
+  *Kerak:* o'z modal oynalari va toast xabarlar. — **keyingi sessiya (panel dizayni)**
 - **B5. Jonli oqim TERMINAL_COMMAND (INFO) bilan to'lib ketadi** — muhim DANGER/WARN pastga suriladi (100 ta
-  chegara). *Kerak:* oqimda INFO buyruqlarni yashirish/filtr, batafsil sahifada to'liq tarix. — ⏳
-- **B6. Natijalar jadvalida AI holati ustuni yo'q** (CLAUDE.md 7.5: baholanmoqda/tayyor/xato). — ⏳
-- **B7. Panel telefon ekranida buziladi:** jadval sahifadan chiqib ketadi, menyu siqiladi. — ⏳
+  chegara). *Kerak:* oqimda INFO buyruqlarni yashirish/filtr, batafsil sahifada to'liq tarix. — tuzatildi ✅ (oqimda terminal buyruqlari standart yashirin, "Buyruqlarni ko'rsatish" tanlovi va yashirinlar soni; batafsil sahifada to'liq tarix)
+- **B6. Natijalar jadvalida AI holati ustuni yo'q** (CLAUDE.md 7.5: baholanmoqda/tayyor/xato). — tuzatildi ✅ ("AI holati": Tayyor / Xato (sababi tooltipda) / Baholanmoqda / O'chiq)
+- **B7. Panel telefon ekranida buziladi:** jadval sahifadan chiqib ketadi, menyu siqiladi. — **keyingi sessiya (panel dizayni)**
 - **B8. Jonli sahifada yangi ogohlantirish ajralib ko'rinmaydi** (rang bor, lekin "yangi" urg'usi va toast
-  yo'q). — ⏳
+  yo'q). — **keyingi sessiya (panel dizayni)** — ma'lumot tayyor: `LiveAlert.fresh` va `lastLoud`
 
 ### KICHIK
-- **C1. Panel login bo'sh maydon bilan yuboriladi** — mijoz tomonida tekshiruv yo'q. — ⏳
-- **C2. Yuklanish holatlari faqat "Yuklanmoqda…" matni** — skeletlar yo'q. — ⏳
-- **C3. "O'z fayllarim" (CUSTOM) shabloni panelda yo'q** — ⏳ (fayllarni qo'lda kiritish; .zip — yo'q)
+- **C1. Panel login bo'sh maydon bilan yuboriladi** — mijoz tomonida tekshiruv yo'q. — **keyingi sessiya (panel dizayni)**
+- **C2. Yuklanish holatlari faqat "Yuklanmoqda…" matni** — skeletlar yo'q. — **keyingi sessiya (panel dizayni)**
+- **C3. "O'z fayllarim" (CUSTOM) shabloni panelda yo'q** — **keyingi sessiya** (fayllarni qo'lda kiritish; .zip — yo'q)
 - **C4. Desktop fayllar daraxti har 3 s so'rov yuboradi** — watcher eventlari bilan darhol yangilansin.
-  — ⏳
+  — **keyingi sessiya (desktop dizayni)**
 - **C5. Soxta o'quvchi bir marta sababsiz qayta ulandi** (server log'da xato yo'q). Klient o'zi jim qayta
   ulanadi, event yo'qolmaydi (navbat). Kuzatishda qoldi.
 - **C6. Sinov vositasi (CDP) oyna kichraytirilganda osilib qoladi** — mahsulot muammosi emas.
+- **C7. Lokal baza sinovlar orasida tozalanmagan.** `prisma migrate reset` AI agent ishlatganda foydalanuvchining
+  aniq roziligini talab qiladi va jim rad etgan — shuning uchun panelda eski "Smoke"/"Curl" imtihonlar va eski
+  `demo@exam-ide.local` / `admin@exam-ide.local` akkauntlari qolgan. Toza baza kerak bo'lsa, o'zingiz ishga tushiring:
+  `pnpm --filter @exam-ide/server exec prisma migrate reset --force`, keyin `pnpm seed`.
+
+## Keyingi sessiya (foydalanuvchi qarori: dizayn alohida)
+- **B2, C4 — desktop:** VS Code Dark Modern UI (Activity Bar, fayl ikonkalari, breadcrumbs, status bar, sudraladigan
+  panellar, F2/Delete, Emmet, Ctrl+P, chiroyli bo'sh holat, kirish/kutish/topshirildi ekranlari).
+- **B4, B7, B8, C1, C2, C3 — panel:** o'z modal/toast oynalari, telefon ekrani, yangi ogohlantirish urg'usi,
+  skeletlar, login tekshiruvi, CUSTOM shablon.
 
 ## Qolgan (sababi bilan)
 - **AI baholash** — 8-bosqich (rejada alohida). Hozir "AI hali ulanmagan" deb aniq ko'rsatiladi.
