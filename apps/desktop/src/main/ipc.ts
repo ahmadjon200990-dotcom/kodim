@@ -79,6 +79,7 @@ export function registerIpc({ session, terminals, browser, live, getRenderer }: 
   });
   on(IPC.termResize, (id, cols, rows) => terminals.resize(num(id), num(cols), num(rows)));
   on(IPC.termKill, (id) => terminals.kill(num(id)));
+  on(IPC.reportLargeInsert, (chars) => session.reportEvent("LARGE_INSERT", { chars: num(chars) }));
 
   // ---- Ichki brauzer va Go Live
   on(IPC.browserBounds, (r) => browser.setBounds(rect(r)));

@@ -50,6 +50,10 @@ export interface KodimApi {
   getState(): Promise<ClientState>;
   onState(listener: (state: ClientState) => void): () => void;
   getLastName(): Promise<string>;
+  /** Fayl diskda o'zgardi (tashqi yoki tiklangan) — ochiq bo'lsa qayta yuklash. */
+  onDiskChange(listener: (path: string) => void): () => void;
+  /** Editorda katta qo'shimcha (ichki paste emas) — LARGE_INSERT. */
+  reportLargeInsert(chars: number): void;
   join(code: string, name: string): Promise<Result>;
   submit(): Promise<Result>;
   /** Ichki clipboard (tizim clipboard'i ishlatilmaydi). */
@@ -91,6 +95,8 @@ export interface KodimApi {
 export const IPC = {
   getState: "state:get",
   state: "state:changed",
+  diskChange: "fs:disk-change",
+  reportLargeInsert: "monitor:large-insert",
   lastName: "store:last-name",
   join: "session:join",
   submit: "session:submit",

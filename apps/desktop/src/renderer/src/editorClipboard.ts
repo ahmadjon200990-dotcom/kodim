@@ -1,6 +1,7 @@
 // Monaco uchun ichki clipboard (CLAUDE.md 5.4): Ctrl+C/X/V, Ctrl+Insert, Shift+Insert, Shift+Delete
 // va kontekst menyu tizim clipboard'i o'rniga ilovaning ichki clipboard'ini ishlatadi.
 import { monaco } from "./monaco";
+import { runInternalEdit } from "./models";
 
 type Editor = monaco.editor.IStandaloneCodeEditor;
 
@@ -53,12 +54,15 @@ export async function editorPaste(editor: Editor): Promise<void> {
   const text = await window.kodim.clipboard.paste("editor");
   if (!text) return;
   const selections = editor.getSelections() ?? [];
-  editor.pushUndoStop();
-  editor.executeEdits(
-    "kodim-paste",
-    selections.map((range) => ({ range, text, forceMoveMarkers: true })),
-  );
-  editor.pushUndoStop();
+  // Ichki paste — LARGE_INSERT yozilmasin.
+  runInternalEdit(() => {
+    editor.pushUndoStop();
+    editor.executeEdits(
+      "kodim-paste",
+      selections.map((range) => ({ range, text, forceMoveMarkers: true })),
+    );
+    editor.pushUndoStop();
+  });
   editor.focus();
 }
 

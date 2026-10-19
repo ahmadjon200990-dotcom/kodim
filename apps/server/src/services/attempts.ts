@@ -1,6 +1,7 @@
 import type { Exam, Prisma } from "@prisma/client";
 import { computeFinalScore, sumPenalties } from "@exam-ide/shared";
 import type { AttemptSummary, ExamLive, ExamPublic } from "@exam-ide/shared";
+import { z } from "zod";
 import { prisma } from "../db.js";
 
 const summaryQuery = {
@@ -42,6 +43,8 @@ export async function getAttemptSummary(attemptId: string): Promise<AttemptSumma
   return row ? toSummary(row) : null;
 }
 
+const PackageList = z.array(z.string()).catch([]);
+
 export function examPublic(exam: Exam): ExamPublic {
   return {
     id: exam.id,
@@ -49,6 +52,7 @@ export function examPublic(exam: Exam): ExamPublic {
     durationMin: exam.durationMin,
     template: exam.template,
     status: exam.status,
+    allowedPackages: PackageList.parse(exam.allowedPackages),
   };
 }
 

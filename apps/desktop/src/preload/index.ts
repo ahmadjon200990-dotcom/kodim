@@ -16,6 +16,8 @@ const api: KodimApi = {
     return () => ipcRenderer.off(IPC.state, handler);
   },
   getLastName: () => ipcRenderer.invoke(IPC.lastName),
+  onDiskChange: (listener) => subscribe<[string]>(IPC.diskChange, listener),
+  reportLargeInsert: (chars) => ipcRenderer.send(IPC.reportLargeInsert, chars),
   join: (code, name) => ipcRenderer.invoke(IPC.join, code, name),
   submit: () => ipcRenderer.invoke(IPC.submit),
   clipboard: {

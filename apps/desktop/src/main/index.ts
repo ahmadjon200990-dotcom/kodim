@@ -6,7 +6,9 @@ import { IPC } from "../common/api";
 import { ExamBrowser } from "./browser";
 import { clearSystemClipboardOnce } from "./clipboard";
 import { LiveServer } from "./liveServer";
+import { Monitor } from "./monitor";
 import { Terminals } from "./terminal";
+import { Watcher } from "./watcher";
 import { registerIpc } from "./ipc";
 import { hardenApp, hardenDefaultSession, hardenWindow } from "./protection";
 import { ExamSession } from "./session";
@@ -32,19 +34,36 @@ const send = (channel: string, ...args: unknown[]) => mainWindow?.webContents.se
 const terminals = new Terminals({
   data: (id, data) => send(IPC.termData, id, data),
   exit: (id, code) => send(IPC.termExit, id, code),
-  command: (info) => {
-    // 6-bosqichda TERMINAL_COMMAND / DANGEROUS_COMMAND ga ulanadi.
-    if (!app.isPackaged) console.log("[terminal]", info.terminalId, info.approximate ? "~" : "", info.line);
-  },
+  command: (info) => monitor.onCommand(info),
 });
 const live = new LiveServer();
+const monitor = new Monitor();
+const watcher = new Watcher();
 
 const session = new ExamSession({
   onStateChange: (state) => send(IPC.state, state),
-  // Imtihon boshlanganda tizim clipboard'i bir marta tozalanadi.
-  onWorking: () => clearSystemClipboardOnce(),
-  // Vaqt tugadi: terminal, dev serverlar, Go Live va brauzer o'chiriladi.
+  // Imtihon boshlanganda: tizim clipboard'i tozalanadi, kuzatuv va fayl watcher yoqiladi.
+  onWorking: () => {
+    clearSystemClipboardOnce();
+    const workspace = session.workspace;
+    if (!workspace) return;
+    monitor.start({
+      session,
+      getWindow: () => mainWindow,
+      onSafeCommand: () => watcher.noteSafeCommand(),
+      allowedPackages: () => session.allowedPackages(),
+    });
+    watcher.start({
+      session,
+      workspace,
+      readonlyContent: (rel) => session.readonlyContent(rel),
+      onDiskChange: (rel) => send(IPC.diskChange, rel),
+    });
+  },
+  // Vaqt tugadi: kuzatuv, terminal, dev serverlar, Go Live va brauzer o'chiriladi.
   onLocked: () => {
+    monitor.stop();
+    void watcher.stop();
     terminals.killAll();
     void live.stop();
     browser.reset();
@@ -109,6 +128,8 @@ void app.whenReady().then(() => {
 });
 
 app.on("before-quit", () => {
+  monitor.stop();
+  void watcher.stop();
   terminals.killAll();
   void live.stop();
   session.disconnect();

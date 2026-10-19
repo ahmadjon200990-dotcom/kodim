@@ -33,10 +33,25 @@ export const sha1 = (text: string) => createHash("sha1").update(text).digest("he
 
 export class Workspace {
   readonly root: string;
+  /** Editor/ilova yozgan fayllar xeshi — watcher tashqi o'zgarishni ajratishi uchun. */
+  private readonly editorHashes = new Map<string, string>();
 
   constructor(attemptId: string) {
     // Foydalanuvchiga yo'l ko'rsatilmaydi.
     this.root = join(app.getPath("userData"), "workspaces", attemptId);
+  }
+
+  private mark(rel: string, content: string): void {
+    this.editorHashes.set(rel, sha1(content));
+  }
+
+  /** Watcher ko'rgan o'zgarish editor saqlashiga tengmi (normal) yoki tashqimi. */
+  isEditorChange(rel: string, content: string): boolean {
+    return this.editorHashes.get(rel) === sha1(content);
+  }
+
+  forgetHash(rel: string): void {
+    this.editorHashes.delete(rel);
   }
 
   private abs(rel: string): string {
@@ -79,6 +94,7 @@ export class Workspace {
       await mkdir(dirname(abs), { recursive: true });
       // Faqat-o'qish fayllari: yozishdan oldin atributni olib, keyin qaytaramiz (Windows'da read-only atribut).
       if (readonly) await chmod(abs, 0o666).catch(() => undefined);
+      this.mark(f.path, f.content);
       await writeFile(abs, f.content, "utf8");
       if (readonly) await chmod(abs, 0o444);
     }
@@ -104,6 +120,7 @@ export class Workspace {
     this.guardWritable(rel);
     const abs = this.abs(rel);
     await mkdir(dirname(abs), { recursive: true });
+    this.mark(rel, content);
     await writeFile(abs, content, "utf8");
   }
 
@@ -112,6 +129,7 @@ export class Workspace {
     const abs = this.abs(rel);
     if (await this.exists(abs)) throw new WorkspaceError(uz.exists);
     await mkdir(dirname(abs), { recursive: true });
+    this.mark(rel, "");
     await writeFile(abs, "", "utf8");
   }
 
@@ -137,6 +155,16 @@ export class Workspace {
   async remove(rel: string): Promise<void> {
     this.guardWritable(rel);
     await rm(this.abs(rel), { recursive: true, force: true });
+  }
+
+  /** Buzilgan yoki o'chirilgan read-only faylni asl tarkib bilan tiklaydi (READONLY_TAMPER). */
+  async restoreReadonly(rel: string, content: string): Promise<void> {
+    if (!isReadonlyPath(rel)) return;
+    const abs = this.abs(rel);
+    await mkdir(dirname(abs), { recursive: true });
+    await chmod(abs, 0o666).catch(() => undefined);
+    await writeFile(abs, content, "utf8");
+    await chmod(abs, 0o444);
   }
 
   /** Sync uchun: e'tiborga olinmaydiganlar va faqat-o'qish fayllarisiz matn fayllari (≤ 1 MB, ≤ 300 ta). */

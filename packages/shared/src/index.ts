@@ -3,3 +3,4 @@ export * from "./events.js";
 export * from "./types.js";
 export * from "./score.js";
 export * from "./workspace.js";
+export * from "./monitoring.js";

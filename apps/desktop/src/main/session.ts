@@ -15,6 +15,18 @@ import { sha1, Workspace } from "./workspace";
 
 type StudentSocket = Socket<StudentServerToClient, StudentClientToServer>;
 
+interface PendingEvent {
+  type: EventType;
+  details: Record<string, unknown>;
+  id: string | null;
+  sent: boolean;
+}
+
+export interface EventHandle {
+  /** Event tafsilotlarini to'ldirish (serverda o'sha event yangilanadi). */
+  update(details: Record<string, unknown>): void;
+}
+
 const ACK_TIMEOUT_MS = 15_000;
 /** Bitta `attempt:sync` dagi taxminiy maksimal hajm (socket limiti 25 MB). */
 const SYNC_BATCH_BYTES = 5 * 1024 * 1024;
@@ -53,7 +65,19 @@ export class ExamSession {
   private lastAttemptId: string | null = null;
   /** Serverda tasdiqlangan join bormi (eventlar shundan keyin yuboriladi). */
   private joined = false;
-  private pendingEvents: { type: EventType; details: Record<string, unknown> }[] = [];
+  private pendingEvents: PendingEvent[] = [];
+  /** Read-only fayllarning asl tarkibi (yo'l → tarkib). */
+  private readonlyFiles = new Map<string, string>();
+
+  /** Read-only faylning server bergan asl tarkibi (watcher tiklashi uchun). */
+  readonlyContent(rel: string): string | null {
+    return this.readonlyFiles.get(rel) ?? null;
+  }
+
+  /** Imtihonda ruxsat etilgan npm paketlar (UNKNOWN_PACKAGE tekshiruvi). */
+  allowedPackages(): Set<string> {
+    return new Set((this.state.exam?.allowedPackages ?? []).map((p) => p.toLowerCase()));
+  }
 
   constructor(private readonly hooks: SessionHooks) {
     this.socket = io(`${__SERVER_URL__}${STUDENT_NAMESPACE}`, {
@@ -139,6 +163,8 @@ export class ExamSession {
     if (this.state.locked) return;
     if (this.workspace?.root !== new Workspace(attemptId).root) this.workspace = new Workspace(attemptId);
     await this.workspace.init(files);
+    // Read-only fayllarning asl tarkibi (READONLY_TAMPER tiklashi uchun).
+    this.readonlyFiles = new Map(files.filter((f) => isReadonlyPath(f.path)).map((f) => [f.path, f.content]));
     // Server bilgan holat — faqat undan farqlar yuboriladi.
     this.synced = new Map(files.map((f) => [f.path, sha1(f.content)]));
     this.set({
@@ -219,18 +245,36 @@ export class ExamSession {
     this.set({ screen: "submitted" });
   }
 
-  /** Qoidabuzarlik/kuzatuv eventi. Aloqa bo'lmasa navbatda turadi va qayta ulanganda yuboriladi. */
-  reportEvent(type: EventType, details: Record<string, unknown> = {}): void {
-    if (this.state.locked) return;
-    if (this.pendingEvents.length >= 200) this.pendingEvents.shift();
-    this.pendingEvents.push({ type, details: { ...details, at: new Date().toISOString() } });
-    this.flushEvents();
+  /**
+   * Qoidabuzarlik/kuzatuv eventi. Aloqa bo'lmasa navbatda turadi va qayta ulanganda yuboriladi.
+   * Qaytgan handle bilan keyinroq tafsilot qo'shish mumkin (masalan FOCUS_LOST davomiyligi).
+   */
+  reportEvent(type: EventType, details: Record<string, unknown> = {}): EventHandle {
+    const event: PendingEvent = { type, details: { ...details, at: new Date().toISOString() }, id: null, sent: false };
+    if (!this.state.locked) {
+      if (this.pendingEvents.length >= 200) this.pendingEvents.shift();
+      this.pendingEvents.push(event);
+      this.flushEvents();
+    }
+    return {
+      update: (extra) => {
+        if (!event.sent) {
+          // Hali yuborilmagan — shu eventning o'ziga qo'shamiz.
+          event.details = { ...event.details, ...extra };
+        } else if (event.id && this.joined && this.socket.connected) {
+          this.socket.emit("event:report", { type, details: extra, eventId: event.id }, () => {});
+        }
+      },
+    };
   }
 
   private flushEvents(): void {
     if (!this.joined || !this.socket.connected) return;
     for (const e of this.pendingEvents.splice(0)) {
-      this.socket.emit("event:report", { type: e.type, details: e.details }, () => {});
+      e.sent = true;
+      this.socket.emit("event:report", { type: e.type, details: e.details }, (res) => {
+        if (res.ok) e.id = res.eventId;
+      });
     }
   }
 

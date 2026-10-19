@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DESIGNS_DIR, isReadonlyPath, QUESTIONS_FILE } from "@exam-ide/shared";
 import type { ClientState } from "../../../common/api";
 import { useDialog } from "../Dialog";
-import { closeModel, discardUnder, onSaveError } from "../models";
+import { closeModel, discardUnder, onSaveError, reloadFromDisk } from "../models";
 import { uz } from "../uz";
 import { BrowserPanel } from "./BrowserPanel";
 import { EditorPane } from "./EditorPane";
@@ -20,6 +20,9 @@ export function Workspace({ state }: { state: ClientState }) {
   const [browserOpen, setBrowserOpen] = useState(false);
 
   useEffect(() => onSaveError((msg) => void dialog.alert(msg)), [dialog]);
+
+  // Diskda o'zgargan (tashqi yoki tiklangan) ochiq faylni qayta yuklash.
+  useEffect(() => window.kodim.onDiskChange((path) => void reloadFromDisk(path)), []);
 
   const open = useCallback((path: string) => {
     setTabs((t) => (t.includes(path) ? t : [...t, path]));

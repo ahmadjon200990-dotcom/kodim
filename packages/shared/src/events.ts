@@ -95,6 +95,8 @@ export interface ExamPublic {
   durationMin: number;
   template: ExamTemplate;
   status: ExamStatus;
+  /** Ruxsat etilgan npm paketlar (UNKNOWN_PACKAGE tekshiruvi uchun). */
+  allowedPackages: string[];
 }
 
 export interface ExamLive extends ExamPublic {

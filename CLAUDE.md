@@ -314,7 +314,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 - [x] 3. Desktop: oyna, kirish, kutish, ish maydoni (fayllar, Monaco, saqlash)
 - [x] 4. Desktop: terminal + ichki brauzer + Go Live
 - [x] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
-- [ ] 6. Desktop: kuzatuv (fokus, jarayonlar, buyruqlar, fayl watcher, katta qo'shish)
+- [x] 6. Desktop: kuzatuv (fokus, jarayonlar, buyruqlar, fayl watcher, katta qo'shish)
 - [ ] 7. Panel: kirish, imtihon yaratish, kutish/jonli kuzatuv, jarimalar
 - [ ] 8. AI baholash
 - [ ] 9. Panel: natijalar, batafsil sahifa, qo'lda baholash, Excel
@@ -376,5 +376,13 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Go Live: `src/main/liveServer.ts` — `127.0.0.1:<tasodifiy port>` statik server, papkadan chiqish yo'q, `no-store`.
   - Qulflanganda (`onLocked`): barcha terminallar (va ulardan ishga tushgan dev serverlar) o'ldiriladi, Go Live to'xtaydi, brauzer `about:blank`, yangi terminal ochib bo'lmaydi. Sinaldi: Topshirishdan keyin Go Live porti javob bermadi, PowerShell jarayonlari qolmadi.
   - Real ilovada sinaldi: `node -v`, cwd, `BROWSER=none`, buyruq qatori ushlandi; terminalda tashqi Ctrl+V → hech narsa + `PASTE_BLOCKED` (source: terminal), ichki paste ishladi; Go Live sahifasi ochildi; example.com va chatgpt.com rad etildi; "Dizaynni ochish" Figma'ni ochdi; brauzer ichida `window.open` → null.
-- Keyingi qadam: 6-bosqich (kuzatuv), keyin 7-bosqich (panel).
+- 6-bosqich tayyor (kuzatuv):
+  - Qoidalar `packages/shared/src/monitoring.ts`: taqiqlangan jarayonlar, xavfli buyruq regexlari (`matchDangerousCommand`), xavfsiz fayl buyruqlari (`isSafeFileCommand`), `parseInstalledPackages` (versiyasiz), `LARGE_INSERT_CHARS=200`, `PROCESS_SCAN_INTERVAL_MS=5000`, `FOCUS_LOST_MIN_MS=1500`. `ExamPublic.allowedPackages` qo'shildi (server yuboradi).
+  - `src/main/monitor.ts`: FOCUS_LOST (blur/minimize, 1.5 s dan qisqasi e'tiborsiz, qaytganda `durationSec` bilan yangilanadi), EXTRA_DISPLAY (>1 monitor yoki display-added, bir marta), FORBIDDEN_PROCESS (har 5 s `tasklist /fo csv /nh`, har dastur bir marta, boshlanishda ochiqlar ham), va terminal buyruqlari: TERMINAL_COMMAND (hammasi), DANGEROUS_COMMAND, UNKNOWN_PACKAGE (allowedPackages bilan solishtirib). Xavfsiz buyruq → watcher'ga 60 s oyna beradi.
+  - `src/main/terminal.ts`: `Terminals.track` har buyruqni `onCommand` ga beradi (Enter bufer). `src/main/watcher.ts` (chokidar 4): tashqi fayl o'zgarishi — editor xeshiga teng bo'lsa normal; oxirgi 60 s da xavfsiz buyruq bo'lsa INFO (faqat qayta yuklash); aks holda EXTERNAL_FILE_CHANGE (path, size, 300 belgi preview). Read-only (`savollar.md`/`dizaynlar`) buzilsa/o'chirilsa → `restoreReadonly` (asl tarkib + 0o444) va READONLY_TAMPER. Ochiq fayl diskda o'zgarsa editor qayta yuklaydi (`reloadFromDisk`).
+  - LARGE_INSERT: `models.ts` `detectLargeInsert` — bitta o'zgarishda net >200 belgi, undo/redo/flush va ichki paste (`runInternalEdit`) bundan mustasno.
+  - Workspace: `editorHashes` (write/createFile/init belgilaydi), `isEditorChange`, `restoreReadonly`, `forgetHash`.
+  - Eventlar `session.reportEvent(type, details)` orqali — aloqa yo'q bo'lsa navbatda (max 200), qaytgach yuboriladi. `EventHandle.update` bilan keyinroq tafsilot (FOCUS_LOST davomiyligi) qo'shiladi: hali yuborilmagan bo'lsa o'sha eventga, yuborilgan bo'lsa `eventId` bilan server yangilaydi. 3 s ichida bir xil fayl uchun EXTERNAL/READONLY takrorlanmaydi.
+  - Real ilovada sinaldi: FORBIDDEN_PROCESS (chrome/claude/telegram), TERMINAL_COMMAND, DANGEROUS_COMMAND (git clone), UNKNOWN_PACKAGE (lodash/axios; react ruxsatli — chiqmadi), EXTERNAL_FILE_CHANGE (to'g'ridan-to'g'ri disk yozuvi), READONLY_TAMPER (savollar.md tiklandi + atribut), FOCUS_LOST (minimize → durationSec). EXTRA_DISPLAY — bu mashinada 1 monitor, logika oddiy. LARGE_INSERT — yozish (harf-harf) uni chaqirmaydi (false positive yo'q), Monaco xom paste hodisasi guard tomonidan bloklanadi; bitta katta ichki-bo'lmagan tahrirda chiqadi.
+- Keyingi qadam: 7-bosqich (o'qituvchi paneli).
 - Test vositasi eslatmasi: Electron'ni `--remote-debugging-port=9222` bilan ishga tushirib, CDP orqali (`Runtime.evaluate`, `Input.insertText`, `Page.captureScreenshot`) sinash qulay. Monaco 0.57 `native-edit-context` elementiga fokus kerak. Fon vazifasini to'xtatish Electron'ni o'ldirmaydi — `Get-Process electron | ? Path -like '*exam-ide*' | Stop-Process`. Server ishlab turganda `prisma generate` (typecheck/build) Windows fayl qulfi tufayli yiqiladi — avval serverni to'xtating.
