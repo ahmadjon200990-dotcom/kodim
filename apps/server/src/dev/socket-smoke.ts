@@ -284,7 +284,7 @@ async function main() {
   const login = await fetch(`${BASE}/api/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email: "demo@exam-ide.local", password: "demo12345" }),
+    body: JSON.stringify({ email: "demo@kodim.uz", password: "demo12345" }),
   });
   const { token } = (await login.json()) as { token: string };
 

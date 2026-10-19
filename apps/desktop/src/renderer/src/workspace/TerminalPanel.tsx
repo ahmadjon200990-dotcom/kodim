@@ -86,7 +86,10 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
     }
   }, [current]);
 
-  const create = useCallback(async () => {
+  /** Faqat foydalanuvchi ochgan terminal fokus oladi (avtomatik ochilgani editordan fokusni tortmasin). */
+  const focusOnMount = useRef(new Set<number>());
+
+  const create = useCallback(async (focus: boolean) => {
     if (creating.current) return;
     creating.current = true;
     const res = await window.kodim.terminal.create(100, 12);
@@ -95,6 +98,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
       await dialog.alert(res.error);
       return;
     }
+    if (focus) focusOnMount.current.add(res.id);
     setTabs((t) => [...t, { id: res.id, exited: false }]);
     setCurrent(res.id);
   }, [dialog]);
@@ -133,7 +137,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
       try {
         fit.fit();
         window.kodim.terminal.resize(id, term.cols, term.rows);
-        term.focus();
+        if (focusOnMount.current.delete(id)) term.focus();
       } catch {
         // e'tiborsiz
       }
@@ -161,7 +165,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
   useEffect(() => {
     if (autoStarted.current || locked) return;
     autoStarted.current = true;
-    void create();
+    void create(false);
   }, [create, locked]);
 
   useEffect(() => {
@@ -218,7 +222,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
           ))}
         </div>
         <div className="pane-actions">
-          <button className="icon-btn" title={uz.terminal.new} disabled={locked} onClick={() => void create()}>
+          <button className="icon-btn" title={uz.terminal.new} disabled={locked} onClick={() => void create(true)}>
             ＋
           </button>
         </div>

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DEFAULT_ALLOWED_PACKAGES } from "@exam-ide/shared";
 import type { ExamTemplate, TaskType } from "@exam-ide/shared";
-import { api, ApiError } from "../lib/api";
+import { api } from "../lib/api";
+import { errorLines } from "../lib/errors";
 import type { ExamFull } from "../lib/types";
 import { uz } from "../uz";
 
@@ -104,7 +105,7 @@ export function ExamEdit() {
       else await api.post("/exams", body);
       nav("/");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : uz.common.error);
+      setError(errorLines(e, uz.common.error).join("\n"));
     } finally {
       setBusy(false);
     }

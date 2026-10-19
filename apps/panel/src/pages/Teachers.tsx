@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError } from "../lib/api";
+import { api } from "../lib/api";
+import { errorLines } from "../lib/errors";
 import { useAuth } from "../lib/auth";
 import type { Teacher } from "../lib/types";
 import { uz } from "../uz";
@@ -29,7 +30,7 @@ export function Teachers() {
       setRole("TEACHER");
       load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : uz.common.error);
+      setError(errorLines(err, uz.common.error).join("\n"));
     } finally {
       setBusy(false);
     }

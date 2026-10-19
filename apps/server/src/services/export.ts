@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { computeFinalScore, CriteriaList, sumPenalties } from "@exam-ide/shared";
+import { BRAND, computeFinalScore, CriteriaList, sumPenalties } from "@exam-ide/shared";
 import type { Criterion } from "@exam-ide/shared";
 import { prisma } from "../db.js";
 
@@ -25,7 +25,7 @@ export async function buildResultsWorkbook(examId: string): Promise<ExcelJS.Work
   }
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Kodim";
+  wb.creator = BRAND.name;
   const ws = wb.addWorksheet("Natijalar");
 
   const columns: Partial<ExcelJS.Column>[] = [

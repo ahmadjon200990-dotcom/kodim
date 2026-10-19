@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { TEACHER_NAMESPACE } from "@exam-ide/shared";
+import { TEACHER_NAMESPACE, WATCH_EVENTS_LIMIT } from "@exam-ide/shared";
 import type {
   AttemptSummary,
   EventDto,
+  EventWithStudent,
   ExamLive,
   TeacherClientToServer,
   TeacherServerToClient,
@@ -16,6 +17,8 @@ export interface LiveAlert {
   key: string;
   studentName: string;
   event: EventDto;
+  /** Sahifa ochiq turganda jonli kelgan (tarixdan emas) — ajratib ko'rsatiladi. */
+  fresh: boolean;
 }
 
 export interface ExamLiveState {
@@ -23,20 +26,34 @@ export interface ExamLiveState {
   attempts: AttemptSummary[];
   alerts: LiveAlert[];
   connected: boolean;
-  /** Yangi DANGER/WARN kelganda oshadi — ovozli signal uchun. */
-  alertTick: number;
+  /** Oxirgi jonli DANGER/WARN — ovozli signal va toast uchun. */
+  lastLoud: LiveAlert | null;
 }
 
-/** O'qituvchi paneli uchun jonli imtihon holati (socket). */
+const byNewest = (a: LiveAlert, b: LiveAlert) => b.event.createdAt.localeCompare(a.event.createdAt);
+
+/** Tarix (watch javobi) va jonli eventlarni id bo'yicha birlashtiradi — hech narsa yo'qolmaydi. */
+function merge(current: LiveAlert[], incoming: LiveAlert[]): LiveAlert[] {
+  const map = new Map(current.map((a) => [a.key, a]));
+  for (const a of incoming) {
+    const prev = map.get(a.key);
+    map.set(a.key, prev ? { ...a, fresh: prev.fresh || a.fresh } : a);
+  }
+  return [...map.values()].sort(byNewest).slice(0, WATCH_EVENTS_LIMIT);
+}
+
+const fromHistory = (rows: EventWithStudent[]): LiveAlert[] =>
+  rows.map((r) => ({ key: r.event.id, studentName: r.studentName, event: r.event, fresh: false }));
+
+/** O'qituvchi paneli uchun jonli imtihon holati (socket). Qayta ulanishda tarix qayta yuklanadi. */
 export function useExamSocket(examId: string | undefined): ExamLiveState {
   const [state, setState] = useState<ExamLiveState>({
     exam: null,
     attempts: [],
     alerts: [],
     connected: false,
-    alertTick: 0,
+    lastLoud: null,
   });
-  const socketRef = useRef<TeacherSocket | null>(null);
 
   useEffect(() => {
     if (!examId) return;
@@ -44,7 +61,6 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
       transports: ["websocket"],
       auth: { token: tokenStore.get() ?? "" },
     });
-    socketRef.current = socket;
 
     const upsert = (attempts: AttemptSummary[], a: AttemptSummary) => {
       const i = attempts.findIndex((x) => x.id === a.id);
@@ -57,7 +73,13 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
     socket.on("connect", () => {
       setState((s) => ({ ...s, connected: true }));
       void socket.emitWithAck("exam:watch", { examId }).then((res) => {
-        if (res.ok) setState((s) => ({ ...s, exam: res.exam, attempts: res.attempts }));
+        if (!res.ok) return;
+        setState((s) => ({
+          ...s,
+          exam: res.exam,
+          attempts: res.attempts,
+          alerts: merge(s.alerts, fromHistory(res.events)),
+        }));
       });
     });
     socket.on("disconnect", () => setState((s) => ({ ...s, connected: false })));
@@ -66,16 +88,16 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
     socket.on("exam:update", ({ exam }) => setState((s) => ({ ...s, exam })));
     socket.on("event:new", ({ studentName, event }) => {
       setState((s) => {
-        const alert: LiveAlert = { key: event.id, studentName, event };
-        const alerts = [alert, ...s.alerts.filter((a) => a.key !== event.id)].slice(0, 100);
-        const louder = event.severity !== "INFO";
-        return { ...s, alerts, alertTick: louder ? s.alertTick + 1 : s.alertTick };
+        const known = s.alerts.some((a) => a.key === event.id);
+        const alert: LiveAlert = { key: event.id, studentName, event, fresh: true };
+        // Yangilanish (masalan FOCUS_LOST davomiyligi) qayta signal bermaydi.
+        const loud = !known && event.severity !== "INFO";
+        return { ...s, alerts: merge(s.alerts, [alert]), lastLoud: loud ? alert : s.lastLoud };
       });
     });
 
     return () => {
       socket.close();
-      socketRef.current = null;
     };
   }, [examId]);
 

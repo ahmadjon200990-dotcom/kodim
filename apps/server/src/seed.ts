@@ -4,7 +4,7 @@ import { env } from "./env.js";
 import { prisma } from "./db.js";
 
 // Demo o'qituvchi faqat lokal sinov uchun.
-const DEMO_TEACHER = { name: "Demo o'qituvchi", email: "demo@exam-ide.local", password: "demo12345" };
+const DEMO_TEACHER = { name: "Demo o'qituvchi", email: "demo@kodim.uz", password: "demo12345" };
 const DEMO_EXAM_TITLE = "Demo: JavaScript va Figma";
 
 async function upsertTeacher(name: string, email: string, password: string, role: "ADMIN" | "TEACHER") {

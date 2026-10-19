@@ -34,15 +34,29 @@ function describe(type: string, details: unknown): string {
   }
 }
 
+/** Oqimni to'ldirib, muhim ogohlantirishlarni pastga suradigan oddiy buyruqlar (batafsil sahifada to'liq tarix bor). */
+const NOISY_TYPES = new Set(["TERMINAL_COMMAND"]);
+
 export function AlertsFeed({ alerts }: { alerts: LiveAlert[] }) {
+  const [showCommands, setShowCommands] = useState(false);
+  const visible = showCommands ? alerts : alerts.filter((a) => !NOISY_TYPES.has(a.event.type));
+  const hidden = alerts.length - visible.length;
+
   return (
     <aside className="alerts">
-      <div className="alerts-head">{uz.live.alerts}</div>
+      <div className="alerts-head">
+        <span>{uz.live.alerts}</span>
+        <label className="alerts-toggle">
+          <input type="checkbox" checked={showCommands} onChange={(e) => setShowCommands(e.target.checked)} />
+          {uz.live.showCommands}
+          {!showCommands && hidden > 0 && <span className="muted"> ({hidden})</span>}
+        </label>
+      </div>
       <div className="alerts-body">
-        {alerts.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="muted small alerts-empty">{uz.live.noAlerts}</div>
         ) : (
-          alerts.map((a) => <AlertItem key={a.key} alert={a} />)
+          visible.map((a) => <AlertItem key={a.key} alert={a} />)
         )}
       </div>
     </aside>

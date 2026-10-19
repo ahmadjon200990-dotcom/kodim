@@ -35,16 +35,44 @@ async function submitAttempt(attemptId: string): Promise<void> {
 }
 
 /** Barcha ishlar topshirilgach: GRADING (AI yoqilgan bo'lsa) yoki FINISHED, kod bo'shatiladi. */
+/**
+ * AI baholash navbati (8-bosqich) ulanganda true qilinadi. Hozircha AI yoqilgan imtihon ham FINISHED ga o'tadi,
+ * aks holda u GRADING da abadiy qolib ketardi (o'chirib ham bo'lmasdi).
+ */
+export const AI_GRADER_READY = false;
+
 async function completeExam(examId: string, aiEnabled: boolean): Promise<void> {
+  const grade = aiEnabled && AI_GRADER_READY;
   const updated = await prisma.exam.updateMany({
     where: { id: examId, status: "RUNNING" },
-    data: { status: aiEnabled ? "GRADING" : "FINISHED", code: null },
+    data: { status: grade ? "GRADING" : "FINISHED", code: null },
   });
   if (updated.count === 0) return;
+  if (aiEnabled && !grade) await markAiUnavailable(examId);
   // Bekor qilingan o'quvchilar hali ishlayotgan bo'lishi mumkin — ularni ham yopamiz.
   students().to(rooms.exam(examId)).emit("exam:ended");
   notifyExam(await prisma.exam.findUniqueOrThrow({ where: { id: examId } }));
   // 8-bosqich: shu yerda AI baholash navbatiga qo'yiladi.
+}
+
+/** O'quvchi ishlarida AI bahosi yo'qligi sababini aniq yozib qo'yadi (panelda "AI: xato" ko'rinadi). */
+async function markAiUnavailable(examId: string): Promise<void> {
+  await prisma.attempt.updateMany({
+    where: { examId, aiScore: null, aiError: null },
+    data: { aiError: AI_NOT_READY_ERROR },
+  });
+}
+
+const AI_NOT_READY_ERROR = "AI baholash hali ulanmagan — o'qituvchi qo'lda baholaydi";
+
+/** Eski versiyada GRADING da qolib ketgan imtihonlarni FINISHED ga o'tkazadi (grader yo'q paytda). */
+async function releaseStuckGrading(): Promise<void> {
+  if (AI_GRADER_READY) return;
+  const stuck = await prisma.exam.findMany({ where: { status: "GRADING" }, select: { id: true } });
+  for (const { id } of stuck) {
+    await prisma.exam.update({ where: { id }, data: { status: "FINISHED", code: null } });
+    await markAiUnavailable(id);
+  }
 }
 
 export async function startExam(examId: string) {
@@ -116,6 +144,7 @@ async function syncAllTimes(): Promise<void> {
 }
 
 export function startRuntime(log: FastifyBaseLogger): () => void {
+  releaseStuckGrading().catch((err: unknown) => log.error(err));
   let busy = false;
   const tickTimer = setInterval(() => {
     if (busy) return;

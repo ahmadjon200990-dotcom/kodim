@@ -1,6 +1,6 @@
 import type { Event, Exam } from "@prisma/client";
-import { EVENT_SEVERITY } from "@exam-ide/shared";
-import type { EventDto, EventType } from "@exam-ide/shared";
+import { EVENT_SEVERITY, WATCH_EVENTS_LIMIT } from "@exam-ide/shared";
+import type { EventDto, EventType, EventWithStudent } from "@exam-ide/shared";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { rooms, students, teachers } from "../realtime/io.js";
@@ -23,6 +23,17 @@ export async function notifyLobby(examId: string): Promise<void> {
 
 export function notifyExam(exam: Exam): void {
   teachers().to(rooms.watch(exam.id)).emit("exam:update", { exam: examLive(exam) });
+}
+
+/** Imtihonning oxirgi eventlari (eng yangisi birinchi) — panel tarixini tiklash uchun. */
+export async function recentExamEvents(examId: string): Promise<EventWithStudent[]> {
+  const rows = await prisma.event.findMany({
+    where: { attempt: { examId } },
+    include: { attempt: { select: { studentName: true } } },
+    orderBy: { createdAt: "desc" },
+    take: WATCH_EVENTS_LIMIT,
+  });
+  return rows.map(({ attempt, ...e }) => ({ studentName: attempt.studentName, event: toDto(e) }));
 }
 
 function toDto(e: Event): EventDto {

@@ -178,8 +178,20 @@ export interface EventDto {
   createdAt: string;
 }
 
+export interface EventWithStudent {
+  studentName: string;
+  event: EventDto;
+}
+
+/** exam:watch qaytaradigan eventlar soni (eng yangilari). */
+export const WATCH_EVENTS_LIMIT = 300;
+
 export interface TeacherClientToServer {
-  "exam:watch": (payload: ExamWatchInput, ack: Ack<{ exam: ExamLive; attempts: AttemptSummary[] }>) => void;
+  /** Javobda oxirgi eventlar ham bor — sahifa yangilanganda yoki qayta ulanganda hech narsa yo'qolmasin. */
+  "exam:watch": (
+    payload: ExamWatchInput,
+    ack: Ack<{ exam: ExamLive; attempts: AttemptSummary[]; events: EventWithStudent[] }>,
+  ) => void;
 }
 
 export interface TeacherServerToClient {

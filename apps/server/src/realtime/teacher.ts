@@ -3,6 +3,7 @@ import { ExamWatchInput } from "@exam-ide/shared";
 import { prisma } from "../db.js";
 import { getOwnedExam } from "../lib/access.js";
 import { examLive, listAttemptSummaries } from "../services/attempts.js";
+import { recentExamEvents } from "../services/notify.js";
 import { uz } from "../uz.js";
 import { rooms, type TeacherNsp } from "./io.js";
 import { respond } from "./util.js";
@@ -35,7 +36,11 @@ export function registerTeacherHandlers(nsp: TeacherNsp, app: FastifyInstance): 
         const exam = await getOwnedExam(teacher, examId);
         for (const room of socket.rooms) if (room.startsWith("watch:")) await socket.leave(room);
         await socket.join(rooms.watch(examId));
-        return { exam: examLive(exam), attempts: await listAttemptSummaries(examId) };
+        return {
+          exam: examLive(exam),
+          attempts: await listAttemptSummaries(examId),
+          events: await recentExamEvents(examId),
+        };
       }),
     );
   });

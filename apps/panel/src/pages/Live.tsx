@@ -10,18 +10,17 @@ import { uz } from "../uz";
 export function Live() {
   const { id } = useParams();
   const nav = useNavigate();
-  const { exam, attempts, alerts, connected, alertTick } = useExamSocket(id);
+  const { exam, attempts, alerts, connected, lastLoud } = useExamSocket(id);
   const [busy, setBusy] = useState("");
-  const lastTick = useRef(0);
+  const lastKey = useRef<string | null>(null);
 
   // Yangi DANGER/WARN — ovozli signal.
   useEffect(() => {
-    if (alertTick > lastTick.current) {
-      lastTick.current = alertTick;
-      const latest = alerts[0];
-      if (latest) beep(latest.event.severity === "DANGER");
+    if (lastLoud && lastLoud.key !== lastKey.current) {
+      lastKey.current = lastLoud.key;
+      beep(lastLoud.event.severity === "DANGER");
     }
-  }, [alertTick, alerts]);
+  }, [lastLoud]);
 
   const act = async (label: string, fn: () => Promise<unknown>) => {
     setBusy(label);

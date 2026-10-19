@@ -96,6 +96,7 @@ export const uz = {
     noStudents: "Hali hech kim kirmagan",
     alerts: "Ogohlantirishlar",
     noAlerts: "Hozircha ogohlantirish yo'q",
+    showCommands: "Buyruqlarni ko'rsatish",
     addTime: "Vaqt qo'shish",
     addTimeAll: "Hammaga",
     minutes: "daqiqa",
@@ -112,7 +113,8 @@ export const uz = {
   results: {
     title: "Natijalar",
     export: "Excel yuklab olish",
-    col: { n: "№", name: "Ism", ai: "AI", teacher: "O'qituvchi", penalties: "Jarima", final: "Yakuniy", status: "Holat", warnings: "Ogoh.", detail: "Batafsil" },
+    aiState: { ready: "Tayyor", error: "Xato", grading: "Baholanmoqda", off: "O'chiq", none: "—" },
+    col: { aiState: "AI holati", n: "№", name: "Ism", ai: "AI", teacher: "O'qituvchi", penalties: "Jarima", final: "Yakuniy", status: "Holat", warnings: "Ogoh.", detail: "Batafsil" },
     back: "Orqaga",
   },
   detail: {

@@ -70,6 +70,7 @@ export function Results() {
           <tr>
             <th className="num">{uz.results.col.n}</th>
             {th("name", uz.results.col.name)}
+            <th>{uz.results.col.aiState}</th>
             {th("ai", uz.results.col.ai, "num")}
             <th className="num">{uz.results.col.teacher}</th>
             <th className="num">{uz.results.col.penalties}</th>
@@ -84,6 +85,9 @@ export function Results() {
             <tr key={a.id} className={a.status === "ANNULLED" ? "annulled-row" : ""}>
               <td className="num">{i + 1}</td>
               <td>{a.studentName}</td>
+              <td>
+                <AiState a={a} exam={exam} />
+              </td>
               <td className="num">{a.aiScore ?? uz.common.none}</td>
               <td className="num">{a.teacherScore ?? uz.common.none}</td>
               <td className="num">{a.penaltyTotal > 0 ? `−${a.penaltyTotal}` : uz.common.none}</td>
@@ -103,4 +107,20 @@ export function Results() {
       </table>
     </div>
   );
+}
+
+/** AI baholash holati (CLAUDE.md 7.5): tayyor / xato (sababi tooltipda) / baholanmoqda / o'chiq. */
+function AiState({ a, exam }: { a: AttemptSummary; exam: ExamFull | null }) {
+  const t = uz.results.aiState;
+  if (exam && !exam.aiEnabled) return <span className="ai-state ai-off">{t.off}</span>;
+  if (a.aiScore !== null) return <span className="ai-state ai-ready">{t.ready}</span>;
+  if (a.aiError) {
+    return (
+      <span className="ai-state ai-error" title={a.aiError}>
+        {t.error}
+      </span>
+    );
+  }
+  if (exam?.status === "GRADING") return <span className="ai-state ai-grading">{t.grading}</span>;
+  return <span className="muted">{t.none}</span>;
 }
