@@ -13,7 +13,9 @@
     "seed": "pnpm --filter @exam-ide/server seed",
     "dev:server": "pnpm --filter @exam-ide/server dev",
     "dev:desktop": "pnpm --filter @exam-ide/desktop dev",
-    "start:desktop": "pnpm --filter @exam-ide/desktop build && pnpm --filter @exam-ide/desktop start"
+    "start:desktop": "pnpm --filter @exam-ide/desktop build && pnpm --filter @exam-ide/desktop start",
+    "dev:panel": "pnpm --filter @exam-ide/panel dev",
+    "build:panel": "pnpm --filter @exam-ide/panel build"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

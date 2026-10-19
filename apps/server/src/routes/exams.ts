@@ -7,6 +7,7 @@ import { HttpError, IdParams } from "../lib/http.js";
 import { attemptEndsAt } from "../services/attempts.js";
 import { openExamWithCode } from "../services/exam-code.js";
 import { notifyAttempt, notifyExam } from "../services/notify.js";
+import { buildResultsWorkbook } from "../services/export.js";
 import { finishExamNow, sendTimeSync, startExam } from "../services/runtime.js";
 import { uz } from "../uz.js";
 
@@ -157,5 +158,17 @@ export async function examRoutes(app: FastifyInstance) {
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "RUNNING") throw new HttpError(409, uz.examMustBeRunning);
     return finishExamNow(id, req.log);
+  });
+
+  app.get("/api/exams/:id/export.xlsx", async (req, reply) => {
+    const { id } = IdParams.parse(req.params);
+    const exam = await getOwnedExam(req.teacher, id);
+    const wb = await buildResultsWorkbook(id);
+    const safeName = exam.title.replace(/[^\p{L}\p{N} _-]/gu, "").trim() || "natijalar";
+    reply.header("content-type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    reply.header("content-disposition", `attachment; filename="${encodeURIComponent(safeName)}.xlsx"`);
+    await wb.xlsx.write(reply.raw);
+    reply.raw.end();
+    return reply;
   });
 }

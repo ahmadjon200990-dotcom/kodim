@@ -1,0 +1,48 @@
+import { useState, type FormEvent } from "react";
+import { BRAND } from "@exam-ide/shared";
+import { useAuth } from "../lib/auth";
+import { uz } from "../uz";
+
+export function Login() {
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await login(email.trim(), password);
+    } catch {
+      setError(uz.login.failed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="login-screen">
+      <form className="login-card" onSubmit={(e) => void submit(e)}>
+        <div className="login-brand">
+          <span className="brand-mark">&lt;/&gt;</span> {BRAND.panelName}
+        </div>
+        <div className="login-slogan">{BRAND.slogan}</div>
+        <label className="field">
+          <span>{uz.login.email}</span>
+          <input className="input" type="email" value={email} autoFocus onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>{uz.login.password}</span>
+          <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        {error && <div className="form-error">{error}</div>}
+        <button className="btn btn-primary btn-block" disabled={busy}>
+          {busy ? uz.login.busy : uz.login.submit}
+        </button>
+      </form>
+    </div>
+  );
+}

@@ -84,6 +84,14 @@ export async function attemptRoutes(app: FastifyInstance) {
     return updated;
   });
 
+  app.post("/api/attempts/:id/regrade", async (req) => {
+    const { id } = IdParams.parse(req.params);
+    const attempt = await getOwnedAttempt(req.teacher, id);
+    if (!attempt.exam.aiEnabled) throw new HttpError(409, uz.aiDisabled);
+    // 8-bosqich: shu yerda AI baholash navbatiga qo'yiladi.
+    throw new HttpError(501, uz.aiNotReady);
+  });
+
   app.put("/api/attempts/:id/grade", async (req) => {
     const { id } = IdParams.parse(req.params);
     const attempt = await getOwnedAttempt(req.teacher, id);

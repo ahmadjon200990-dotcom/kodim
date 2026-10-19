@@ -25,6 +25,8 @@ export const uz = {
   nameTaken: "Bu ism bilan o'quvchi allaqachon kirgan. Ismingizni to'liqroq yozing",
   studentNotJoined: "Avval imtihonga kiring",
   notWorking: "Ish hozir qabul qilinmaydi",
+  aiDisabled: "Bu imtihonda AI baholash o'chirilgan",
+  aiNotReady: "AI baholash hali ulanmagan (8-bosqich)",
   unknownCriterion: (name: string) => `Imtihonda "${name}" mezoni yo'q`,
   criterionOverWeight: (name: string, weight: number) => `"${name}" mezoni bo'yicha ball ${weight} dan oshmasligi kerak`,
 } as const;

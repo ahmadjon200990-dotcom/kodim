@@ -1,6 +1,9 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
+import fastifyStatic from "@fastify/static";
 import { ZodError } from "zod";
 import { BRAND } from "@exam-ide/shared";
 import { env } from "./env.js";
@@ -49,6 +52,16 @@ export async function buildApp() {
   registerTeacherHandlers(realtime.teachers, app);
   const stopRuntime = startRuntime(app.log);
   app.addHook("onClose", async () => stopRuntime());
+
+  // O'qituvchi paneli (build qilingan): apps/server/public. SPA — noma'lum yo'llar index.html ga.
+  const publicDir = fileURLToPath(new URL("../public", import.meta.url));
+  if (existsSync(publicDir)) {
+    await app.register(fastifyStatic, { root: publicDir });
+    app.setNotFoundHandler((req, reply) => {
+      if (req.raw.url?.startsWith("/api")) return reply.code(404).send({ error: uz.notFound });
+      return reply.sendFile("index.html");
+    });
+  }
 
   return app;
 }

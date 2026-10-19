@@ -315,7 +315,7 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 - [x] 4. Desktop: terminal + ichki brauzer + Go Live
 - [x] 5. Desktop: himoya (screenshot, clipboard, drag&drop, devtools, read-only)
 - [x] 6. Desktop: kuzatuv (fokus, jarayonlar, buyruqlar, fayl watcher, katta qo'shish)
-- [ ] 7. Panel: kirish, imtihon yaratish, kutish/jonli kuzatuv, jarimalar
+- [x] 7. Panel: kirish, imtihon yaratish, kutish/jonli kuzatuv, jarimalar
 - [ ] 8. AI baholash
 - [ ] 9. Panel: natijalar, batafsil sahifa, qo'lda baholash, Excel
 - [ ] 10. Windows .exe build, serverni deploy, to'liq sinov
@@ -384,5 +384,16 @@ Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
   - Workspace: `editorHashes` (write/createFile/init belgilaydi), `isEditorChange`, `restoreReadonly`, `forgetHash`.
   - Eventlar `session.reportEvent(type, details)` orqali — aloqa yo'q bo'lsa navbatda (max 200), qaytgach yuboriladi. `EventHandle.update` bilan keyinroq tafsilot (FOCUS_LOST davomiyligi) qo'shiladi: hali yuborilmagan bo'lsa o'sha eventga, yuborilgan bo'lsa `eventId` bilan server yangilaydi. 3 s ichida bir xil fayl uchun EXTERNAL/READONLY takrorlanmaydi.
   - Real ilovada sinaldi: FORBIDDEN_PROCESS (chrome/claude/telegram), TERMINAL_COMMAND, DANGEROUS_COMMAND (git clone), UNKNOWN_PACKAGE (lodash/axios; react ruxsatli — chiqmadi), EXTERNAL_FILE_CHANGE (to'g'ridan-to'g'ri disk yozuvi), READONLY_TAMPER (savollar.md tiklandi + atribut), FOCUS_LOST (minimize → durationSec). EXTRA_DISPLAY — bu mashinada 1 monitor, logika oddiy. LARGE_INSERT — yozish (harf-harf) uni chaqirmaydi (false positive yo'q), Monaco xom paste hodisasi guard tomonidan bloklanadi; bitta katta ichki-bo'lmagan tahrirda chiqadi.
-- Keyingi qadam: 7-bosqich (o'qituvchi paneli).
+- 7-bosqich tayyor (o'qituvchi paneli):
+  - `apps/panel` (React 19 + Vite 8 + react-router 7). Build → `apps/server/public` (gitignore), server `@fastify/static` bilan beradi; API bo'lmagan yo'llar SPA `index.html` ga (setNotFoundHandler). Dev: `pnpm dev:panel` (Vite 5273-port, `/api` va `/socket.io` 8080 ga proxy).
+  - Tuzilma: `lib/` (api — REST + JWT localStorage + 401 logout + Excel yuklab olish; auth.tsx — kontekst; useExamSocket.ts — /teacher socket, lobby/attempt/event/exam yangilanishlari; beep.ts — WebAudio ogohlantirish ovozi), `pages/` (Login, ExamsList, ExamEdit, Live, Results, AttemptDetail, Teachers), `components/` (Layout, StatusBadge, AlertsFeed, DiffView).
+  - Imtihon yaratish/tahrirlash: nom, vaqt, shablon, topshiriqlar (EXERCISE/FIGMA), namuna fayllar, mezonlar (yig'indi 100 tekshiruvi), AI yoq/o'ch + model, ruxsatli paketlar. Faqat DRAFT tahrirlanadi.
+  - Jonli kuzatuv (Live): katta kod, Boshlash/Tugatish, vaqt qo'shish (hammaga yoki +5 bitta o'quvchiga), o'quvchi kartalari (onlayn/uzilgan/topshirgan/bekor nuqtasi, ogohlantirish/jarima soni), o'ng tomonda ogohlantirishlar oqimi — yangi DANGER/WARN da ovozli signal (DANGER balandroq), har eventda −5/−10/Boshqa/Bekor. DEVICE_CHANGED, LATE_JOIN va boshqa barcha event turlari o'zbekcha nom bilan.
+  - Natijalar: saralanadigan jadval (AI/o'qituvchi/jarima/yakuniy/ogohlantirish), har 4 s yangilanadi, Excel yuklab olish. Batafsil: mezonlar bo'yicha tahrirlanadigan ball+izoh (AI yoki teacherCriteria dan boshlanadi), umumiy izoh, AI xulosasi, jarimalar (o'chirish), eventlar tarixi, Monaco diff (o'quvchi ↔ namuna, fayl tablari bilan), "AI bilan qayta baholash".
+  - Admin: o'qituvchilar qo'shish/o'chirish (faqat ADMIN; route va nav gated, o'zini o'chira olmaydi).
+  - Server qo'shildi: `GET /exams/:id/export.xlsx` (exceljs, 6.4 ustunlari — `services/export.ts`), `POST /attempts/:id/regrade` (hozir 501/aiDisabled — AI 8-bosqichda ulanadi). `ExamPublic.allowedPackages` socketdan.
+  - Dizayn: toza yorug' tema, ko'k asos, nom/shior brand.ts dan (`Kodim Panel`).
+  - Real sinov (ichki brauzer + desktop o'quvchi): login → imtihonlar → Kutish xonasini ochish (kod) → o'quvchi ulandi (jonli ko'rindi) → boshlash → o'quvchida git clone/npm install axios/taqiqlangan dasturlar → panelda ogohlantirishlar oqimi real vaqtda (UNKNOWN_PACKAGE, DANGEROUS_COMMAND, FORBIDDEN_PROCESS, TERMINAL_COMMAND) → −5 jarima (kartada va "✓" ko'rindi) → Natijalar jadvali (−5, yakuniy 0) → Excel yuklandi (haqiqiy .xlsx) → Batafsil (mezonlar, diff, eventlar, fayllar) → admin sahifa TEACHER uchun bloklandi.
+- VS Build Tools 2026 o'rnatilgan (foydalanuvchi aytdi): node-pty uchun electron-rebuild endi muqobil bor; lekin tayyor binar Electron 44 da ishlagani uchun hozir shart emas. 10-bosqichda paketlashda ABI mos kelishi uchun electron-builder native rebuild qiladi.
+- Keyingi qadam: 8-bosqich (AI baholash), keyin 9 (natijalar/batafsil allaqachon bor — AI bilan to'ldiriladi), 10 (build/deploy), 11 (demo).
 - Test vositasi eslatmasi: Electron'ni `--remote-debugging-port=9222` bilan ishga tushirib, CDP orqali (`Runtime.evaluate`, `Input.insertText`, `Page.captureScreenshot`) sinash qulay. Monaco 0.57 `native-edit-context` elementiga fokus kerak. Fon vazifasini to'xtatish Electron'ni o'ldirmaydi — `Get-Process electron | ? Path -like '*exam-ide*' | Stop-Process`. Server ishlab turganda `prisma generate` (typecheck/build) Windows fayl qulfi tufayli yiqiladi — avval serverni to'xtating.
