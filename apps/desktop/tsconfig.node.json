@@ -3,8 +3,19 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["node"],
-    "noEmit": true
+    "types": [
+      "node"
+    ],
+    "noEmit": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
-  "include": ["electron.vite.config.ts", "src/main", "src/preload", "src/common"]
+  "include": [
+    "electron.vite.config.ts",
+    "src/main",
+    "src/preload",
+    "src/common"
+  ]
 }

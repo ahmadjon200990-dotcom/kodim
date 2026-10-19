@@ -31,6 +31,21 @@ export interface FsEntry {
 
 export type Result = AckResult<object>;
 
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface BrowserState {
+  url: string;
+  title: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  loading: boolean;
+}
+
 export interface KodimApi {
   getState(): Promise<ClientState>;
   onState(listener: (state: ClientState) => void): () => void;
@@ -42,6 +57,25 @@ export interface KodimApi {
     write(text: string): Promise<void>;
     /** Ichki matnni qaytaradi; tizim clipboard'ida tashqi matn bo'lsa PASTE_BLOCKED yuboriladi. */
     paste(source: "editor" | "input" | "terminal"): Promise<string>;
+  };
+  terminal: {
+    create(cols: number, rows: number): Promise<AckResult<{ id: number }>>;
+    write(id: number, data: string): void;
+    resize(id: number, cols: number, rows: number): void;
+    kill(id: number): void;
+    onData(listener: (id: number, data: string) => void): () => void;
+    onExit(listener: (id: number, code: number) => void): () => void;
+  };
+  browser: {
+    /** Brauzer paneli joyi (CSS px); `null` — yashirish. */
+    setBounds(rect: Rect | null): void;
+    navigate(url: string): Promise<Result>;
+    back(): void;
+    forward(): void;
+    reload(): void;
+    /** Ish papkasini lokal serverda ochib, brauzerda ko'rsatadi. */
+    goLive(): Promise<AckResult<{ url: string }>>;
+    onState(listener: (state: BrowserState) => void): () => void;
   };
   fs: {
     list(dir: string): Promise<FsEntry[]>;
@@ -62,6 +96,19 @@ export const IPC = {
   submit: "session:submit",
   clipboardWrite: "clipboard:write",
   clipboardPaste: "clipboard:paste",
+  termCreate: "terminal:create",
+  termWrite: "terminal:write",
+  termResize: "terminal:resize",
+  termKill: "terminal:kill",
+  termData: "terminal:data",
+  termExit: "terminal:exit",
+  browserBounds: "browser:bounds",
+  browserNavigate: "browser:navigate",
+  browserBack: "browser:back",
+  browserForward: "browser:forward",
+  browserReload: "browser:reload",
+  browserGoLive: "browser:go-live",
+  browserState: "browser:state",
   fsList: "fs:list",
   fsRead: "fs:read",
   fsWrite: "fs:write",

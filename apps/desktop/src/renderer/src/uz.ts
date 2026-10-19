@@ -55,7 +55,24 @@ export const uz = {
   },
   panel: {
     terminal: "Terminal",
-    terminalSoon: "Terminal tez orada",
+  },
+  terminal: {
+    new: "Yangi terminal",
+    close: "Terminalni yopish",
+    exited: "[jarayon tugadi]",
+    none: "Terminal yo'q — ＋ tugmasini bosing",
+  },
+  browser: {
+    title: "Brauzer",
+    back: "Orqaga",
+    forward: "Oldinga",
+    reload: "Yangilash",
+    close: "Brauzerni yopish",
+    placeholder: "localhost:5173 yoki Figma havolasi",
+    empty: "Go Live tugmasini bosing yoki manzil kiriting (faqat localhost va Figma)",
+    goLive: "Go Live",
+    openDesign: "Dizaynni ochish",
+    noDesignUrl: "Bu faylda Figma havolasi topilmadi",
   },
   status: {
     offline: "Server bilan aloqa uzildi — qayta ulanmoqda. Ishingiz kompyuterda saqlanmoqda.",

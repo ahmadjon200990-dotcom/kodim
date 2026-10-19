@@ -19,6 +19,12 @@ interface DialogApi {
 }
 
 const DialogContext = createContext<DialogApi | null>(null);
+const DialogOpenContext = createContext(false);
+
+/** Modal oyna ochiqmi (ichki brauzer view'i DOM ustida turgani uchun yashiriladi). */
+export function useDialogOpen(): boolean {
+  return useContext(DialogOpenContext);
+}
 
 export function useDialog(): DialogApi {
   const api = useContext(DialogContext);
@@ -55,8 +61,10 @@ export function DialogProvider({ children }: { children: ReactNode }) {
 
   return (
     <DialogContext.Provider value={api}>
-      {children}
-      {request && <DialogView request={request} onClose={close} />}
+      <DialogOpenContext.Provider value={request !== null}>
+        {children}
+        {request && <DialogView request={request} onClose={close} />}
+      </DialogOpenContext.Provider>
     </DialogContext.Provider>
   );
 }

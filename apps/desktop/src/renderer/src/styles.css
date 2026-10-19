@@ -602,6 +602,152 @@ h1 {
   min-height: 0;
 }
 
+/* Terminal */
+
+.term-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.term-tabs > span {
+  margin-right: 8px;
+}
+
+.term-tab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 8px;
+  border-radius: var(--radius);
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.term-tab:hover {
+  background: var(--bg-hover);
+}
+
+.term-tab-active {
+  background: var(--bg-active);
+  color: var(--text-strong);
+}
+
+.term-close {
+  width: 16px;
+  height: 16px;
+  font-size: 13px;
+}
+
+.term-tab:hover .term-close,
+.term-tab-active .term-close {
+  visibility: visible;
+}
+
+.term-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  padding: 4px 0 0 10px;
+}
+
+.term-host {
+  position: absolute;
+  inset: 4px 0 0 10px;
+}
+
+.term-empty {
+  padding: 8px 4px;
+}
+
+/* Ichki brauzer */
+
+.browser {
+  width: 42%;
+  min-width: 320px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-side);
+}
+
+.browser-bar {
+  height: 36px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.browser-form {
+  flex: 1;
+  margin: 0 4px;
+}
+
+.browser-address {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.browser-error {
+  background: var(--danger-bg);
+  color: #ffd7d7;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.browser-slot {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #fff;
+}
+
+.browser-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+}
+
+.tab-action {
+  margin: 4px 8px 4px auto;
+  padding: 2px 10px;
+  font-size: 12px;
+  flex: none;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font: inherit;
+  padding: 0 8px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.status-btn:hover {
+  background: rgb(255 255 255 / 0.15);
+}
+
 .statusbar {
   height: 22px;
   flex: none;

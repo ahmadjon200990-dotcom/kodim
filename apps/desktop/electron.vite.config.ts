@@ -40,7 +40,16 @@ export default defineConfig({
   },
   preload: {
     resolve: { alias },
-    build: { externalizeDeps },
+    build: {
+      externalizeDeps,
+      // Asosiy oyna va ichki brauzer uchun alohida preload.
+      rolldownOptions: {
+        input: {
+          index: resolve(__dirname, "src/preload/index.ts"),
+          browser: resolve(__dirname, "src/preload/browser.ts"),
+        },
+      },
+    },
   },
   renderer: {
     resolve: { alias },

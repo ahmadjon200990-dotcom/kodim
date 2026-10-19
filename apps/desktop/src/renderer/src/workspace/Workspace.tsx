@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { isReadonlyPath, QUESTIONS_FILE } from "@exam-ide/shared";
+import { DESIGNS_DIR, isReadonlyPath, QUESTIONS_FILE } from "@exam-ide/shared";
 import type { ClientState } from "../../../common/api";
 import { useDialog } from "../Dialog";
 import { closeModel, discardUnder, onSaveError } from "../models";
 import { uz } from "../uz";
+import { BrowserPanel } from "./BrowserPanel";
 import { EditorPane } from "./EditorPane";
 import { FileTree } from "./FileTree";
+import { TerminalPanel } from "./TerminalPanel";
 import { TopBar } from "./TopBar";
 
 const baseName = (p: string) => p.slice(p.lastIndexOf("/") + 1);
@@ -15,6 +17,7 @@ export function Workspace({ state }: { state: ClientState }) {
   const dialog = useDialog();
   const [tabs, setTabs] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
+  const [browserOpen, setBrowserOpen] = useState(false);
 
   useEffect(() => onSaveError((msg) => void dialog.alert(msg)), [dialog]);
 
@@ -50,6 +53,24 @@ export function Workspace({ state }: { state: ClientState }) {
     setTabs((t) => t.filter((p) => !isUnder(p, path)));
     setActive((a) => (a && isUnder(a, path) ? null : a));
   };
+
+  const goLive = async () => {
+    const res = await window.kodim.browser.goLive();
+    if (res.ok) setBrowserOpen(true);
+    else await dialog.alert(res.error);
+  };
+
+  /** dizaynlar/*.md dagi Figma havolasini ichki brauzerda ochadi. */
+  const openDesign = async (path: string) => {
+    const text = await window.kodim.fs.read(path);
+    const url = /https:\/\/(?:[\w-]+\.)?figma\.com\/\S+/i.exec(text)?.[0];
+    if (!url) return dialog.alert(uz.browser.noDesignUrl);
+    const res = await window.kodim.browser.navigate(url);
+    if (!res.ok) return dialog.alert(res.error);
+    setBrowserOpen(true);
+  };
+
+  const isDesign = active !== null && active.startsWith(`${DESIGNS_DIR}/`) && active.endsWith(".md");
 
   return (
     <div className="ws">
@@ -90,20 +111,33 @@ export function Workspace({ state }: { state: ClientState }) {
                 </button>
               </div>
             ))}
+            {isDesign && !state.locked && (
+              <button className="btn tab-action" onClick={() => void openDesign(active)}>
+                {uz.browser.openDesign}
+              </button>
+            )}
           </div>
           <EditorPane path={active} readOnly={state.locked || (active !== null && isReadonlyPath(active))} locked={state.locked} />
-          <div className="bottom-panel">
-            <div className="pane-header">
-              <span>{uz.panel.terminal}</span>
-            </div>
-            <div className="bottom-body muted small">{uz.panel.terminalSoon}</div>
-          </div>
+          <TerminalPanel locked={state.locked} />
         </section>
+        {browserOpen && !state.locked && <BrowserPanel onClose={() => setBrowserOpen(false)} />}
       </div>
       <footer className="statusbar">
         <span>{state.connected ? uz.status.online : uz.status.offline}</span>
         <span>{active ?? ""}</span>
-        <span>{uz.status.saved}</span>
+        <span className="status-right">
+          <span>{uz.status.saved}</span>
+          {!state.locked && (
+            <>
+              <button className="status-btn" onClick={() => setBrowserOpen((o) => !o)}>
+                {uz.browser.title}
+              </button>
+              <button className="status-btn" onClick={() => void goLive()}>
+                ◉ {uz.browser.goLive}
+              </button>
+            </>
+          )}
+        </span>
       </footer>
     </div>
   );

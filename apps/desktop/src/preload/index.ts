@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IPC, type ClientState, type KodimApi } from "../common/api";
+import { IPC, type BrowserState, type ClientState, type KodimApi } from "../common/api";
+
+function subscribe<A extends unknown[]>(channel: string, listener: (...args: A) => void): () => void {
+  const handler = (_e: Electron.IpcRendererEvent, ...args: unknown[]) => listener(...(args as A));
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.off(channel, handler);
+}
 
 // Renderer'ga faqat shu aniq funksiyalar beriladi (Node API yo'q).
 const api: KodimApi = {
@@ -15,6 +21,23 @@ const api: KodimApi = {
   clipboard: {
     write: (text) => ipcRenderer.invoke(IPC.clipboardWrite, text),
     paste: (source) => ipcRenderer.invoke(IPC.clipboardPaste, source),
+  },
+  terminal: {
+    create: (cols, rows) => ipcRenderer.invoke(IPC.termCreate, cols, rows),
+    write: (id, data) => ipcRenderer.send(IPC.termWrite, id, data),
+    resize: (id, cols, rows) => ipcRenderer.send(IPC.termResize, id, cols, rows),
+    kill: (id) => ipcRenderer.send(IPC.termKill, id),
+    onData: (listener) => subscribe<[number, string]>(IPC.termData, listener),
+    onExit: (listener) => subscribe<[number, number]>(IPC.termExit, listener),
+  },
+  browser: {
+    setBounds: (rect) => ipcRenderer.send(IPC.browserBounds, rect),
+    navigate: (url) => ipcRenderer.invoke(IPC.browserNavigate, url),
+    back: () => ipcRenderer.send(IPC.browserBack),
+    forward: () => ipcRenderer.send(IPC.browserForward),
+    reload: () => ipcRenderer.send(IPC.browserReload),
+    goLive: () => ipcRenderer.invoke(IPC.browserGoLive),
+    onState: (listener) => subscribe<[BrowserState]>(IPC.browserState, listener),
   },
   fs: {
     list: (dir) => ipcRenderer.invoke(IPC.fsList, dir),

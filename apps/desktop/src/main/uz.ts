@@ -10,4 +10,7 @@ export const uz = {
   notFound: "Fayl topilmadi",
   ignoredPath: "Bu papkada fayl yaratib bo'lmaydi",
   failed: "Amalni bajarib bo'lmadi",
+  tooManyTerminals: "Terminallar soni 5 tadan oshmasligi kerak",
+  terminalFailed: "Terminalni ochib bo'lmadi",
+  urlNotAllowed: "Bu manzil ruxsat etilmagan. Faqat localhost va Figma ochiladi",
 } as const;

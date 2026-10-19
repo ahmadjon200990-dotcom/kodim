@@ -3,7 +3,10 @@ import { pathToFileURL } from "node:url";
 import { app, BrowserWindow, Menu, net, protocol } from "electron";
 import { BRAND } from "@exam-ide/shared";
 import { IPC } from "../common/api";
+import { ExamBrowser } from "./browser";
 import { clearSystemClipboardOnce } from "./clipboard";
+import { LiveServer } from "./liveServer";
+import { Terminals } from "./terminal";
 import { registerIpc } from "./ipc";
 import { hardenApp, hardenDefaultSession, hardenWindow } from "./protection";
 import { ExamSession } from "./session";
@@ -24,12 +27,35 @@ const devUrl = !app.isPackaged ? process.env.ELECTRON_RENDERER_URL : undefined;
 const isAppUrl = (url: string) => url.startsWith("app://kodim/") || (devUrl !== undefined && url.startsWith(devUrl));
 
 let mainWindow: BrowserWindow | null = null;
+const send = (channel: string, ...args: unknown[]) => mainWindow?.webContents.send(channel, ...args);
+
+const terminals = new Terminals({
+  data: (id, data) => send(IPC.termData, id, data),
+  exit: (id, code) => send(IPC.termExit, id, code),
+  command: (info) => {
+    // 6-bosqichda TERMINAL_COMMAND / DANGEROUS_COMMAND ga ulanadi.
+    if (!app.isPackaged) console.log("[terminal]", info.terminalId, info.approximate ? "~" : "", info.line);
+  },
+});
+const live = new LiveServer();
 
 const session = new ExamSession({
-  onStateChange: (state) => mainWindow?.webContents.send(IPC.state, state),
+  onStateChange: (state) => send(IPC.state, state),
   // Imtihon boshlanganda tizim clipboard'i bir marta tozalanadi.
   onWorking: () => clearSystemClipboardOnce(),
+  // Vaqt tugadi: terminal, dev serverlar, Go Live va brauzer o'chiriladi.
+  onLocked: () => {
+    terminals.killAll();
+    void live.stop();
+    browser.reset();
+  },
 });
+
+const browser = new ExamBrowser(
+  () => mainWindow,
+  (state) => send(IPC.browserState, state),
+  (details) => session.reportEvent("PASTE_BLOCKED", details),
+);
 
 function registerAppProtocol(): void {
   const rendererDir = join(__dirname, "../renderer");
@@ -74,7 +100,7 @@ function createWindow(): void {
   else void win.loadURL("app://kodim/index.html");
 }
 
-registerIpc(session, () => mainWindow?.webContents ?? null);
+registerIpc({ session, terminals, browser, live, getRenderer: () => mainWindow?.webContents ?? null });
 
 void app.whenReady().then(() => {
   hardenDefaultSession();
@@ -82,5 +108,9 @@ void app.whenReady().then(() => {
   createWindow();
 });
 
-app.on("before-quit", () => session.disconnect());
+app.on("before-quit", () => {
+  terminals.killAll();
+  void live.stop();
+  session.disconnect();
+});
 app.on("window-all-closed", () => app.quit());
