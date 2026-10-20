@@ -22,23 +22,40 @@ export function setUnauthorizedHandler(fn: () => void): void {
   onUnauthorized = fn;
 }
 
+/** Token yaroqsiz (REST 401 yoki socket rad etdi) — login sahifasiga. */
+export function forceLogout(): void {
+  onUnauthorized();
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = tokenStore.get();
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: {
-      ...(token && { authorization: `Bearer ${token}` }),
-      ...(body !== undefined && { "content-type": "application/json" }),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      headers: {
+        ...(token && { authorization: `Bearer ${token}` }),
+        ...(body !== undefined && { "content-type": "application/json" }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, "Server bilan aloqa yo'q");
+  }
   if (res.status === 401) {
     onUnauthorized();
     throw new ApiError(401, "Avtorizatsiya kerak");
   }
   if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  const data = parseJson(await res.text());
   if (!res.ok) {
     const msg = typeof data === "object" && data !== null && "error" in data ? String((data as { error: unknown }).error) : "Xatolik";
     throw new ApiError(res.status, msg, (data as { issues?: unknown })?.issues);

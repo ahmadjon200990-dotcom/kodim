@@ -4,34 +4,51 @@ import { BRAND } from "@exam-ide/shared";
 import { useAuth } from "../lib/auth";
 import { uz } from "../uz";
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+
 export function Layout({ children }: { children: ReactNode }) {
   const { me, logout } = useAuth();
   const loc = useLocation();
-  const active = (to: string) => (to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(to));
+  const isExams = loc.pathname === "/" || loc.pathname.startsWith("/exams") || loc.pathname.startsWith("/attempts");
 
   return (
     <div className="app">
-      <header className="topnav">
+      <aside className="sidenav">
         <Link to="/" className="brand">
-          <span className="brand-mark">&lt;/&gt;</span> {BRAND.panelName}
+          <span className="brand-mark">&lt;/&gt;</span>
+          {BRAND.panelName}
         </Link>
         <nav className="nav-links">
-          <Link to="/" className={active("/") ? "nav-link nav-active" : "nav-link"}>
+          <Link to="/" className={isExams ? "nav-link nav-active" : "nav-link"}>
+            <span className="nav-icon">▤</span>
             {uz.nav.exams}
           </Link>
           {me?.role === "ADMIN" && (
-            <Link to="/teachers" className={active("/teachers") ? "nav-link nav-active" : "nav-link"}>
+            <Link to="/teachers" className={loc.pathname.startsWith("/teachers") ? "nav-link nav-active" : "nav-link"}>
+              <span className="nav-icon">◎</span>
               {uz.nav.teachers}
             </Link>
           )}
         </nav>
-        <div className="nav-right">
-          <span className="muted">{me?.name}</span>
-          <button className="btn btn-ghost" onClick={logout}>
+        <div className="nav-user">
+          <span className="avatar" title={me?.name}>
+            {initials(me?.name ?? "")}
+          </span>
+          <div className="nav-user-info">
+            <div className="nav-user-name">{me?.name}</div>
+            <div className="nav-user-role">{me?.role === "ADMIN" ? uz.teachers.admin : uz.teachers.teacher}</div>
+          </div>
+          <button className="nav-logout" onClick={logout} title={uz.nav.logout}>
             {uz.nav.logout}
           </button>
         </div>
-      </header>
+      </aside>
       <main className="content">{children}</main>
     </div>
   );

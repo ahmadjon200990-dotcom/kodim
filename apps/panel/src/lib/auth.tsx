@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api
       .get<Me>("/me")
       .then(setMe)
+      // 401 — token eskirgan (api.ts o'zi tozalaydi). Server o'chiq bo'lsa ham login ekrani — abadiy yuklanish yo'q.
       .catch(() => tokenStore.clear())
       .finally(() => setReady(true));
   }, [logout]);

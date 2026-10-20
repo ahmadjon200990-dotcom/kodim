@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { DEFAULT_ALLOWED_PACKAGES } from "@exam-ide/shared";
 import type { ExamTemplate, TaskType } from "@exam-ide/shared";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
+import { PageMessage, PageSkeleton } from "../components/ui";
 import { errorLines } from "../lib/errors";
 import type { ExamFull } from "../lib/types";
 import { uz } from "../uz";
@@ -43,10 +44,14 @@ export function ExamEdit() {
   const [newPackage, setNewPackage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "notFound" | "error">(id ? "loading" : "ready");
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     if (!id) return;
+    setLoadState("loading");
     void api.get<ExamFull>(`/exams/${id}`).then((e) => {
+      setLoadState("ready");
       setTitle(e.title);
       setDuration(e.durationMin);
       setTemplate(e.template);
@@ -66,6 +71,9 @@ export function ExamEdit() {
       setAiEnabled(e.aiEnabled);
       setAiModel(e.aiModel);
       setPackages(e.allowedPackages);
+    }, (err: unknown) => {
+      setLoadError(err instanceof Error ? err.message : "");
+      setLoadState(err instanceof ApiError && (err.status === 404 || err.status === 400) ? "notFound" : "error");
     });
   }, [id]);
 
@@ -110,6 +118,10 @@ export function ExamEdit() {
       setBusy(false);
     }
   };
+
+  if (loadState === "loading") return <PageSkeleton />;
+  if (loadState === "notFound") return <PageMessage kind="notFound" title={uz.common.examNotFound} text={uz.common.examNotFoundText} />;
+  if (loadState === "error") return <PageMessage kind="error" text={loadError} />;
 
   return (
     <div className="edit-page">

@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { BRAND } from "@exam-ide/shared";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
+import { UiProvider } from "./components/ui";
 import "./styles.css";
 
 document.title = BRAND.panelName;
@@ -13,9 +14,11 @@ if (root) {
   createRoot(root).render(
     <StrictMode>
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <UiProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </UiProvider>
       </BrowserRouter>
     </StrictMode>,
   );

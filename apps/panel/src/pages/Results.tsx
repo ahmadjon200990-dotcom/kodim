@@ -3,29 +3,30 @@ import { Link, useParams } from "react-router-dom";
 import type { AttemptSummary } from "@exam-ide/shared";
 import { api, downloadExport } from "../lib/api";
 import type { ExamFull } from "../lib/types";
+import { useLoad } from "../lib/useLoad";
+import { StatusBadge } from "../components/StatusBadge";
+import { EmptyState, PageMessage, PageSkeleton, useToast } from "../components/ui";
 import { uz } from "../uz";
 
 type SortKey = "name" | "final" | "ai" | "warnings";
 
 export function Results() {
   const { id } = useParams();
-  const [exam, setExam] = useState<ExamFull | null>(null);
-  const [rows, setRows] = useState<AttemptSummary[]>([]);
+  const toast = useToast();
   const [sort, setSort] = useState<SortKey>("final");
-  const [error, setError] = useState("");
+  const examLoad = useLoad(() => api.get<ExamFull>(`/exams/${id}`), [id]);
+  const rowsLoad = useLoad(() => api.get<AttemptSummary[]>(`/exams/${id}/attempts`), [id]);
+  const { reload: reloadRows } = rowsLoad;
 
-  const load = () => {
-    void api.get<AttemptSummary[]>(`/exams/${id}/attempts`).then(setRows);
-  };
+  // Baholash davomida natijalar o'zgarib turadi — jim yangilash.
   useEffect(() => {
-    void api.get<ExamFull>(`/exams/${id}`).then(setExam);
-    load();
-    const t = setInterval(load, 4000);
-    return () => clearInterval(t);
-  }, [id]);
+    const t = window.setInterval(() => void reloadRows(true), 4000);
+    return () => window.clearInterval(t);
+  }, [reloadRows]);
 
+  const rows = rowsLoad.data;
   const sorted = useMemo(() => {
-    const r = [...rows];
+    const r = [...(rows ?? [])];
     r.sort((a, b) => {
       if (sort === "name") return a.studentName.localeCompare(b.studentName);
       if (sort === "ai") return (b.aiScore ?? -1) - (a.aiScore ?? -1);
@@ -35,11 +36,18 @@ export function Results() {
     return r;
   }, [rows, sort]);
 
+  if (examLoad.status === "loading") return <PageSkeleton />;
+  if (examLoad.status === "notFound")
+    return <PageMessage kind="notFound" title={uz.common.examNotFound} text={uz.common.examNotFoundText} />;
+  if (examLoad.status === "error") return <PageMessage kind="error" text={examLoad.error} onRetry={() => void examLoad.reload()} />;
+  const exam = examLoad.data;
+
   const exportXlsx = async () => {
     try {
-      await downloadExport(id!, `${exam?.title ?? "natijalar"}.xlsx`);
+      await downloadExport(exam.id, `${exam.title}.xlsx`);
+      toast.success(uz.results.exported);
     } catch {
-      setError("Excel yuklab bo'lmadi");
+      toast.error(uz.results.exportFailed);
     }
   };
 
@@ -49,70 +57,116 @@ export function Results() {
     </th>
   );
 
+  const submitted = sorted.filter((a) => a.status === "SUBMITTED").length;
+  const avg = sorted.length ? Math.round(sorted.reduce((s, a) => s + a.finalScore, 0) / sorted.length) : 0;
+
   return (
     <div>
+      <div className="breadcrumb">
+        <Link to="/">{uz.nav.exams}</Link> / {exam.title}
+      </div>
       <div className="page-head">
-        <h1>
-          {uz.results.title}: {exam?.title}
-        </h1>
+        <div>
+          <h1>
+            {uz.results.title} <StatusBadge status={exam.status} />
+          </h1>
+          <div className="page-sub">{exam.title}</div>
+        </div>
         <div className="row-actions">
-          <Link to={`/exams/${id}/live`} className="btn btn-sm">
+          <Link to={`/exams/${exam.id}/live`} className="btn btn-sm">
             {uz.live.title}
           </Link>
-          <button className="btn btn-primary btn-sm" onClick={() => void exportXlsx()}>
+          <button className="btn btn-primary btn-sm" onClick={() => void exportXlsx()} disabled={sorted.length === 0}>
             ⤓ {uz.results.export}
           </button>
         </div>
       </div>
-      {error && <div className="form-error">{error}</div>}
-      <table className="table">
-        <thead>
-          <tr>
-            <th className="num">{uz.results.col.n}</th>
-            {th("name", uz.results.col.name)}
-            <th>{uz.results.col.aiState}</th>
-            {th("ai", uz.results.col.ai, "num")}
-            <th className="num">{uz.results.col.teacher}</th>
-            <th className="num">{uz.results.col.penalties}</th>
-            {th("final", uz.results.col.final, "num")}
-            <th>{uz.results.col.status}</th>
-            {th("warnings", uz.results.col.warnings, "num")}
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((a, i) => (
-            <tr key={a.id} className={a.status === "ANNULLED" ? "annulled-row" : ""}>
-              <td className="num">{i + 1}</td>
-              <td>{a.studentName}</td>
-              <td>
-                <AiState a={a} exam={exam} />
-              </td>
-              <td className="num">{a.aiScore ?? uz.common.none}</td>
-              <td className="num">{a.teacherScore ?? uz.common.none}</td>
-              <td className="num">{a.penaltyTotal > 0 ? `−${a.penaltyTotal}` : uz.common.none}</td>
-              <td className="num">
-                <b>{a.finalScore}</b>
-              </td>
-              <td>{uz.attemptStatus[a.status]}</td>
-              <td className="num">{a.warningCount || uz.common.none}</td>
-              <td>
-                <Link to={`/attempts/${a.id}`} className="btn btn-xs">
-                  {uz.results.col.detail}
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <div className="stats">
+        <div className="stat-card">
+          <div className="stat-label">{uz.results.statStudents}</div>
+          <div className="stat-value">{sorted.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">{uz.results.statSubmitted}</div>
+          <div className="stat-value">{submitted}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">{uz.results.statAverage}</div>
+          <div className="stat-value">{avg}</div>
+        </div>
+      </div>
+
+      {rowsLoad.status === "error" && <PageMessage kind="error" text={rowsLoad.error} onRetry={() => void reloadRows()} />}
+      {rowsLoad.status === "ready" && sorted.length === 0 && (
+        <EmptyState icon="∅" title={uz.results.emptyTitle} text={uz.results.empty} />
+      )}
+      {sorted.length > 0 && (
+        <div className="table-wrap">
+          <table className="table table-mobile">
+            <thead>
+              <tr>
+                <th className="num">{uz.results.col.n}</th>
+                {th("name", uz.results.col.name)}
+                <th>{uz.results.col.aiState}</th>
+                {th("ai", uz.results.col.ai, "num")}
+                <th className="num">{uz.results.col.teacher}</th>
+                <th className="num">{uz.results.col.penalties}</th>
+                {th("final", uz.results.col.final, "num")}
+                <th>{uz.results.col.status}</th>
+                {th("warnings", uz.results.col.warnings, "num")}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((a, i) => (
+                <tr key={a.id} className={a.status === "ANNULLED" ? "annulled-row" : ""}>
+                  <td className="num">{i + 1}</td>
+                  <td className="cell-main">
+                    <Link to={`/attempts/${a.id}`} className="title-cell">
+                      {a.studentName}
+                    </Link>
+                  </td>
+                  <td data-label={uz.results.col.aiState}>
+                    <AiState a={a} exam={exam} />
+                  </td>
+                  <td className="num" data-label={uz.results.col.ai}>
+                    {a.aiScore ?? uz.common.none}
+                  </td>
+                  <td className="num" data-label={uz.results.col.teacher}>
+                    {a.teacherScore ?? uz.common.none}
+                  </td>
+                  <td className="num" data-label={uz.results.col.penalties}>
+                    {a.penaltyTotal > 0 ? <span className="badge badge-plain badge-danger">−{a.penaltyTotal}</span> : uz.common.none}
+                  </td>
+                  <td className="num" data-label={uz.results.col.final}>
+                    <b>{a.finalScore}</b>
+                  </td>
+                  <td data-label={uz.results.col.status}>{uz.attemptStatus[a.status]}</td>
+                  <td className="num" data-label={uz.results.col.warnings}>
+                    {a.warningCount ? <span className="badge badge-plain badge-warn">{a.warningCount}</span> : uz.common.none}
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      <Link to={`/attempts/${a.id}`} className="btn btn-xs">
+                        {uz.results.col.detail}
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
 /** AI baholash holati (CLAUDE.md 7.5): tayyor / xato (sababi tooltipda) / baholanmoqda / o'chiq. */
-function AiState({ a, exam }: { a: AttemptSummary; exam: ExamFull | null }) {
+function AiState({ a, exam }: { a: AttemptSummary; exam: ExamFull }) {
   const t = uz.results.aiState;
-  if (exam && !exam.aiEnabled) return <span className="ai-state ai-off">{t.off}</span>;
+  if (!exam.aiEnabled) return <span className="ai-state ai-off">{t.off}</span>;
   if (a.aiScore !== null) return <span className="ai-state ai-ready">{t.ready}</span>;
   if (a.aiError) {
     return (
@@ -121,6 +175,6 @@ function AiState({ a, exam }: { a: AttemptSummary; exam: ExamFull | null }) {
       </span>
     );
   }
-  if (exam?.status === "GRADING") return <span className="ai-state ai-grading">{t.grading}</span>;
+  if (exam.status === "GRADING") return <span className="ai-state ai-grading">{t.grading}</span>;
   return <span className="muted">{t.none}</span>;
 }

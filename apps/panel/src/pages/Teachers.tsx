@@ -1,13 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { api } from "../lib/api";
 import { errorLines } from "../lib/errors";
 import { useAuth } from "../lib/auth";
 import type { Teacher } from "../lib/types";
+import { useLoad } from "../lib/useLoad";
+import { errorText, PageMessage, Skeleton, useModal, useToast } from "../components/ui";
 import { uz } from "../uz";
 
 export function Teachers() {
   const { me } = useAuth();
-  const [list, setList] = useState<Teacher[]>([]);
+  const modal = useModal();
+  const toast = useToast();
+  const { status, data: list, error: loadError, reload } = useLoad(() => api.get<Teacher[]>("/teachers"), []);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,20 +19,21 @@ export function Teachers() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = () => void api.get<Teacher[]>("/teachers").then(setList);
-  useEffect(load, []);
-
   const add = async (e: FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) return setError(`${uz.teachers.name}: ${uz.common.required}`);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError(uz.login.emailRequired);
+    if (password.length < 8) return setError(uz.teachers.passwordShort);
     setBusy(true);
     setError("");
     try {
       await api.post("/teachers", { name: name.trim(), email: email.trim(), password, role });
+      toast.success(uz.teachers.created, name.trim());
       setName("");
       setEmail("");
       setPassword("");
       setRole("TEACHER");
-      load();
+      void reload(true);
     } catch (err) {
       setError(errorLines(err, uz.common.error).join("\n"));
     } finally {
@@ -36,71 +41,109 @@ export function Teachers() {
     }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm(uz.teachers.confirmDelete)) return;
+  const remove = async (t: Teacher) => {
+    const yes = await modal.confirm({
+      title: uz.teachers.confirmDelete,
+      text: uz.teachers.confirmDeleteText(t.name),
+      okLabel: uz.teachers.delete,
+      danger: true,
+    });
+    if (!yes) return;
     try {
-      await api.del(`/teachers/${id}`);
-      load();
+      await api.del(`/teachers/${t.id}`);
+      toast.success(uz.teachers.deleted);
+      void reload(true);
     } catch (err) {
-      alert(err instanceof Error ? err.message : uz.common.error);
+      toast.error(uz.common.error, errorText(err));
     }
   };
 
   return (
     <div>
       <div className="page-head">
-        <h1>{uz.teachers.title}</h1>
+        <div>
+          <h1>{uz.teachers.title}</h1>
+          <div className="page-sub">{uz.teachers.subtitle}</div>
+        </div>
       </div>
       <section className="card">
-        <form className="teacher-form" onSubmit={(e) => void add(e)}>
-          <input className="input" placeholder={uz.teachers.name} value={name} onChange={(e) => setName(e.target.value)} required />
-          <input className="input" type="email" placeholder={uz.teachers.email} value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <input
-            className="input"
-            type="password"
-            placeholder={uz.teachers.password}
-            value={password}
-            minLength={8}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <select className="input input-auto" value={role} onChange={(e) => setRole(e.target.value as "TEACHER" | "ADMIN")}>
-            <option value="TEACHER">{uz.teachers.teacher}</option>
-            <option value="ADMIN">{uz.teachers.admin}</option>
-          </select>
-          <button className="btn btn-primary" disabled={busy}>
-            + {uz.teachers.create}
-          </button>
+        <div className="card-head">
+          <h2>{uz.teachers.add}</h2>
+        </div>
+        <form className="grid-2" onSubmit={(e) => void add(e)} noValidate>
+          <label className="field">
+            <span>{uz.teachers.name}</span>
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>{uz.teachers.email}</span>
+            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>{uz.teachers.password}</span>
+            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </label>
+          <label className="field">
+            <span>{uz.teachers.role}</span>
+            <select className="input" value={role} onChange={(e) => setRole(e.target.value as "TEACHER" | "ADMIN")}>
+              <option value="TEACHER">{uz.teachers.teacher}</option>
+              <option value="ADMIN">{uz.teachers.admin}</option>
+            </select>
+          </label>
+          <div>
+            <button className="btn btn-primary" disabled={busy}>
+              + {uz.teachers.create}
+            </button>
+          </div>
         </form>
         {error && <div className="form-error">{error}</div>}
       </section>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>{uz.teachers.name}</th>
-            <th>{uz.teachers.email}</th>
-            <th>{uz.teachers.role}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((t) => (
-            <tr key={t.id}>
-              <td>{t.name}</td>
-              <td className="mono">{t.email}</td>
-              <td>{t.role === "ADMIN" ? uz.teachers.admin : uz.teachers.teacher}</td>
-              <td className="row-actions">
-                {t.id !== me?.id && (
-                  <button className="btn btn-xs btn-danger" onClick={() => void remove(t.id)}>
-                    {uz.teachers.delete}
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {status === "loading" && (
+        <div className="card">
+          <Skeleton lines={3} height={20} />
+        </div>
+      )}
+      {(status === "error" || status === "notFound") && <PageMessage kind="error" text={loadError} onRetry={() => void reload()} />}
+      {list && (
+        <div className="table-wrap">
+          <table className="table table-mobile">
+            <thead>
+              <tr>
+                <th>{uz.teachers.name}</th>
+                <th>{uz.teachers.email}</th>
+                <th>{uz.teachers.role}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((t) => (
+                <tr key={t.id}>
+                  <td className="cell-main">
+                    <b>{t.name}</b>
+                    {t.id === me?.id && <span className="muted small"> ({uz.teachers.you})</span>}
+                  </td>
+                  <td className="mono">{t.email}</td>
+                  <td>
+                    <span className={t.role === "ADMIN" ? "badge badge-plain badge-lobby" : "badge badge-plain badge-draft"}>
+                      {t.role === "ADMIN" ? uz.teachers.admin : uz.teachers.teacher}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      {t.id !== me?.id && (
+                        <button className="btn btn-xs btn-danger" onClick={() => void remove(t)}>
+                          {uz.teachers.delete}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

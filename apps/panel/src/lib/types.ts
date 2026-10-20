@@ -77,7 +77,8 @@ export interface AttemptDetail {
   extraMinutes: number;
   submittedAt: string | null;
   deviceId: string | null;
-  files: { path: string; content: string }[];
+  /** `encoding: "base64"` — dizayn rasmi (kod sifatida ko'rsatilmaydi). */
+  files: { path: string; content: string; encoding?: "base64" }[];
   aiScore: number | null;
   aiResult: unknown;
   aiError: string | null;

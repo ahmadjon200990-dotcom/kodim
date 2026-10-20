@@ -9,7 +9,7 @@ import type {
   TeacherClientToServer,
   TeacherServerToClient,
 } from "@exam-ide/shared";
-import { tokenStore } from "./api";
+import { forceLogout, tokenStore } from "./api";
 
 type TeacherSocket = Socket<TeacherServerToClient, TeacherClientToServer>;
 
@@ -28,7 +28,12 @@ export interface ExamLiveState {
   connected: boolean;
   /** Oxirgi jonli DANGER/WARN — ovozli signal va toast uchun. */
   lastLoud: LiveAlert | null;
+  /** Imtihonni kuzatib bo'lmadi: "notFound" (yo'q / boshqa o'qituvchiniki) yoki "network" (server bilan aloqa yo'q). */
+  error: { kind: "notFound" | "network"; message: string } | null;
 }
+
+/** Server socket middleware'i rad etganda qaytaradigan matn (apps/server/src/uz.ts → unauthorized). */
+const UNAUTHORIZED = "Avval tizimga kiring";
 
 const byNewest = (a: LiveAlert, b: LiveAlert) => b.event.createdAt.localeCompare(a.event.createdAt);
 
@@ -53,6 +58,7 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
     alerts: [],
     connected: false,
     lastLoud: null,
+    error: null,
   });
 
   useEffect(() => {
@@ -72,15 +78,33 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
 
     socket.on("connect", () => {
       setState((s) => ({ ...s, connected: true }));
-      void socket.emitWithAck("exam:watch", { examId }).then((res) => {
-        if (!res.ok) return;
+      void socket
+        .timeout(15_000)
+        .emitWithAck("exam:watch", { examId })
+        .then((res) => {
+        if (!res.ok) {
+          setState((s) => ({ ...s, error: { kind: "notFound", message: res.error } }));
+          return;
+        }
         setState((s) => ({
           ...s,
+          error: null,
           exam: res.exam,
           attempts: res.attempts,
           alerts: merge(s.alerts, fromHistory(res.events)),
         }));
-      });
+        })
+        .catch(() => setState((s) => ({ ...s, error: s.exam ? s.error : { kind: "network", message: "" } })));
+    });
+    socket.on("connect_error", (err) => {
+      // Token eskirgan yoki o'qituvchi o'chirilgan — login sahifasiga.
+      if (err.message === UNAUTHORIZED) {
+        socket.close();
+        forceLogout();
+        return;
+      }
+      // Birinchi yuklanishda server javob bermasa — abadiy "Yuklanmoqda…" emas, xabar.
+      setState((s) => (s.exam ? s : { ...s, error: { kind: "network", message: err.message } }));
     });
     socket.on("disconnect", () => setState((s) => ({ ...s, connected: false })));
     socket.on("lobby:update", ({ attempts }) => setState((s) => ({ ...s, attempts })));
