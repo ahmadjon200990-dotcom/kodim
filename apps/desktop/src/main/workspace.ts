@@ -51,8 +51,12 @@ export const sha1 = (text: string) => createHash("sha1").update(text).digest("he
 
 export class Workspace {
   readonly root: string;
-  /** Editor/ilova yozgan fayllar xeshi — watcher tashqi o'zgarishni ajratishi uchun. */
-  private readonly editorHashes = new Map<string, string>();
+  /**
+   * Editor/ilova yozgan fayllarning SO'NGGI bir nechta xeshi — watcher tashqi o'zgarishni ajratishi uchun.
+   * Bittasi yetmaydi: tez yozishda ketma-ket saqlashlar bo'ladi va watcher (awaitWriteFinish) oraliq
+   * versiyani ko'rishi mumkin — u ham bizniki.
+   */
+  private readonly editorHashes = new Map<string, string[]>();
 
   constructor(attemptId: string) {
     // Foydalanuvchiga yo'l ko'rsatilmaydi.
@@ -60,12 +64,15 @@ export class Workspace {
   }
 
   private mark(rel: string, content: string): void {
-    this.editorHashes.set(rel, sha1(content));
+    const list = this.editorHashes.get(rel) ?? [];
+    list.push(sha1(content));
+    if (list.length > 30) list.shift();
+    this.editorHashes.set(rel, list);
   }
 
-  /** Watcher ko'rgan o'zgarish editor saqlashiga tengmi (normal) yoki tashqimi. */
+  /** Watcher ko'rgan o'zgarish editor saqlashlaridan biriga tengmi (normal) yoki tashqimi. */
   isEditorChange(rel: string, content: string): boolean {
-    return this.editorHashes.get(rel) === sha1(content);
+    return this.editorHashes.get(rel)?.includes(sha1(content)) ?? false;
   }
 
   forgetHash(rel: string): void {

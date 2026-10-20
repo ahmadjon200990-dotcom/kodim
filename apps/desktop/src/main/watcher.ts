@@ -87,11 +87,9 @@ export class Watcher {
     const content = await readFile(abs, "utf8").catch(() => null);
     if (content === null) return;
 
-    // Editor saqlagani — normal.
-    if (deps.workspace.isEditorChange(rel, content)) {
-      deps.onDiskChange(rel);
-      return;
-    }
+    // Editor saqlagani — normal. Renderer'ga XABAR BERILMAYDI: aks holda u diskdagi (eskiroq) matnni
+    // modelga qayta yuklab, kursorni boshiga otib, oxirgi yozilganlarni yo'qotardi (kursor sakrash xatosi).
+    if (deps.workspace.isEditorChange(rel, content)) return;
 
     // Yaqinda xavfsiz buyruq (npm install ...) ishlagan — unga bog'laymiz, faqat INFO.
     if (Date.now() - this.lastSafeCommandAt < SAFE_COMMAND_WINDOW_MS) {

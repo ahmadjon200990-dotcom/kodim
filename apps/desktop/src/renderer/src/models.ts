@@ -7,6 +7,19 @@ const SAVE_DELAY_MS = 400;
 const models = new Map<string, monaco.editor.ITextModel>();
 const pending = new Map<string, Promise<monaco.editor.ITextModel>>();
 const timers = new Map<string, number>();
+/**
+ * Fayl bo'yicha diskdagi "bizniki" bo'lgan so'nggi matnlar (ochilganda o'qilgan va har saqlashda yozilgan).
+ * Diskdan kelgan xabar shulardan biriga teng bo'lsa — bu o'z saqlashimiz, modelga TEGILMAYDI.
+ */
+const ownContents = new Map<string, string[]>();
+
+function rememberOwn(path: string, content: string): void {
+  const list = ownContents.get(path) ?? [];
+  if (list[list.length - 1] === content) return;
+  list.push(content);
+  if (list.length > 20) list.shift();
+  ownContents.set(path, list);
+}
 let errorListener: (message: string) => void = () => {};
 
 /** Ichki paste / disk qayta yuklash paytida LARGE_INSERT yozilmasin. */
@@ -42,6 +55,7 @@ export function openModel(path: string): Promise<monaco.editor.ITextModel> {
           detectLargeInsert(e);
         });
       }
+      rememberOwn(path, content);
       models.set(path, model);
       pending.delete(path);
       return model;
@@ -60,13 +74,37 @@ function detectLargeInsert(e: monaco.editor.IModelContentChangedEvent): void {
   if (net > LARGE_INSERT_CHARS) window.kodim.reportLargeInsert(net);
 }
 
-/** Diskda o'zgargan faylni (tashqi yoki tiklangan) editor modeliga yuklaydi. */
+/**
+ * Diskda TASHQARIDAN o'zgargan faylni (terminal, tiklangan read-only fayl) editor modeliga yuklaydi.
+ * O'z saqlashimiz e'tiborsiz. setValue ishlatilmaydi — faqat farq qilgan bo'lak almashtiriladi,
+ * shuning uchun kursor va scroll joyida qoladi (o'zgarish kursordan oldin bo'lmasa).
+ */
 export async function reloadFromDisk(path: string): Promise<void> {
   const model = models.get(path);
   if (!model) return;
   const content = await window.kodim.fs.read(path).catch(() => null);
-  if (content === null || content === model.getValue()) return;
-  runInternalEdit(() => model.setValue(content));
+  if (content === null || model.isDisposed()) return;
+  if (ownContents.get(path)?.includes(content)) return;
+  const current = model.getValue();
+  if (content === current) return;
+  // Tashqi o'zgarish ustun: kutilayotgan avtosaqlash uni bosib ketmasin.
+  window.clearTimeout(timers.get(path));
+  timers.delete(path);
+  rememberOwn(path, content);
+  let start = 0;
+  const max = Math.min(current.length, content.length);
+  while (start < max && current[start] === content[start]) start++;
+  let end = 0;
+  while (end < max - start && current[current.length - 1 - end] === content[content.length - 1 - end]) end++;
+  const from = model.getPositionAt(start);
+  const to = model.getPositionAt(current.length - end);
+  runInternalEdit(() =>
+    model.pushEditOperations(
+      [],
+      [{ range: new monaco.Range(from.lineNumber, from.column, to.lineNumber, to.column), text: content.slice(start, content.length - end) }],
+      () => null,
+    ),
+  );
 }
 
 function schedule(path: string): void {
@@ -79,7 +117,9 @@ export async function save(path: string): Promise<void> {
   timers.delete(path);
   const model = models.get(path);
   if (!model || isReadonlyPath(path)) return;
-  const res = await window.kodim.fs.write(path, model.getValue());
+  const value = model.getValue();
+  rememberOwn(path, value);
+  const res = await window.kodim.fs.write(path, value);
   if (!res.ok) errorListener(res.error);
 }
 
@@ -92,6 +132,7 @@ export async function closeModel(path: string): Promise<void> {
   await save(path);
   models.get(path)?.dispose();
   models.delete(path);
+  ownContents.delete(path);
 }
 
 /** O'chirilgan/qayta nomlangan fayl yoki papka modellari saqlanmasdan yopiladi. */
@@ -102,6 +143,7 @@ export function discardUnder(path: string): void {
       timers.delete(p);
       models.get(p)?.dispose();
       models.delete(p);
+      ownContents.delete(p);
     }
   }
 }

@@ -17,9 +17,6 @@ const baseName = (p: string) => p.slice(p.lastIndexOf("/") + 1);
 const isUnder = (p: string, root: string) => p === root || p.startsWith(`${root}/`);
 const isMd = (p: string) => /\.md$/i.test(p);
 
-/** Imtihon boshlanganda kursor qo'yiladigan asosiy fayl (birinchi topilgani). */
-const MAIN_FILES = ["index.html", "script.js", "src/App.jsx", "src/App.tsx", "src/main.jsx", "main.js", "app.js", "main.py", "index.js"];
-
 export function Workspace({ state }: { state: ClientState }) {
   const dialog = useDialog();
   const [tabs, setTabs] = useState<string[]>([]);
@@ -60,26 +57,14 @@ export function Workspace({ state }: { state: ClientState }) {
     [open],
   );
 
-  // Ish boshlanganda: savollar.md (ko'rinish) va asosiy fayl ochiladi, kursor asosiy faylda.
+  // Ish boshlanganda faqat savollar.md ochiladi (CLAUDE.md 0.2). Qayta ulanishda (workspaceVersion oshadi)
+  // ochiq tablar va faol fayl O'ZGARMAYDI — aks holda yozayotgan o'quvchining fokusi boshqa faylga ketardi.
+  const initialized = useRef(false);
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const root = await window.kodim.fs.list("");
-      const hasSrc = root.some((e) => e.path === "src" && e.type === "dir");
-      const src = hasSrc ? await window.kodim.fs.list("src") : [];
-      const files = [...root, ...src].filter((e) => e.type === "file" && !e.readonly).map((e) => e.path);
-      const main = MAIN_FILES.find((p) => files.includes(p)) ?? files[0] ?? null;
-      if (cancelled) return;
-      setTabs((t) => {
-        const next = [...t];
-        for (const p of [QUESTIONS_FILE, main]) if (p && !next.includes(p)) next.push(p);
-        return next;
-      });
-      setActive(main ?? QUESTIONS_FILE);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    if (initialized.current) return;
+    initialized.current = true;
+    setTabs((t) => (t.includes(QUESTIONS_FILE) ? t : [QUESTIONS_FILE, ...t]));
+    setActive((a) => a ?? QUESTIONS_FILE);
   }, [state.workspaceVersion]);
 
   const closeTab = useCallback(
