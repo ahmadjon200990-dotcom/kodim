@@ -32,9 +32,9 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
-      emmet-monaco-es:
-        specifier: 5.5.0
-        version: 5.5.0(monaco-editor@0.57.0)
+      emmet:
+        specifier: 2.4.11
+        version: 2.4.11
       node-pty:
         specifier: ^1.1.0
         version: 1.1.0
@@ -1137,11 +1137,6 @@ packages:
     resolution: {integrity: sha512-boP8zA5OIoMGYe3uWP4IqB1VJNoEzdHYgcBaVYnd1DBv5TogwXkbM4yJGSfNmYCzalVQ5J3TAIbaKOY+ILTnyg==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
-
-  emmet-monaco-es@5.5.0:
-    resolution: {integrity: sha512-OJxfHJZevWtFJZHfkJUS4WG+erEoFjlUNXtOnXJXEBLKyFDHrpiEBp5hwnuPXvCM9gBjYlUm8tpfLA0Pmd0K5Q==}
-    peerDependencies:
-      monaco-editor: '>=0.22.0'
 
   emmet@2.4.11:
     resolution: {integrity: sha512-23QPJB3moh/U9sT4rQzGgeyyGIrcM+GH5uVYg2C6wZIxAIJq7Ng3QLT79tl8FUwDXhyq9SusfknOrofAKqvgyQ==}
@@ -3463,11 +3458,6 @@ snapshots:
       '@types/node': 24.19.2
     transitivePeerDependencies:
       - supports-color
-
-  emmet-monaco-es@5.5.0(monaco-editor@0.57.0):
-    dependencies:
-      emmet: 2.4.11
-      monaco-editor: 0.57.0
 
   emmet@2.4.11:
     dependencies:

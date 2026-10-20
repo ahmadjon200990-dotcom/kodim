@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isReadonlyPath } from "@exam-ide/shared";
 import { bindEditorClipboard, editorCopy, editorCut, editorPaste } from "../editorClipboard";
+import { attachEditorFeatures, installEditorFeatures } from "../editorFeatures";
 import { monaco } from "../monaco";
 import { openModel, save } from "../models";
 import { uz } from "../uz";
@@ -38,6 +39,7 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
 
   useEffect(() => {
     if (!hostRef.current) return;
+    installEditorFeatures();
     const editor = monaco.editor.create(hostRef.current, {
       model: null,
       theme: "vs-dark",
@@ -52,13 +54,23 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
       autoClosingBrackets: "languageDefined",
       autoClosingQuotes: "languageDefined",
       suggestOnTriggerCharacters: true,
-      formatOnType: false,
+      quickSuggestions: { other: true, comments: false, strings: true },
+      quickSuggestionsDelay: 10,
+      snippetSuggestions: "top",
+      tabCompletion: "on",
+      acceptSuggestionOnEnter: "on",
+      suggest: { snippetsPreventQuickSuggestions: false, showWords: true, preview: true },
+      linkedEditing: true,
+      formatOnPaste: true,
+      formatOnType: true,
+      autoIndent: "full",
       contextmenu: false,
       dropIntoEditor: { enabled: false },
       dragAndDrop: false,
       pasteAs: { enabled: false },
     });
     bindEditorClipboard(editor);
+    const features = attachEditorFeatures(editor);
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       if (pathRef.current) void save(pathRef.current);
     });
@@ -82,6 +94,7 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
     registerEditor(editor);
     return () => {
       ctx.dispose();
+      features.dispose();
       editor.dispose();
       editorRef.current = null;
       registerEditor(null);

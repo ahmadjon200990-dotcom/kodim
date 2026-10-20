@@ -28,12 +28,6 @@ self.MonacoEnvironment = {
   },
 };
 
-// Emmet (HTML/CSS/JSX) — teg/qisqartmalarni kengaytirish (Tab bilan).
-import { emmetCSS, emmetHTML, emmetJSX } from "emmet-monaco-es";
-emmetHTML(monaco, ["html", "vue"]);
-emmetCSS(monaco, ["css", "scss", "less"]);
-emmetJSX(monaco, ["javascript", "typescript"]);
-
 // node_modules ko'rinmagani uchun "modul topilmadi" xatolari chalg'itadi — faqat sintaksis tekshiriladi.
 const ts = monaco.typescript;
 for (const defaults of [ts.typescriptDefaults, ts.javascriptDefaults]) {
