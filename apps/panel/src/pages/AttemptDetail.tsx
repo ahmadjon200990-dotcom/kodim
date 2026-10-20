@@ -1,3 +1,4 @@
+import { isReadonlyPath } from "@exam-ide/shared";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { AiResult } from "@exam-ide/shared";
@@ -95,7 +96,7 @@ export function AttemptDetailPage() {
   };
 
   const events = showCommands ? attempt.events : attempt.events.filter((e) => e.type !== "TERMINAL_COMMAND");
-  const files = attempt.files.filter((f) => !f.encoding);
+  const files = attempt.files.filter((f) => !isReadonlyPath(f.path));
 
   return (
     <div className="detail-page">

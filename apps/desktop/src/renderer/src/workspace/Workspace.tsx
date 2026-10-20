@@ -4,7 +4,7 @@ import type { ClientState } from "../../../common/api";
 import type { monaco } from "../monaco";
 import { useDialog } from "../Dialog";
 import { INTERNAL_DRAG_TYPE } from "../guard";
-import { closeModel, discardUnder, onSaveError, reloadFromDisk, saveAll } from "../models";
+import { closeModel, discardUnder, disposeAll, onSaveError, reloadFromDisk, saveAll } from "../models";
 import { uz } from "../uz";
 import { BrowserPanel } from "./BrowserPanel";
 import { EditorPane } from "./EditorPane";
@@ -55,6 +55,9 @@ export function Workspace({ state }: { state: ClientState }) {
 
   useEffect(() => onSaveError((msg) => void dialog.alert(msg)), [dialog]);
   useEffect(() => window.kodim.onDiskChange((path) => void reloadFromDisk(path)), []);
+  // Ish maydoni yopilganda (topshirildi → yangi imtihon) eski imtihon modellari xotirada qolmasin:
+  // aks holda keyingi imtihondagi shu nomli fayl (masalan index.html) eski matn bilan ochilib, yozib yuborilardi.
+  useEffect(() => () => disposeAll(), []);
 
   /** Faylni `index` guruhida ochadi; `insertAt` berilsa — o'sha joyga yangi guruh qo'shiladi. */
   const openIn = useCallback((index: number, path: string, insertAt?: number) => {

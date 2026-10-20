@@ -24,6 +24,13 @@ let errorListener: (message: string) => void = () => {};
 
 /** Ichki paste / disk qayta yuklash paytida LARGE_INSERT yozilmasin. */
 let internalEdits = 0;
+/** Diskdan qayta yuklash (tashqi o'zgarish) — bu o'zgarish "foydalanuvchi tahriri" emas. */
+let reloading = 0;
+/**
+ * Foydalanuvchi haqiqatan tahrirlagan, hali saqlanmagan fayllar. Faqat shular diskka yoziladi —
+ * tahrirlanmagan model (masalan tab yopilganda yoki topshirishda) diskdagi faylni hech qachon bosib ketmaydi.
+ */
+const dirty = new Set<string>();
 
 export function onSaveError(listener: (message: string) => void): void {
   errorListener = listener;
@@ -51,6 +58,8 @@ export function openModel(path: string): Promise<monaco.editor.ITextModel> {
       const model = monaco.editor.getModel(uriOf(path)) ?? monaco.editor.createModel(content, undefined, uriOf(path));
       if (!isReadonlyPath(path)) {
         model.onDidChangeContent((e) => {
+          if (reloading > 0) return;
+          dirty.add(path);
           schedule(path);
           detectLargeInsert(e);
         });
@@ -98,13 +107,16 @@ export async function reloadFromDisk(path: string): Promise<void> {
   while (end < max - start && current[current.length - 1 - end] === content[content.length - 1 - end]) end++;
   const from = model.getPositionAt(start);
   const to = model.getPositionAt(current.length - end);
-  runInternalEdit(() =>
+  reloading++;
+  try {
     model.pushEditOperations(
       [],
       [{ range: new monaco.Range(from.lineNumber, from.column, to.lineNumber, to.column), text: content.slice(start, content.length - end) }],
       () => null,
-    ),
-  );
+    );
+  } finally {
+    reloading--;
+  }
 }
 
 function schedule(path: string): void {
@@ -116,15 +128,19 @@ export async function save(path: string): Promise<void> {
   window.clearTimeout(timers.get(path));
   timers.delete(path);
   const model = models.get(path);
-  if (!model || isReadonlyPath(path)) return;
+  if (!model || isReadonlyPath(path) || !dirty.has(path)) return;
+  dirty.delete(path);
   const value = model.getValue();
   rememberOwn(path, value);
   const res = await window.kodim.fs.write(path, value);
-  if (!res.ok) errorListener(res.error);
+  if (!res.ok) {
+    dirty.add(path); // keyingi urinishda qayta saqlanadi
+    errorListener(res.error);
+  }
 }
 
 export async function saveAll(): Promise<void> {
-  await Promise.all([...timers.keys()].map((p) => save(p)));
+  await Promise.all([...new Set([...timers.keys(), ...dirty])].map((p) => save(p)));
 }
 
 /** Tabni yopish: avval saqlanadi. */
@@ -133,6 +149,7 @@ export async function closeModel(path: string): Promise<void> {
   models.get(path)?.dispose();
   models.delete(path);
   ownContents.delete(path);
+  dirty.delete(path);
 }
 
 /** O'chirilgan/qayta nomlangan fayl yoki papka modellari saqlanmasdan yopiladi. */
@@ -144,6 +161,7 @@ export function discardUnder(path: string): void {
       models.get(p)?.dispose();
       models.delete(p);
       ownContents.delete(p);
+      dirty.delete(p);
     }
   }
 }

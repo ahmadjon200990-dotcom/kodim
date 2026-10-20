@@ -1,3 +1,4 @@
+import { isReadonlyPath } from "@exam-ide/shared";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { AttemptSummary } from "@exam-ide/shared";
@@ -329,7 +330,7 @@ function CodeModal({ attempt, onClose }: { attempt: AttemptSummary; onClose(): v
     setError("");
     try {
       const d = await api.get<AttemptDetail>(`/attempts/${attempt.id}`);
-      setFiles(d.files.filter((f) => !f.encoding));
+      setFiles(d.files.filter((f) => !isReadonlyPath(f.path)));
       setLoadedAt(new Date());
     } catch (e) {
       setError(errorText(e));

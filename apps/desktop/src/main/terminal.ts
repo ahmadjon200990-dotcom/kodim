@@ -13,8 +13,8 @@ interface Term {
   proc: pty.IPty;
   cwd: string;
   busy: boolean;
-  /** Oxirgi chiqish (ANSI tozalangan) — shell prompt'iga qaytganini aniqlash uchun. */
-  tail: string;
+  /** Oldingi bo'lak oxiri — prompt belgisi ikki bo'lakka bo'linib kelsa ham topilsin. */
+  carry: string;
 }
 
 export interface TerminalEvents {
@@ -24,10 +24,13 @@ export interface TerminalEvents {
 }
 
 const MAX_TERMINALS = 5;
-// eslint-disable-next-line no-control-regex -- ANSI escape ketma-ketliklarini olib tashlash
-const ANSI = /\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b[()][AB012]/g;
-/** Bizning prompt: "PS ~\src> " — shu bilan tugasa, buyruq tugagan (idle). */
-const PROMPT_END = /PS [^\n]*>\s?$/;
+/**
+ * Prompt oldidan chiqadigan ko'rinmas belgi (OSC 633;A — VS Code shell integration kabi).
+ * ConPTY uni o'tkazadi va faqat YANGI prompt chiqqanda yuboradi (ekranni qayta chizishda emas),
+ * shuning uchun "buyruq tugadi, shell kutmoqda" holatini ishonchli bildiradi. Avvalgi "PS ...>" matnini
+ * qidirish ConPTY qayta chizganda xato ishlardi (masalan `node` REPL'da kiritma buyruq deb bloklanardi).
+ */
+const PROMPT_MARK = "\x1b]633;A\x07";
 
 export class Terminals {
   private readonly terms = new Map<number, Term>();
@@ -46,14 +49,14 @@ export class Terminals {
     env.KODIM_ROOT = cwd;
     const prompt =
       "function global:prompt { $p = (Get-Location).Path; $r = $env:KODIM_ROOT; " +
-      "if ($p.StartsWith($r)) { $p = '~' + $p.Substring($r.Length) }; \"PS $p> \" }";
+      "if ($p.StartsWith($r)) { $p = '~' + $p.Substring($r.Length) }; \"$([char]27)]633;A$([char]7)PS $p> \" }";
     const proc = pty.spawn(
       isWin ? "powershell.exe" : (process.env.SHELL ?? "bash"),
       isWin ? ["-NoLogo", "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", prompt] : [],
       { name: "xterm-256color", cols: clamp(cols, 20, 500), rows: clamp(rows, 5, 200), cwd, env },
     );
     const id = this.nextId++;
-    const term: Term = { proc, cwd, busy: false, tail: "" };
+    const term: Term = { proc, cwd, busy: false, carry: "" };
     this.terms.set(id, term);
     proc.onData((data) => {
       this.events.data(id, data);
@@ -97,11 +100,11 @@ export class Terminals {
     this.terms.get(id)?.proc.write("\x03");
   }
 
+  /** Yangi prompt belgisi kelsa — jarayon tugagan, keyingi kiritma yana buyruq sifatida tekshiriladi. */
   private observe(id: number, term: Term, data: string): void {
-    term.tail = (term.tail + data.replace(ANSI, "")).slice(-200);
-    const idle = PROMPT_END.test(term.tail);
-    if (idle && term.busy) this.setBusy(id, term, false);
-    // cwd o'zgarishini taxminan kuzatish shart emas — Tab to'ldirish faqat ildizdan.
+    const chunk = term.carry + data;
+    term.carry = data.slice(-(PROMPT_MARK.length - 1));
+    if (term.busy && chunk.includes(PROMPT_MARK)) this.setBusy(id, term, false);
   }
 
   private setBusy(id: number, term: Term, busy: boolean): void {
