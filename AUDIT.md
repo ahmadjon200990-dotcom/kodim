@@ -104,3 +104,42 @@ Barchasi bajarildi va real Electron (CDP, port 9222) + panel (ichki brauzer) orq
 **Haqiqiy sinov natijalari (desktop):** kirish → qoidalar → kutish → boshlash → VS Code ish maydoni (status barda node/npm/python ✓) → terminal: curl=NOT_ALLOWED, `node -v; echo hi`=CHAINING, `npm i lodash`=UNKNOWN_PACKAGE (bloklandi), `node -v`=ishladi → FORBIDDEN_PROCESS + FOCUS_LOST keldi → savollar.md markdown ko'rinishi → Topshirish → "Topshirildi" → 10 s → login (ish papkasi o'chdi).
 
 **Qolgan (sababi bilan):** AI baholash (8), `.exe` build/deploy (10), Ctrl+\ editor split (vaqt), dizayn rasm bilan AI baholash, screenshot — telefon kamerasi (fizik cheklov). Baza avtomatik tozalanmagan (eski test yozuvlar qolishi mumkin; `prisma migrate reset` + `pnpm seed` foydalanuvchi qo'lida).
+
+---
+
+## Demo Day 3 (2026-10-20) — real sinov muammolari va audit
+
+Sinov: server + panel (ichki brauzer) + real Electron (CDP, port 9222). To'liq oqim: imtihon yaratish (rasm + tayyor papka
+.zip) → kod → o'quvchi kirdi → qoidalar → boshlash → kod yozish, fayl yaratish/nusxalash/ko'chirish, terminal (node REPL,
+bloklangan buyruqlar), tashqi o'zgarish → panelda kodni ko'rish → tugatish → avtomatik qaytish → topshirilgan ishlar,
+baholash, zip, Excel.
+
+### Foydalanuvchi topganlari
+| # | Muammo | Sabab | Holat |
+|---|---|---|---|
+| 1 | Yozayotganda kursor fayl boshiga sakraydi | watcher o'z avtosaqlashimizni ham `onDiskChange` qilib yuborardi → renderer eskiroq disk matnini `setValue` qilardi | ✅ `scripts/typing-test.mjs`: oldin 4/4 xato → 4/4 OK |
+| 2 | Emmet / takliflar / snippetlar | `emmet-monaco-es` Monaco 0.57 da ishlamadi | ✅ o'z modul (`editorFeatures.ts`), real yozib sinaldi |
+| 2 | Linked editing, split editor (Ctrl+\, chetga sudrash) | yo'q edi | ✅ |
+| 3 | Fayllar paneli to'liq menyusi, rasm ko'rinishi | yo'q edi | ✅ |
+| 4 | Brauzer to'liq ekran ↔ yon panel, Esc | yo'q edi | ✅ |
+| 5 | Dizayn rasmi saqlanmaydi | forma rasmlarni faqat FIGMA turida yuborardi, server ham faqat FIGMA'da saqlardi | ✅ har turda |
+| 5 | Mezonlar majburiy | — | ✅ ixtiyoriy, AI bilan birga yashirin |
+| 5 | Tayyor papka (.zip/papka, binarlar) | yo'q edi | ✅ 20 MB, aniq xatolar |
+| 6 | Topshirilgan ishlar, zip, faqat o'qituvchi baholashi | yo'q edi | ✅ |
+| 7 | UI'da "Demo" | seed nomlari | ✅ |
+
+### O'zim topganlarim
+- **KRITIK — ma'lumot yo'qolishi xavfi:** tahrirlanmagan model ham tab yopilganda / topshirishda / ko'chirishda diskka
+  yozilardi. Sinovda bir marta `index.html` bo'sh matn bilan bosilib ketdi (aniq ketma-ketligi takrorlanmadi). Endi faqat
+  foydalanuvchi tahrirlagan ("dirty") fayl yoziladi. ✅
+- **KRITIK:** avtomatik qaytishdan keyin oldingi imtihonning Monaco modellari xotirada qolardi — keyingi imtihondagi shu
+  nomli fayl eski matn bilan ochilardi. Ish maydoni yopilganda `disposeAll()`. ✅
+- **MUHIM:** terminal `node` REPL'da kiritma buyruq deb tekshirilib bloklanardi (ConPTY ekranni qayta chizganda eski "PS ~>"
+  qatori "prompt qaytdi" deb tanilardi). Endi prompt'da OSC 633;A belgisi. Sinaldi: node → `6*7` → `.exit` → `curl` bloklandi. ✅
+- **MUHIM:** >1 MB fayllar sync'da "o'chirilgan" deb serverdan o'chirilardi (`snapshot(present)`). ✅
+- **MUHIM:** o'quvchi qo'shgan binar fayllar serverga bormasdi (topshirilgan ishda yo'qolardi) — endi base64. ✅
+- **KICHIK:** qayta ulanishda faol tab boshqa faylga almashardi; boshlanganda faqat savollar.md ochiladi (0.2). ✅
+- **KICHIK:** panel "Kodni ko'rish" va Batafsil sahifada rasmlar yashirin edi. ✅
+- **KICHIK:** ko'chirish/nusxalash watcher'da soxta EXTERNAL_FILE_CHANGE berishi mumkin edi (`markTree`). ✅
+- **Kuzatuvda:** terminal orqali o'chirilgan fayl tabi ochiq qoladi; yozilsa fayl qayta yaratiladi (VS Code ham shunday).
+- **Sinov vositasi:** bir vaqtda ikkita CDP sinov skripti ishlasa, kiritmalar aralashadi — ketma-ket ishga tushiring.

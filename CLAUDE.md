@@ -58,6 +58,17 @@ Ziddiyat bo'lsa shu bo'lim ustun. Ustuvorlik: 0 → 5 → 4 → 3 → 1 → 6 �
 - Imtihon yaratishda: shablon, ruxsat etilgan buyruqlar va paketlar (tayyor to'plamlar bilan).
 - Jonli kuzatuvda har o'quvchining joriy kodini faqat o'qish uchun ko'rish ("Kodni ko'rish" — oxirgi sync snapshot).
 
+**7. Demo Day 3 qarorlari (2026-10-20, real sinovdan keyin) — yuqoridagilarni to'ldiradi/almashtiradi.**
+- **Baholashni faqat o'qituvchi qiladi.** Bu versiyada AI baholash o'chiq: `aiEnabled` standart `false`, mezonlar majburiy emas (`ExamInput.criteria` bo'sh bo'lishi mumkin), panel formasida mezon va AI bo'limlari yashirin (`ExamEdit.tsx` → `SHOW_AI = false`, kod keyingi versiya uchun qoladi). O'qituvchi ball (0–100) + izoh qo'yadi; yakuniy = baho − jarimalar, bekor qilingan = 0; baholanmaganlar natijalar/Excel'da ajratiladi.
+- **"Topshirilgan ishlar"** sahifasi (`/exams/:id/submissions`): har o'quvchi papkasi `Ism_Familiya` (`shared/workspace.ts` → `studentFolderName`/`uniqueFolderNames`), fayllar daraxti, kod va rasm ko'rish, baholash. Yuklab olish: `GET /api/attempts/:id/download.zip` va `GET /api/exams/:id/download.zip` (har o'quvchi alohida papkada; node_modules va o'qituvchi materiallari — savollar.md, dizaynlar/ — kirmaydi).
+- **Tayyor papka** (`CUSTOM` shablon): panelda .zip yoki papka tanlash, jami ≤ 20 MB, ≤ 300 fayl, bitta fayl ≤ 6 MB; binar fayllar (rasm, ikonka, shrift) `FileEntry.encoding = "base64"` bilan. O'quvchining binar fayllari ham sync bo'ladi (≤ 1 MB).
+- **Dizayn rasmlari** har qanday topshiriq turida (`Task.images`), o'quvchining `dizaynlar/<n>-<slug>/` papkasiga tushadi.
+- **Editor:** har fayl uchun bitta Monaco modeli (uncontrolled). Yozish paytida `setValue` YO'Q. O'z avtosaqlashimiz watcher'da e'tiborsiz (xesh tarixi), tashqi o'zgarish faqat farq qilgan bo'lak bilan (`pushEditOperations`, kursor joyida). Faqat foydalanuvchi tahrirlagan ("dirty") fayl diskka yoziladi. Imtihonlar orasida modellar tozalanadi. Regressiya sinovi: `apps/desktop/scripts/typing-test.mjs`.
+- **Emmet va snippetlar** o'zimizniki (`renderer/src/editorFeatures.ts`, `emmet` paketi) — `emmet-monaco-es` Monaco 0.57 bilan ishlamadi. Teg avto-yopish, linked editing (HTML/JSX).
+- **Editor guruhlari:** ko'pi bilan 2 (Ctrl+, "Yon tomonda ochish", fayl/tabni editor chetiga sudrash).
+- **Ichki brauzer:** status bar tugmasi → to'liq ekran (editor o'rnida); qayta bosish yoki Esc → yon panel.
+- **Terminal busy aniqlash:** prompt oldida OSC `633;A` belgisi (ConPTY qayta chizishida takrorlanmaydi).
+
 ---
 
 ## 1. Loyiha nima qiladi
@@ -474,3 +485,16 @@ Ustuvorlik 0→5→4→3→1→6→2 bo'yicha, har qism alohida commit, real Ele
 - **Yangi migratsiyalar:** `demo_commands_images` (Exam.allowedCommands, Task.images), `template_options` (ExamTemplate enum). Seed `allowedCommands`/`images` ni beradi. **Eslatma:** baza tozalanmagan — eski test imtihon/akkauntlar qolgan bo'lishi mumkin; toza baza: `pnpm --filter @exam-ide/server exec prisma migrate reset --force` + `pnpm seed` (foydalanuvchi o'zi).
 - **Qolgan (sababi bilan):** 8 (AI baholash — `AI_GRADER_READY=false`), 9-dagi AI bog'liq qismlar, 10 (.exe build/deploy — electron-builder fuses), Ctrl+\ editor split, dizayn rasm bilan AI baholash. Screenshot bloklash telefon kamerasini to'xtatmaydi (hujjatlangan cheklov).
 - **Yangi fayllar:** panel — `lib/useLoad.ts`, `lib/events.ts`, `components/ui.tsx`; desktop — `main/runtime.ts`, `renderer/.../screens/Rules.tsx`, `workspace/{icons,Palette,SearchPanel,ImageView,MarkdownView}.tsx`; shared — `commands.ts`.
+
+### Demo Day 3 (2026-10-20) — real sinov muammolari tuzatildi
+
+Ustuvorlik 1 → 3 → 2 → 6 → 5 → 4 → 7 → 8; har qism alohida commit; typecheck + build + lint toza; real ilovada (CDP) va panelda (ichki brauzer) sinaldi. Qarorlar — 0-bo'lim, 7-band.
+- **1 (kritik, kursor sakrashi):** sabab — watcher o'z avtosaqlashimizni ham renderer'ga `onDiskChange` qilib yuborardi, renderer diskdagi (eskiroq) matnni `model.setValue()` qilardi → kursor boshiga, oxirgi belgilar yo'qolardi. Tuzatish: `watcher.ts` editor o'zgarishini yubormaydi; `workspace.ts` xesh TARIXI (ketma-ket saqlashlar); `models.ts` o'z matnlarimizni eslaydi, tashqi o'zgarishni farq bo'lagi bilan qo'llaydi. Avtomatik sinov `node apps/desktop/scripts/typing-test.mjs [kod] [ism]`: html/css/js/jsx da 329 belgi, avtosaqlash va sync oralig'ida — oldin 4/4 xato (kursor Ustun 6–8, ~40 belgi yo'qolgan), keyin 4/4 OK.
+- **3 (fayllar paneli):** VS Code kontekst menyusi (Yangi fayl/papka, Ochish, Yon tomonda ochish, Kesish/Nusxalash/Qo'yish, Yo'lni nusxalash, F2, Delete); readonly (savollar.md, dizaynlar) uchun o'zgartirish bandlari nofaol; bo'sh joyda ham. `fs:copy` (nom band bo'lsa "copy"), ko'chirish/nusxalashda soxta EXTERNAL_FILE_CHANGE yo'q (`markTree`). Rasm ko'rinishi: masshtab (−/+/1:1/moslash, Ctrl+g'ildirak), o'lcham va hajm.
+- **2 (editor):** Emmet (`!`, `h1`, `div.box>ul>li*3`, `a:link`, CSS `m10`, JSX), snippetlar (clg/log, for, fori, forof, foreach, if/ifelse, func/fn, afn/caf, imp/imd, rfce/rafce/rfc, useState, useEffect …), quickSuggestions, tabCompletion, teg avto-yopish, linked editing, formatOnPaste/Type; split editor. Hammasi real ilovada yozib sinaldi.
+- **6 (topshirilgan ishlar):** yangi sahifa, zip (bitta/hamma), faqat o'qituvchi baholashi, Results/Excel (O'qituvchi bahosi, Jarimalar, Yakuniy, Baholash). Sinaldi: zip ichida `Ali_Valiyev/…` binarlar bayt-baraobar, Excel 85 − 10 = 75.
+- **5 (imtihon yaratish):** mezon/AI yashirin; dizayn rasmi saqlanmasligi — SABAB: forma rasmlarni faqat FIGMA turida yuborardi; endi har turda (server ham). Tayyor papka (.zip/papka). Sinaldi: panelda rasm drop + zip → saqlandi → o'quvchida dizaynlar/ va img/logo.png, fonts/*.woff2 ochildi.
+- **4 (brauzer):** to'liq ekran ↔ yon panel, Esc (brauzer sahifasidan ham — IPC `browser:escape`).
+- **7:** UI kodida "Demo" yo'q; seed o'qituvchi "Namuna o'qituvchi", imtihon "JavaScript va Figma" (login `demo@kodim.uz` o'zgarmadi — hujjatlarda shu).
+- **8 (audit, AUDIT.md "Demo Day 3"):** topildi va tuzatildi — tahrirlanmagan model faylni bo'sh matn bilan bosib ketish xavfi (faqat dirty yoziladi), imtihonlar orasida eski modellar, terminal busy noto'g'ri (node REPL kiritmasi bloklanardi), >1 MB fayllar sync'da "o'chirildi" hisoblanardi, panel kod ko'rishda rasmlar yashirin edi, qayta ulanishda faol tab almashardi.
+- **Ochiq:** AI baholash (keyingi versiya), .exe build/deploy, bitta sinovda index.html bo'sh bo'lib qolgani takrorlanmadi (ehtimoliy sabablar dirty-guard bilan yopildi; AUDIT.md da).

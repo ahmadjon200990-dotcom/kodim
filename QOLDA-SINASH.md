@@ -1,4 +1,4 @@
-# Kodim — qo'lda sinash yo'riqnomasi (Demo Day 2)
+# Kodim — qo'lda sinash yo'riqnomasi (Demo Day 3)
 
 Bu ro'yxat barcha yangi talablarni (CLAUDE.md 0-bo'lim) qamrab oladi. Tartib bo'yicha yuring.
 
@@ -18,13 +18,23 @@ node apps/server/dist/index.js
 # yoki: pnpm dev:server
 ```
 
-Demo o'qituvchi: `demo@kodim.uz` / `demo12345`. Admin: `.env` dagi `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+Namuna o'qituvchi: `demo@kodim.uz` / `demo12345`. Admin: `.env` dagi `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
 
 Desktop ilovani ishga tushirish: `pnpm start:desktop` (build + preview).
 Sinov uchun CDP bilan: `cd apps/desktop && npx electron . --remote-debugging-port=9222`.
 Ikkinchi o'quvchi (ixtiyoriy): `node apps/server/dist/dev/fake-student.js <kod> <ism> [deviceId]`.
 
 ---
+
+## 0.1 Avtomatik sinov — kursor sakramasligi
+
+Ilova CDP bilan ishga tushgan va imtihon boshlangan bo'lsin (yoki login ekranida — kod va ism bering):
+
+```bash
+node apps/desktop/scripts/typing-test.mjs <kod> <ism>
+```
+
+Kutiladi: html, css, js, jsx — hammasida `okDisk` va `okCursor` = true va "OK: ..." xabari.
 
 ## 1. Panel — abadiy yuklanish yo'q (0-talab)
 
@@ -50,7 +60,9 @@ Brauzerda `http://localhost:8080` ni oching, o'qituvchi sifatida kiring.
 - [ ] Shablon grid: Bo'sh, HTML/CSS/JS, React+Vite, **Vue+Vite, TypeScript, Node.js, Python**, "muhit kerak/kerak emas" belgisi.
 - [ ] "Ruxsat etilgan terminal buyruqlari" bo'limi: **Frontend / Node.js / Python to'plamlari**, qo'lda buyruq qo'shish, o'chirish.
 - [ ] Figma topshiriq qo'shing → **dizayn rasm yuklash** (drag&drop yoki tanlash), oldindan ko'rish, o'chirish. Figma havolasi YOKI rasm bo'lmasa — saqlashda xato.
-- [ ] Mezonlar yig'indisi 100 bo'lmasa — xato. Saqlang.
+- [ ] Mezonlar va AI bo'limlari **ko'rinmaydi** (bu versiyada baholashni o'qituvchi qiladi) — ularsiz saqlanadi.
+- [ ] Mashq topshirig'iga ham **dizayn rasmi** qo'shing (sudrab tashlash) → saqlang → tahrirlashda rasm turibdi → o'quvchida `dizaynlar/` ichida ochiladi.
+- [ ] **Tayyor papka:** ".zip yuklash" yoki "Papka tanlash" (rasm, ikonka, shrift, css bilan). Ro'yxat, hajm, "binar" belgisi; node_modules kirmaydi; 20 MB dan katta — aniq xato.
 
 ## 4. Desktop — kirish va qoidalar (5-talab)
 
@@ -68,7 +80,14 @@ Imtihonni boshlang (panel → "Boshlash").
 - [ ] Klaviatura: **Ctrl+`** (terminal), **Ctrl+B** (sidebar), **Ctrl+Shift+E/F**, **Ctrl+P** (fayl qidirish), **Ctrl+Shift+P** (buyruqlar palitrasi), **Ctrl+N/S/W**, **Ctrl+Tab**, **Ctrl+=/−** (masshtab), **Alt+Z** (o'rash).
 - [ ] FileTree: **F2** nomlash, **Delete** o'chirish (tasdiq bilan), o'ng menyu; faylni papkaga **sudrab ko'chirish** (ilova ichida).
 - [ ] Rasm fayli (png/jpg/svg) editorда **rasm** sifatida ochiladi; `savollar.md` **markdown ko'rinishida** (tabdagi "Manba/Ko'rinish" yoki Ctrl+Shift+V).
-- [ ] Emmet: HTML faylda `div.box>ul>li*3` + Tab → kengayadi; teg/qavs avtoyopiladi.
+- [ ] **Kod yozish:** html/css/js/jsx fayllarda uzoq yozing (30+ soniya, avtosaqlash va sync o'tsin) — kursor HECH QACHON sakramaydi, belgi yo'qolmaydi.
+- [ ] Emmet (HTML): `!` + Tab → HTML5 shablon; `h1` → `<h1></h1>`; `div.box>ul>li*3`; `a:link`. CSS: `a {` ichida `m10` + Tab → `margin: 10px;`. JSX'da ham.
+- [ ] Takliflar: `h1`, `div`, `console` yozganda ro'yxat chiqadi; snippetlar `clg`, `log`, `for`, `fori`, `foreach`, `if`, `func`, `afn`, `imp`, `imd`, `rfce` (jsx).
+- [ ] `<span>` yozing → `</span>` o'zi qo'yiladi; ochuvchi teg nomini o'zgartirsangiz yopuvchisi ham o'zgaradi.
+- [ ] **Ctrl+\** yoki faylni editorning o'ng chetiga sudrash → ikki oyna; tabni boshqa oynaga sudrash.
+- [ ] Fayllar paneli o'ng tugma: Yangi fayl/papka, Ochish, Yon tomonda ochish, Kesish/Nusxalash/Qo'yish, Yo'lni nusxalash, F2, Delete; savollar.md/dizaynlar uchun o'zgartirish bandlari **nofaol**; bo'sh joyda ham menyu.
+- [ ] Rasm (png/jpg/svg/ico) ochilsa: o'lcham, hajm, −/+/1:1/moslash, Ctrl+g'ildirak.
+- [ ] Shrift (.woff2) ochilsa — "binar fayl" xabari (buzilgan matn emas).
 
 ## 6. Desktop — terminal ruxsati (3-talab)
 
@@ -78,7 +97,12 @@ Terminalda (pastdagi kiritma qatoriga yozib Enter):
 - [ ] `node -v; echo hi` → **CHAINING** bloklanadi (zanjirlash ruxsat etilmagan).
 - [ ] `npm install lodash` (lodash ruxsatsiz) → bloklanadi, **Ruxsatsiz paket** (WARN) + bloklangan buyruq.
 - [ ] `node -v` → **ishlaydi** (ruxsat etilgan), versiya chiqadi.
+- [ ] `node` → REPL ochiladi (kiritma qatorida "Jarayon ishlamoqda"), `6*7` → 42, `.exit` → yana oddiy rejim, keyin `curl x` yana bloklanadi.
 - [ ] `npm create vite@latest` → interaktiv savollar (busy rejimda javob yoziladi). ↑↓ tarix, Tab to'ldirish, Ctrl+C to'xtatish.
+
+## 6.1 Ichki brauzer
+
+- [ ] Status bar "Brauzer" → **to'liq ekran** (editor o'rnida); yana bosish yoki **Esc** → yon panel; ⤢/⤡ tugmasi; × yopadi.
 
 ## 7. Desktop — barcha ogohlantirishlar (4-talab)
 
@@ -113,17 +137,24 @@ Har birini chaqirib, **panel jonli oqimida** ism bilan, o'zbekcha, to'g'ri rangd
 - [ ] "Kodni ko'rish" → o'quvchining joriy kodi (faqat o'qish, fayllar bo'yicha).
 - [ ] Ogohlantirish yonida −5 / −10 / Boshqa (modal) / Bekor qilish (modal). Jarima → yakuniy ball qayta hisoblanadi.
 
+## 9.1 Topshirilgan ishlar va baholash (faqat o'qituvchi)
+
+- [ ] Imtihonlar ro'yxati yoki Natijalar → **"📁 Ishlar"**: chapda o'quvchi papkalari (`Ali_Valiyev`), "Baholanmagan" filtri.
+- [ ] Papka tanlang: fayllar daraxti, kod, rasmlar; ball (0–100) + izoh → "Bahoni saqlash" → ro'yxatda ball, baholanmaganlar soni kamayadi.
+- [ ] "Papkani yuklab olish (.zip)" va "Hammasini yuklab olish (.zip)" — har o'quvchi alohida papkada, node_modules va savollar.md/dizaynlar yo'q, rasm/shriftlar ochiladi.
+
 ## 10. Natijalar va Excel
 
-- [ ] Natijalar jadvali: AI holati, jarima, yakuniy ball, ogohlantirish; saralash; telefon ekrani.
+- [ ] Natijalar jadvali: o'qituvchi bahosi, jarima, yakuniy (= baho − jarima, bekor = 0), baholanmaganlar sariq; saralash; telefon ekrani.
 - [ ] "Excel yuklab olish" → `.xlsx` yuklanadi.
-- [ ] Batafsil: mezon bo'yicha ball tahrirlash + izoh, jarimalar, eventlar tarixi (buyruqlarni yashirish/ko'rsatish), fayllar diff (o'quvchi ↔ namuna).
+- [ ] Excel: "O'qituvchi bahosi", "Jarimalar", "Yakuniy ball", "Baholash" (baholanmagan qatorlar sariq).
+- [ ] Batafsil: ball + izoh, jarimalar, eventlar tarixi, fayllar (namuna bilan diff, rasmlar).
 
 ---
 
 ## Ma'lum cheklovlar (hakamlarга)
 
 - Telefon kamerasi bilan ekranni suratga olishni dastur to'xtata olmaydi — o'qituvchi nazorati qoplaydi.
-- AI baholash (8-bosqich) hali ulanmagan — natijalarда "AI hali ulanmagan", o'qituvchi qo'lda baholaydi.
+- AI baholash bu versiyada o'chiq — baholashni o'qituvchi "Topshirilgan ishlar"da qiladi.
 - Fayl ikonkalari — VS Code'ga yaqin yengil to'plam (to'liq vscode-icons shrifti emas).
 - `.exe` build va deploy — 10-bosqich.
