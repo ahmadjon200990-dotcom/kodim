@@ -45,6 +45,7 @@ export class ExamBrowser {
     private readonly push: (state: BrowserState) => void,
     private readonly reportPaste: (details: { source: "browser"; length: number }) => void,
     private readonly reportBlocked: (url: string) => void,
+    private readonly onEscape: () => void,
   ) {}
 
   private configureSession(): void {
@@ -94,6 +95,9 @@ export class ExamBrowser {
     win.contentView.addChildView(view);
     hardenContents(view.webContents, isAllowedBrowserUrl);
     const wc = view.webContents;
+    wc.on("before-input-event", (_e, input) => {
+      if (input.type === "keyDown" && input.key === "Escape") this.onEscape();
+    });
     const update = () => {
       this.state = {
         url: wc.getURL(),

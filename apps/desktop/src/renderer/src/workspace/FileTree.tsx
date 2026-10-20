@@ -16,6 +16,8 @@ interface Props {
   locked: boolean;
   activePath: string | null;
   onOpen(path: string): void;
+  /** Ikkinchi editor guruhida ochish (VS Code "Open to the Side"). */
+  onOpenToSide(path: string): void;
   onRenamed(from: string, to: string): void;
   onDeleted(path: string): void;
 }
@@ -28,13 +30,20 @@ interface Menu {
 
 const designRoot = (dir: string) => dir === DESIGNS_DIR || dir.startsWith(`${DESIGNS_DIR}/`);
 
-export function FileTree({ version, locked, activePath, onOpen, onRenamed, onDeleted }: Props) {
+/** Fayllar panelidagi ichki "clipboard" (faqat ilova ichida, tizim clipboard'iga tegmaydi). */
+interface FileClip {
+  mode: "copy" | "cut";
+  path: string;
+}
+
+export function FileTree({ version, locked, activePath, onOpen, onOpenToSide, onRenamed, onDeleted }: Props) {
   const dialog = useDialog();
   const [children, setChildren] = useState<Record<string, FsEntry[]>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<FsEntry | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [clip, setClip] = useState<FileClip | null>(null);
   const expandedRef = useRef(expanded);
   expandedRef.current = expanded;
 
@@ -125,6 +134,23 @@ export function FileTree({ version, locked, activePath, onOpen, onRenamed, onDel
     await refreshAll();
   };
 
+  const paste = async (base: FsEntry | null) => {
+    if (!clip) return;
+    const dir = targetDir(base);
+    if (designRoot(dir)) return;
+    if (clip.mode === "cut") {
+      await moveInto(clip.path, dir);
+      setClip(null);
+      return;
+    }
+    const res = await window.kodim.fs.copy(clip.path, dir);
+    if (!res.ok) return void dialog.alert(res.error);
+    if (dir) setExpanded((s) => new Set(s).add(dir));
+    await refreshAll();
+  };
+
+  const copyPath = (entry: FsEntry) => void window.kodim.clipboard.write(entry.path);
+
   const openMenu = (e: MouseEvent, entry: FsEntry | null) => {
     e.preventDefault();
     e.stopPropagation();
@@ -134,8 +160,24 @@ export function FileTree({ version, locked, activePath, onOpen, onRenamed, onDel
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (locked || !selected) return;
-    if (e.key === "F2" && !selected.readonly) {
+    if (locked) return;
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (ctrl && e.key.toLowerCase() === "v" && clip) {
+      e.preventDefault();
+      void paste(selected);
+      return;
+    }
+    if (!selected) return;
+    if (ctrl && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      setClip({ mode: "copy", path: selected.path });
+    } else if (ctrl && e.key.toLowerCase() === "x" && !selected.readonly) {
+      e.preventDefault();
+      setClip({ mode: "cut", path: selected.path });
+    } else if (e.key === "Enter" && selected.type === "file") {
+      e.preventDefault();
+      onOpen(selected.path);
+    } else if (e.key === "F2" && !selected.readonly) {
       e.preventDefault();
       void rename(selected);
     } else if (e.key === "Delete" && !selected.readonly) {
@@ -179,7 +221,7 @@ export function FileTree({ version, locked, activePath, onOpen, onRenamed, onDel
       return (
         <div key={entry.path}>
           <div
-            className={`tree-row${isActive ? " tree-row-active" : ""}${dropTarget === (isDir ? entry.path : "") ? " tree-drop" : ""}`}
+            className={`tree-row${clip?.mode === "cut" && clip.path === entry.path ? " tree-cut" : ""}${isActive ? " tree-row-active" : ""}${dropTarget === (isDir ? entry.path : "") ? " tree-drop" : ""}`}
             style={{ paddingLeft: 6 + depth * 12 }}
             title={entry.readonly ? `${entry.path} (${uz.tree.readonly})` : entry.path}
             draggable={!locked && !entry.readonly}
@@ -249,29 +291,50 @@ export function FileTree({ version, locked, activePath, onOpen, onRenamed, onDel
         {renderDir("", 0)}
       </div>
       {menu && (
-        <div className="context-menu" style={{ left: menu.x, top: menu.y }} onClick={(e) => e.stopPropagation()}>
-          {(!menuEntry || !menuEntry.readonly) && !designRoot(targetDir(menuEntry)) && (
-            <>
-              <div className="context-item" onClick={() => (setMenu(null), void create("file", menuEntry))}>
-                {uz.tree.newFile}
+        <div className="context-menu" style={{ left: menu.x, top: Math.min(menu.y, window.innerHeight - 330) }} onClick={(e) => e.stopPropagation()}>
+          {(() => {
+            const ro = menuEntry?.readonly ?? false;
+            const dirRo = designRoot(targetDir(menuEntry));
+            const item = (label: string, key: string, enabled: boolean, fn: () => void, danger = false) => (
+              <div
+                className={`context-item${enabled ? "" : " context-disabled"}${danger ? " context-danger" : ""}`}
+                onClick={() => {
+                  if (!enabled) return;
+                  setMenu(null);
+                  fn();
+                }}
+              >
+                {label} {key && <span className="context-key">{key}</span>}
               </div>
-              <div className="context-item" onClick={() => (setMenu(null), void create("dir", menuEntry))}>
-                {uz.tree.newFolder}
-              </div>
-            </>
-          )}
-          {menuEntry && !menuEntry.readonly && (
-            <>
-              <div className="context-sep" />
-              <div className="context-item" onClick={() => (setMenu(null), void rename(menuEntry))}>
-                {uz.tree.rename} <span className="context-key">F2</span>
-              </div>
-              <div className="context-item context-danger" onClick={() => (setMenu(null), void remove(menuEntry))}>
-                {uz.tree.delete} <span className="context-key">Delete</span>
-              </div>
-            </>
-          )}
-          {menuEntry?.readonly && <div className="context-item context-disabled">{uz.editor.readonly}</div>}
+            );
+            return (
+              <>
+                {item(uz.tree.newFile, "", !dirRo, () => void create("file", menuEntry))}
+                {item(uz.tree.newFolder, "", !dirRo, () => void create("dir", menuEntry))}
+                {menuEntry?.type === "file" && (
+                  <>
+                    <div className="context-sep" />
+                    {item(uz.tree.open, "Enter", true, () => onOpen(menuEntry.path))}
+                    {item(uz.tree.openToSide, "", true, () => onOpenToSide(menuEntry.path))}
+                  </>
+                )}
+                <div className="context-sep" />
+                {menuEntry && item(uz.tree.cut, "Ctrl+X", !ro, () => setClip({ mode: "cut", path: menuEntry.path }))}
+                {menuEntry && item(uz.tree.copy, "Ctrl+C", true, () => setClip({ mode: "copy", path: menuEntry.path }))}
+                {item(uz.tree.paste, "Ctrl+V", clip !== null && !dirRo, () => void paste(menuEntry))}
+                {menuEntry && (
+                  <>
+                    <div className="context-sep" />
+                    {item(uz.tree.copyPath, "", true, () => copyPath(menuEntry))}
+                    <div className="context-sep" />
+                    {item(uz.tree.rename, "F2", !ro, () => void rename(menuEntry))}
+                    {item(uz.tree.delete, "Delete", !ro, () => void remove(menuEntry), true)}
+                  </>
+                )}
+                {ro && <div className="context-note">{uz.editor.readonly}</div>}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

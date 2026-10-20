@@ -100,6 +100,8 @@ export interface KodimApi {
     /** Ish papkasini lokal serverda ochib, brauzerda ko'rsatadi. */
     goLive(): Promise<AckResult<{ url: string }>>;
     onState(listener: (state: BrowserState) => void): () => void;
+    /** Brauzer sahifasida Esc bosildi (to'liq ekrandan chiqish uchun). */
+    onEscape(listener: () => void): () => void;
   };
   fs: {
     list(dir: string): Promise<FsEntry[]>;
@@ -112,6 +114,8 @@ export interface KodimApi {
     rename(from: string, to: string): Promise<Result>;
     /** Ilova ichida sudrab ko'chirish: `from` ni `toDir` papkasiga. */
     move(from: string, toDir: string): Promise<Result>;
+    /** Ilova ichida nusxalash; yangi yo'lni qaytaradi (nom band bo'lsa "copy"). */
+    copy(from: string, toDir: string): Promise<AckResult<{ path: string }>>;
     remove(path: string): Promise<Result>;
   };
 }
@@ -148,6 +152,7 @@ export const IPC = {
   browserReload: "browser:reload",
   browserGoLive: "browser:go-live",
   browserState: "browser:state",
+  browserEscape: "browser:escape",
   fsList: "fs:list",
   fsRead: "fs:read",
   fsReadImage: "fs:read-image",
@@ -156,5 +161,6 @@ export const IPC = {
   fsCreateDir: "fs:create-dir",
   fsRename: "fs:rename",
   fsMove: "fs:move",
+  fsCopy: "fs:copy",
   fsRemove: "fs:remove",
 } as const;

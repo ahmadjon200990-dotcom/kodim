@@ -4,6 +4,9 @@ import { useDialogOpen } from "../Dialog";
 import { uz } from "../uz";
 
 interface Props {
+  /** To'liq ekran (editor o'rnida) yoki yon panel. */
+  full: boolean;
+  onToggleFull(): void;
   onClose(): void;
 }
 
@@ -11,7 +14,7 @@ interface Props {
  * Ichki brauzer paneli. Sahifaning o'zi main process'dagi WebContentsView'da —
  * bu komponent faqat boshqaruv va view joylashadigan joyni (o'lchamini) beradi.
  */
-export function BrowserPanel({ onClose }: Props) {
+export function BrowserPanel({ full, onToggleFull, onClose }: Props) {
   const dialogOpen = useDialogOpen();
   const slotRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<BrowserState>({ url: "", title: "", canGoBack: false, canGoForward: false, loading: false });
@@ -54,7 +57,7 @@ export function BrowserPanel({ onClose }: Props) {
   };
 
   return (
-    <aside className="browser">
+    <aside className={full ? "browser browser-full" : "browser"}>
       <div className="browser-bar">
         <button className="icon-btn" title={uz.browser.back} disabled={!state.canGoBack} onClick={() => window.kodim.browser.back()}>
           ←
@@ -76,6 +79,9 @@ export function BrowserPanel({ onClose }: Props) {
             onChange={(e) => setAddress(e.target.value)}
           />
         </form>
+        <button className="icon-btn" title={full ? uz.browser.toSide : uz.browser.toFull} onClick={onToggleFull}>
+          {full ? "⤡" : "⤢"}
+        </button>
         <button className="icon-btn" title={uz.browser.close} onClick={onClose}>
           ×
         </button>

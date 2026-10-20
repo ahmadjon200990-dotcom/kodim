@@ -647,17 +647,39 @@ button {
 .image-view {
   position: absolute;
   inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+}
+.image-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
   display: grid;
   place-items: center;
-  overflow: auto;
-  background: #1a1a1a;
   padding: 20px;
 }
-.image-view img {
-  max-width: 100%;
-  max-height: 100%;
+.image-stage img {
+  cursor: zoom-in;
+  image-rendering: auto;
   box-shadow: 0 4px 20px rgb(0 0 0 / 0.5);
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #222 0% 50%) 50% / 20px 20px;
+}
+.image-bar {
+  height: 28px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.image-zoom {
+  min-width: 70px;
+  text-align: center;
 }
 .md-view {
   position: absolute;
@@ -1039,4 +1061,79 @@ button {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 16px;
+}
+
+/* ---------- Editor guruhlari (split) ---------- */
+.editor-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.groups {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+}
+.group:last-child {
+  border-right: 0;
+}
+.group-focused .tab-active {
+  border-top-color: var(--focus);
+}
+.group:not(.group-focused) .tab-active {
+  border-top-color: transparent;
+}
+.group-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+.tab .ficon {
+  width: 14px;
+  height: 14px;
+}
+.drop-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(0 127 212 / 0.18);
+  border: 2px solid rgb(0 127 212 / 0.6);
+  pointer-events: none;
+  z-index: 20;
+}
+.drop-left {
+  left: 0;
+  width: 50%;
+}
+.drop-right {
+  right: 0;
+  width: 50%;
+}
+.drop-center {
+  left: 0;
+  right: 0;
+}
+.tree-cut {
+  opacity: 0.5;
+}
+.context-note {
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+.browser-full {
+  border-left: 0;
+}
+.sb-btn-on {
+  background: #ffffff26;
 }

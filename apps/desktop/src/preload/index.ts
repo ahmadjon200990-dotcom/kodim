@@ -44,6 +44,7 @@ const api: KodimApi = {
     reload: () => ipcRenderer.send(IPC.browserReload),
     goLive: () => ipcRenderer.invoke(IPC.browserGoLive),
     onState: (listener) => subscribe<[BrowserState]>(IPC.browserState, listener),
+    onEscape: (listener) => subscribe<[]>(IPC.browserEscape, listener),
   },
   fs: {
     list: (dir) => ipcRenderer.invoke(IPC.fsList, dir),
@@ -54,6 +55,7 @@ const api: KodimApi = {
     createDir: (path) => ipcRenderer.invoke(IPC.fsCreateDir, path),
     rename: (from, to) => ipcRenderer.invoke(IPC.fsRename, from, to),
     move: (from, toDir) => ipcRenderer.invoke(IPC.fsMove, from, toDir),
+    copy: (from, toDir) => ipcRenderer.invoke(IPC.fsCopy, from, toDir),
     remove: (path) => ipcRenderer.invoke(IPC.fsRemove, path),
   },
 };

@@ -172,5 +172,12 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
   handle(IPC.fsCreateDir, (path) => wsOp((ws) => ws.createDir(str(path))));
   handle(IPC.fsRename, (from, to) => wsOp((ws) => ws.rename(str(from), str(to))));
   handle(IPC.fsMove, (from, toDir) => wsOp((ws) => ws.move(str(from), str(toDir))));
+  handle(IPC.fsCopy, async (from, toDir) => {
+    let path = "";
+    const res = await wsOp(async (ws) => {
+      path = await ws.copy(str(from), str(toDir));
+    });
+    return res.ok ? { ok: true, path } : res;
+  });
   handle(IPC.fsRemove, (path) => wsOp((ws) => ws.remove(str(path))));
 }

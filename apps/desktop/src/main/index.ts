@@ -75,6 +75,7 @@ const browser = new ExamBrowser(
   (state) => send(IPC.browserState, state),
   (details) => session.reportEvent("PASTE_BLOCKED", details),
   (url) => session.reportEvent("BROWSER_BLOCKED", { url: url.slice(0, 200) }),
+  () => send(IPC.browserEscape),
 );
 
 function registerAppProtocol(): void {

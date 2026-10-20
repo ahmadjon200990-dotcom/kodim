@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chmod, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { app } from "electron";
 import { IGNORED_DIRS, isIgnoredPath, isReadonlyPath, SYNC_LIMITS } from "@exam-ide/shared";
@@ -204,7 +204,66 @@ export class Workspace {
     // Windows'da katta-kichik harf farqi bilan qayta nomlashga ruxsat.
     if (from.toLowerCase() !== to.toLowerCase() && (await this.exists(dst))) throw new WorkspaceError(uz.exists);
     await mkdir(dirname(dst), { recursive: true });
+    // Ko'chirilgan fayllar watcher'da "tashqi o'zgarish" bo'lib ko'rinmasin.
+    await this.markTree(src, dst);
     await rename(src, dst);
+  }
+
+  /** `src` daraxtidagi fayllarni `dst` yo'llari bilan "bizniki" deb belgilaydi (rename/copy oldidan). */
+  private async markTree(src: string, dst: string): Promise<void> {
+    const info = await stat(src).catch(() => null);
+    if (!info) return;
+    if (info.isFile()) {
+      if (info.size <= 8 * 1024 * 1024) {
+        const buf = await readFile(src).catch(() => null);
+        if (buf) this.mark(this.toRel(dst), buf.toString("utf8"));
+      }
+      return;
+    }
+    for (const e of await readdir(src).catch(() => [])) {
+      if ((IGNORED_DIRS as readonly string[]).includes(e)) continue;
+      await this.markTree(join(src, e), join(dst, e));
+    }
+  }
+
+  /** Bo'sh nom: "app.js" → "app copy.js" → "app copy 2.js". */
+  private async freeName(dir: string, name: string): Promise<string> {
+    const dot = name.lastIndexOf(".");
+    const stem = dot > 0 ? name.slice(0, dot) : name;
+    const ext = dot > 0 ? name.slice(dot) : "";
+    let candidate = name;
+    for (let i = 1; await this.exists(this.abs(dir ? `${dir}/${candidate}` : candidate)); i++) {
+      candidate = `${stem} copy${i > 1 ? ` ${i}` : ""}${ext}`;
+    }
+    return candidate;
+  }
+
+  /** Ilova ichida nusxalash (fayl yoki papka) `toDir` ga; nom band bo'lsa "copy" qo'shiladi. */
+  async copy(from: string, toDir: string): Promise<string> {
+    if (toDir) this.guardWritable(toDir);
+    const src = this.abs(from);
+    const srcInfo = await stat(src).catch(() => null);
+    if (!srcInfo) throw new WorkspaceError(uz.notFound);
+    const name = await this.freeName(toDir, from.split("/").pop() ?? from);
+    const target = toDir ? `${toDir}/${name}` : name;
+    this.guardWritable(target);
+    if (target.startsWith(`${from}/`)) throw new WorkspaceError(uz.invalidName);
+    const dst = this.abs(target);
+    await this.markTree(src, dst);
+    const walk = async (s: string, d: string): Promise<void> => {
+      const info = await stat(s);
+      if (info.isDirectory()) {
+        await mkdir(d, { recursive: true });
+        for (const e of await readdir(s)) {
+          if (!(IGNORED_DIRS as readonly string[]).includes(e)) await walk(join(s, e), join(d, e));
+        }
+      } else {
+        await copyFile(s, d);
+        await chmod(d, 0o666).catch(() => undefined); // read-only nusxasi tahrirlanadigan bo'lsin
+      }
+    };
+    await walk(src, dst);
+    return target;
   }
 
   async remove(rel: string): Promise<void> {
