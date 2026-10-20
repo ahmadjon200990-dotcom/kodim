@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_ALLOWED_COMMANDS } from "./commands.js";
 import { uzShared } from "./uz.js";
 
 // ---------- Enumlar ----------
@@ -9,8 +10,29 @@ export type TeacherRole = z.infer<typeof TeacherRole>;
 export const ExamStatus = z.enum(["DRAFT", "LOBBY", "RUNNING", "GRADING", "FINISHED"]);
 export type ExamStatus = z.infer<typeof ExamStatus>;
 
-export const ExamTemplate = z.enum(["EMPTY", "HTML", "REACT_VITE", "CUSTOM"]);
+export const ExamTemplate = z.enum([
+  "EMPTY",
+  "HTML",
+  "REACT_VITE",
+  "VUE_VITE",
+  "TYPESCRIPT",
+  "NODE",
+  "PYTHON",
+  "CUSTOM",
+]);
 export type ExamTemplate = z.infer<typeof ExamTemplate>;
+
+/** Shablon qaysi dasturlash muhitini talab qiladi (Status Bar'da tekshiriladi). */
+export const TEMPLATE_RUNTIME: Record<ExamTemplate, "node" | "python" | null> = {
+  EMPTY: null,
+  HTML: null,
+  REACT_VITE: "node",
+  VUE_VITE: "node",
+  TYPESCRIPT: "node",
+  NODE: "node",
+  PYTHON: "python",
+  CUSTOM: null,
+};
 
 export const TaskType = z.enum(["EXERCISE", "FIGMA"]);
 export type TaskType = z.infer<typeof TaskType>;
@@ -41,6 +63,15 @@ export const EventType = z.enum([
   "TERMINAL_COMMAND",
   "DEVICE_CHANGED",
   "LATE_JOIN",
+  // Demo Day (CLAUDE.md 0.4): yangi qoidabuzarlik turlari.
+  "WINDOW_MINIMIZED",
+  "SCREENSHOT_ATTEMPT",
+  "COPY_OUT_ATTEMPT",
+  "DROP_BLOCKED",
+  "BLOCKED_COMMAND",
+  "DEVTOOLS_ATTEMPT",
+  "BROWSER_BLOCKED",
+  "ENV_MISSING",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -70,7 +101,9 @@ const filePath = z
 
 export const FileEntry = z.object({
   path: filePath,
-  content: z.string().max(1_000_000),
+  content: z.string().max(6_000_000),
+  /** "base64" — binar fayl (dizayn rasmi). Yo'q bo'lsa matn (utf8). */
+  encoding: z.enum(["base64"]).optional(),
 });
 export type FileEntry = z.infer<typeof FileEntry>;
 
@@ -93,18 +126,33 @@ export const CriteriaList = z
   .refine((list) => list.reduce((s, c) => s + c.weight, 0) === 100, uzShared.criteriaSum)
   .refine((list) => new Set(list.map((c) => c.name)).size === list.length, uzShared.criteriaDuplicate);
 
+/** Topshiriqqa yuklangan dizayn rasmi (o'quvchining dizaynlar/ papkasiga tushadi). */
+export const DesignImage = z.object({
+  name: z.string().trim().min(1).max(120),
+  /** data:image/...;base64,... — PNG/JPG/WEBP/GIF. */
+  dataUrl: z
+    .string()
+    .max(4_000_000)
+    .regex(/^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/i, uzShared.imageInvalid),
+});
+export type DesignImage = z.infer<typeof DesignImage>;
+
 export const TaskInput = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().max(20_000).default(""),
     type: TaskType,
     figmaUrl: z.url().max(2000).nullish(),
+    images: z.array(DesignImage).max(10).default([]),
     expectedOutput: z.string().max(20_000).nullish(),
   })
-  .refine((t) => t.type !== "FIGMA" || (t.figmaUrl != null && /^https:\/\/([a-z0-9-]+\.)?figma\.com\//i.test(t.figmaUrl)), {
-    message: uzShared.figmaUrlRequired,
-    path: ["figmaUrl"],
-  });
+  .refine(
+    (t) =>
+      t.type !== "FIGMA" ||
+      (t.figmaUrl != null && /^https:\/\/([a-z0-9-]+\.)?figma\.com\//i.test(t.figmaUrl)) ||
+      t.images.length > 0,
+    { message: uzShared.figmaSourceRequired, path: ["figmaUrl"] },
+  );
 export type TaskInput = z.infer<typeof TaskInput>;
 
 // ---------- REST kirishlari ----------
@@ -119,6 +167,8 @@ export const ExamInput = z.object({
   aiEnabled: z.boolean().default(true),
   aiModel: AiModelTier.default("DEFAULT"),
   allowedPackages: z.array(z.string().trim().min(1).max(214)).max(200).default([...DEFAULT_ALLOWED_PACKAGES]),
+  /** Terminalda ruxsat etilgan buyruq naqshlari (CLAUDE.md 3). */
+  allowedCommands: z.array(z.string().trim().min(1).max(100)).max(100).default([...DEFAULT_ALLOWED_COMMANDS]),
   tasks: z.array(TaskInput).min(1).max(50),
 });
 export type ExamInput = z.infer<typeof ExamInput>;

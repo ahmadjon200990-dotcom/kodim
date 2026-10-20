@@ -150,7 +150,8 @@ async function sync(attemptId: string, payload: unknown): Promise<{ rejected: Sy
   const attempt = await prisma.attempt.findUniqueOrThrow({ where: { id: attemptId }, select: { status: true, files: true } });
   if (attempt.status !== "WORKING") throw new HttpError(409, uz.notWorking);
 
-  const files = new Map(StoredFiles.parse(attempt.files).map((f) => [f.path, f.content]));
+  // Readonly/binar fayllar (dizayn rasmlari, savollar.md) o'zgarmaydi — ularni to'liq (encoding bilan) saqlaymiz.
+  const files = new Map(StoredFiles.parse(attempt.files).map((f) => [f.path, f]));
   const rejected: SyncRejection[] = [];
   for (const path of input.deleted) {
     if (isReadonlyPath(path)) rejected.push({ path, reason: "READONLY" });
@@ -163,11 +164,11 @@ async function sync(attemptId: string, payload: unknown): Promise<{ rejected: Sy
     else if (Buffer.byteLength(f.content, "utf8") > SYNC_LIMITS.maxFileBytes) rejected.push({ path: f.path, reason: "TOO_LARGE" });
     else if (f.content.includes("\u0000")) rejected.push({ path: f.path, reason: "BINARY" });
     else if (!files.has(f.path) && files.size >= SYNC_LIMITS.maxFiles) rejected.push({ path: f.path, reason: "TOO_MANY_FILES" });
-    else files.set(f.path, f.content);
+    else files.set(f.path, { path: f.path, content: f.content });
   }
   await prisma.attempt.update({
     where: { id: attemptId },
-    data: { files: [...files].map(([path, content]) => ({ path, content })), lastSeenAt: new Date() },
+    data: { files: [...files.values()], lastSeenAt: new Date() },
   });
   return { rejected };
 }

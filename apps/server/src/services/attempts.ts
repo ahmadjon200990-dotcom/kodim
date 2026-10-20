@@ -53,6 +53,7 @@ export function examPublic(exam: Exam): ExamPublic {
     template: exam.template,
     status: exam.status,
     allowedPackages: PackageList.parse(exam.allowedPackages),
+    allowedCommands: PackageList.parse(exam.allowedCommands),
   };
 }
 

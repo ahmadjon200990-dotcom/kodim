@@ -28,7 +28,7 @@ export const EVENT_SEVERITY: Record<EventType, EventSeverity> = {
   EXTERNAL_FILE_CHANGE: "DANGER",
   LARGE_INSERT: "WARN",
   READONLY_TAMPER: "WARN",
-  PASTE_BLOCKED: "INFO",
+  PASTE_BLOCKED: "WARN",
   DISCONNECTED: "WARN",
   RECONNECTED: "INFO",
   APP_CLOSED: "DANGER",
@@ -36,6 +36,14 @@ export const EVENT_SEVERITY: Record<EventType, EventSeverity> = {
   TERMINAL_COMMAND: "INFO",
   DEVICE_CHANGED: "DANGER",
   LATE_JOIN: "INFO",
+  WINDOW_MINIMIZED: "WARN",
+  SCREENSHOT_ATTEMPT: "WARN",
+  COPY_OUT_ATTEMPT: "WARN",
+  DROP_BLOCKED: "WARN",
+  BLOCKED_COMMAND: "DANGER",
+  DEVTOOLS_ATTEMPT: "WARN",
+  BROWSER_BLOCKED: "WARN",
+  ENV_MISSING: "WARN",
 };
 
 /** Bu turlarni faqat server yaratadi; klient yuborsa rad etiladi. */
@@ -97,6 +105,8 @@ export interface ExamPublic {
   status: ExamStatus;
   /** Ruxsat etilgan npm paketlar (UNKNOWN_PACKAGE tekshiruvi uchun). */
   allowedPackages: string[];
+  /** Terminalda ruxsat etilgan buyruq naqshlari (CLAUDE.md 3). */
+  allowedCommands: string[];
 }
 
 export interface ExamLive extends ExamPublic {

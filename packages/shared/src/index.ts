@@ -6,3 +6,4 @@ export * from "./types.js";
 export * from "./score.js";
 export * from "./workspace.js";
 export * from "./monitoring.js";
+export * from "./commands.js";

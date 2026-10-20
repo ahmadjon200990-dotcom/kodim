@@ -111,6 +111,7 @@ async function main() {
           description: t.description,
           type: t.type,
           figmaUrl: t.figmaUrl ?? null,
+          images: t.images,
           expectedOutput: t.expectedOutput ?? null,
         })),
       },

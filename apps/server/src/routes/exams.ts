@@ -22,6 +22,7 @@ function examData(input: ExamInput) {
     aiEnabled: input.aiEnabled,
     aiModel: input.aiModel,
     allowedPackages: input.allowedPackages,
+    allowedCommands: input.allowedCommands,
   };
 }
 
@@ -32,6 +33,7 @@ function taskData(input: ExamInput) {
     description: t.description,
     type: t.type,
     figmaUrl: t.type === "FIGMA" ? (t.figmaUrl ?? null) : null,
+    images: t.type === "FIGMA" ? t.images : [],
     expectedOutput: t.expectedOutput ?? null,
   }));
 }

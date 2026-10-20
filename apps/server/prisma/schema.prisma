@@ -24,6 +24,10 @@ enum ExamTemplate {
   EMPTY
   HTML
   REACT_VITE
+  VUE_VITE
+  TYPESCRIPT
+  NODE
+  PYTHON
   CUSTOM
 }
 
@@ -85,6 +89,8 @@ model Exam {
   aiModel         String       @default("DEFAULT")
   /// ["react", ...]
   allowedPackages Json
+  /// ["npm install", "node", ...] — terminalda ruxsat etilgan buyruq naqshlari
+  allowedCommands Json         @default("[]")
   createdAt       DateTime     @default(now())
   tasks           Task[]
   attempts        Attempt[]
@@ -101,6 +107,8 @@ model Task {
   description    String
   type           TaskType
   figmaUrl       String?
+  /// [{name, dataUrl}] — yuklangan dizayn rasmlari
+  images         Json     @default("[]")
   expectedOutput String?
 
   @@index([examId, order])
