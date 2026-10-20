@@ -29,6 +29,7 @@ export interface TaskDto {
   description: string;
   type: TaskType;
   figmaUrl: string | null;
+  images?: { name: string; dataUrl: string }[];
   expectedOutput: string | null;
 }
 
@@ -47,6 +48,7 @@ export interface ExamFull {
   aiEnabled: boolean;
   aiModel: "DEFAULT" | "STRONG";
   allowedPackages: string[];
+  allowedCommands: string[];
   tasks: TaskDto[];
 }
 
