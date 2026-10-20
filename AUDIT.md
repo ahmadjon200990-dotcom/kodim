@@ -84,3 +84,23 @@ yoki chalg'ituvchi holat; **KICHIK** — sayqal.
 - **AI baholash** — 8-bosqich (rejada alohida). Hozir "AI hali ulanmagan" deb aniq ko'rsatiladi.
 - **.zip yuklash** (CUSTOM shablon, namuna yechim) — vaqt cheklovi; fayllar qo'lda kiritiladi.
 - **EXTRA_DISPLAY** — ikkinchi monitorda qo'lda sinash kerak.
+
+---
+
+## Demo Day 2 (2026-10-20) — 0-bo'lim talablari
+
+Barchasi bajarildi va real Electron (CDP, port 9222) + panel (ichki brauzer) orqali sinaldi. To'liq tavsif: `CLAUDE.md` → "Demo Day 2" yozuvi. Qisqa holat:
+
+| Talab | Holat | Izoh |
+|---|---|---|
+| 0. Panel abadiy yuklanish | ✅ | `useLoad`, `PageMessage`; yo'q imtihon/ish → topilmadi; buzuq token → login; tarmoq xatosi → login |
+| 1. Desktop VS Code ko'rinishi | ✅ | Activity Bar, ikonkalar, tablar, breadcrumbs, minimap, status bar, sudraladigan panellar, shortcutlar, Emmet, rasm/markdown ko'rinishi, F2/Delete/DnD |
+| 2. Shablon va muhit | ✅ | Vue/TS/Node/Python shablonlar; node/npm/python aniqlash; ENV_MISSING; bo'sh papka = faqat savollar.md |
+| 3. Terminal ruxsati | ✅ | `checkCommand`, zanjirlash/aylanib o'tish bloki, ruxsatsiz paket bloki, busy'da raw; sinaldi (curl/CHAINING/UNKNOWN_PACKAGE/allowed) |
+| 4. Ogohlantirishlar | ✅ | 8 yangi tur; panel filtr (daraja+tur), fresh urg'u; BLOCKED/UNKNOWN sinaldi |
+| 5. Desktop oqimi | ✅ | Qoidalar ekrani, 5/1 daq banner, topshirgach 10 s → login + tozalash; sinaldi |
+| 6. Panel SaaS | ✅ | modal/toast, skelet, bo'sh/xato, telefon, dizayn rasm yuklash, "Kodni ko'rish" |
+
+**Haqiqiy sinov natijalari (desktop):** kirish → qoidalar → kutish → boshlash → VS Code ish maydoni (status barda node/npm/python ✓) → terminal: curl=NOT_ALLOWED, `node -v; echo hi`=CHAINING, `npm i lodash`=UNKNOWN_PACKAGE (bloklandi), `node -v`=ishladi → FORBIDDEN_PROCESS + FOCUS_LOST keldi → savollar.md markdown ko'rinishi → Topshirish → "Topshirildi" → 10 s → login (ish papkasi o'chdi).
+
+**Qolgan (sababi bilan):** AI baholash (8), `.exe` build/deploy (10), Ctrl+\ editor split (vaqt), dizayn rasm bilan AI baholash, screenshot — telefon kamerasi (fizik cheklov). Baza avtomatik tozalanmagan (eski test yozuvlar qolishi mumkin; `prisma migrate reset` + `pnpm seed` foydalanuvchi qo'lida).
