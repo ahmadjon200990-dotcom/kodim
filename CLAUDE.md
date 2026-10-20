@@ -7,6 +7,59 @@
 
 ---
 
+## 0. Demo Day talablari (2026-10-20) — quyidagi bo'limlardagi eski qarorlarni ALMASHTIRADI
+
+Ziddiyat bo'lsa shu bo'lim ustun. Ustuvorlik: 0 → 5 → 4 → 3 → 1 → 6 → 2 (bo'lim raqamlari quyida).
+
+**0. Abadiy yuklanish yo'q (panel).** Mavjud bo'lmagan imtihon/ish → "Imtihon topilmadi" + ro'yxatga qaytish. Yaroqsiz/eskirgan token (REST 401 yoki socket `connect_error`) → login sahifasi. Har bir sahifada xato holati bo'lsin.
+
+**1. Desktop — VS Code (Dark Modern) bilan bir xil.**
+- Activity Bar (Explorer, Qidiruv), Side Bar, tablar, breadcrumbs, minimap, pastki panel (Terminal), ko'k Status Bar. Ranglar, shrift, o'lcham, hover, fokus chizig'i VS Code Dark Modern'dagidek. Panellar chegarasini sudrab o'lchash.
+- Fayl/papka ikonkalari ochiq litsenziyali to'plamdan (vscode-icons yoki Seti, MIT) — kengaytma va maxsus nomlar (package.json, node_modules, src, public …), papka ochiq/yopiq.
+- Klaviatura: Ctrl+` / Ctrl+J (pastki panel), Ctrl+B (yon panel), Ctrl+Shift+E (Explorer), Ctrl+Shift+F (barcha fayllarda qidirish), Ctrl+P (fayl qidirish), Ctrl+Shift+P (buyruqlar palitrasi — faqat ilovadagi ruxsat etilgan amallar), Ctrl+N, Ctrl+S, Ctrl+W, Ctrl+Tab, Ctrl+\ (editorni ikkiga bo'lish), Ctrl+F/H, Ctrl+G, Ctrl+/, Alt+↑↓, Shift+Alt+↑↓, Ctrl+D, Shift+Alt+F, Alt+Z, Ctrl+= / Ctrl+-, F2, Delete, Ctrl+Shift+V (markdown ko'rinishi). Bloklangan tugmalar (F12, Ctrl+Shift+I …) bloklangancha qoladi.
+- Fayllar: yangi fayl/papka, nomlash, o'chirish (tasdiq), o'ng tugma menyusi, ilova ichida sudrab papkaga ko'chirish (tashqaridan sudrab tashlash bloklangan). Daraxt watcher bilan darhol yangilanadi, `node_modules` yig'iq. Rasmlar (png/jpg/gif/webp/svg) editorda rasm sifatida; `savollar.md` chiroyli markdown ko'rinishida ochiladi.
+- Editor: Emmet (HTML/CSS/JSX), teg va qavslarni avto-yopish, avto-to'ldirish, ko'p tilli sintaksis (JS, TS, JSX, TSX, HTML, CSS, SCSS, LESS, JSON, Markdown, Python, Vue …).
+
+**2. Boshlang'ich papka va tillar** (5.2 ni almashtiradi).
+- Ish papkasida dastlab FAQAT `savollar.md` va (bo'lsa) `dizaynlar/`. Shablon tanlanmasa hech qanday `index.html`/`script.js` yaratilmaydi. Boshlanganda faqat `savollar.md` ochiladi.
+- Shablonlar (`Exam.template`): `EMPTY` (standart), `HTML`, `REACT_VITE`, `VUE_VITE`, `TYPESCRIPT`, `NODE`, `PYTHON`, `CUSTOM`.
+- Ilova kompyuterda `node`, `npm`, `python` borligini tekshiradi va Status Bar'da ko'rsatadi; imtihon shablon talab qilgan muhit yo'q bo'lsa — o'quvchiga xabar va o'qituvchiga `ENV_MISSING` (WARN).
+
+**3. Terminal — faqat ruxsat etilgan buyruqlar** (5.5 dagi "terminal bloklanmaydi" qarorini almashtiradi).
+- `Exam.allowedCommands Json` — buyruq naqshlari ro'yxati (birinchi so'zlar: `npm install`, `npm i`, `npm create vite`, `npm run`, `npx vite`, `node`, `python`, `pip install` …). Tayyor to'plamlar `shared` da: "Frontend", "Python", "Node.js" + qo'lda qo'shish. Ruxsat etilgan paketlar (`allowedPackages`) ham shu yerda.
+- Enter bosilganda qator pty'ga yuborilishidan OLDIN tekshiriladi (`shared/commands.ts` — `checkCommand`). Faqat ruxsat etilgan buyruq o'tadi. Zanjirlash va aylanib o'tish bloklanadi: `; && || | \` $( ) > < &`, `cmd /c`, `powershell -c`, `start`, `iex`/`Invoke-Expression`, `&` chaqiruv operatori, PowerShell alias/ichki buyruqlar (ruxsat etilganlardan tashqari). Ichki xavfsiz buyruqlar har doim ruxsat: `cls/clear`, `ls/dir`, `cd`, `pwd`, `mkdir`, `exit`.
+- Bloklangan buyruq bajarilmaydi, terminalda o'zbekcha sabab chiqadi, o'qituvchiga `BLOCKED_COMMAND` (DANGER; xavfli ro'yxatga mos kelsa ham shu). Ruxsatsiz paket o'rnatish ham bloklanadi → `UNKNOWN_PACKAGE` (WARN).
+- Kiritish qatorini ilova o'zi boshqaradi (line editor): Tab to'ldirish (ish papkasidagi fayl/papka nomlari), ↑↓ tarix, ←→/Home/End/Backspace/Delete, Ctrl+C (yozilayotgan qatorni bekor qiladi yoki ishlayotgan jarayonni to'xtatadi). Ishlayotgan dastur (masalan `npm create vite` savollari) kiritmasi to'g'ridan-to'g'ri o'tadi.
+
+**4. Ogohlantirishlar — har bir qoidabuzarlik o'qituvchiga** (5.5 jadvaliga qo'shiladi). Yangi turlar:
+| Event | Qachon | Daraja |
+|---|---|---|
+| `WINDOW_MINIMIZED` | oyna kichraytirildi (qaytganda davomiylik) | WARN |
+| `SCREENSHOT_ATTEMPT` | PrintScreen, Win+Shift+S / Snipping Tool jarayoni | WARN |
+| `COPY_OUT_ATTEMPT` | ilova ichida nusxalab, 10 s ichida ilovadan chiqdi | WARN |
+| `DROP_BLOCKED` | tashqaridan fayl/matn sudrab tashlash urinishi | WARN |
+| `BLOCKED_COMMAND` | ruxsat etilmagan terminal buyrug'i (bajarilmadi) | DANGER |
+| `DEVTOOLS_ATTEMPT` | F12, Ctrl+Shift+I/J/C, Ctrl+R/F5 | WARN |
+| `BROWSER_BLOCKED` | ichki brauzerda ruxsatsiz saytga o'tish urinishi | WARN |
+| `ENV_MISSING` | imtihon uchun kerakli node/npm/python yo'q | WARN |
+- `FOCUS_LOST` — boshqa oynaga o'tdi (davomiylik bilan); kichraytirish endi `WINDOW_MINIMIZED`. `PASTE_BLOCKED` daraja WARN. `DANGEROUS_COMMAND` endi faqat ruxsat etilgan buyruq ichida xavfli naqsh topilsa (amalda `BLOCKED_COMMAND` qoplaydi).
+- Panelda: daraja bo'yicha rang (DANGER qizil, WARN sariq, INFO kulrang), daraja va tur filtri, yangisi ajralib turadi, ovozli signal WARN va DANGER uchun. Oddiy `TERMINAL_COMMAND` standart yashirin.
+
+**5. Desktop oqimi** (5.1 ni to'ldiradi).
+- Ilova har doim kod + ism ekrani bilan ochiladi.
+- Kirgach (kutish xonasida yoki imtihon allaqachon boshlangan bo'lsa ham) — "Imtihon qoidalari" ekrani (nimalar taqiqlangan va kuzatiladi), "Tushundim" bosilgach davom etadi.
+- Vaqt tugashiga 5 va 1 daqiqa qolganda ogohlantirish (banner + tovush yo'q).
+- Imtihon tugagach (vaqt, o'qituvchi yoki "Topshirish"): "Imtihoningiz topshirildi" 10 soniya, so'ng avtomatik kod + ism ekraniga qaytadi; lokal ish papkasi va saqlangan token o'chiriladi (sync tugagandan keyin).
+- Status Bar'da internet/server holati belgisi.
+
+**6. O'qituvchi paneli.**
+- SaaS dizayn: yagona rang tizimi, kartalar, badge'lar, o'z modal oynalari va toast'lar (brauzer `confirm/prompt/alert` yo'q), skeletlar, bo'sh holatlar, telefon ekrani.
+- Topshiriqqa dizayn RASMI (png/jpg/webp, sudrab tashlash, oldindan ko'rish, ≤ 2 MB har biri) — Figma havolasi bilan birga yoki uning o'rniga (`Task.images Json` = `[{name, dataUrl}]`). Rasmlar o'quvchining `dizaynlar/` papkasiga fayl sifatida tushadi va ilovada rasm bo'lib ochiladi (keyin AI baholashda ham ishlatiladi). FIGMA topshiriqda havola YOKI kamida bitta rasm bo'lishi shart.
+- Imtihon yaratishda: shablon, ruxsat etilgan buyruqlar va paketlar (tayyor to'plamlar bilan).
+- Jonli kuzatuvda har o'quvchining joriy kodini faqat o'qish uchun ko'rish ("Kodni ko'rish" — oxirgi sync snapshot).
+
+---
+
 ## 1. Loyiha nima qiladi
 
 O'quv markaz (frontend kurs: HTML/CSS/JS, React) uchun **imtihon tizimi**. Ikki qismdan iborat:
