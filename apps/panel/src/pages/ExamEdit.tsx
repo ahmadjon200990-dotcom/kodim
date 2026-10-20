@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { COMMAND_PRESETS, DEFAULT_ALLOWED_COMMANDS, DEFAULT_ALLOWED_PACKAGES } from "@exam-ide/shared";
 import type { DesignImage, ExamTemplate, TaskType } from "@exam-ide/shared";
 import { api, ApiError } from "../lib/api";
+import { formatBytes, readFolder, readZip, StarterError, type StarterFile } from "../lib/starter";
 import { errorLines } from "../lib/errors";
 import type { ExamFull } from "../lib/types";
 import { PageMessage, PageSkeleton, useToast } from "../components/ui";
@@ -37,13 +38,18 @@ const TEMPLATES: { id: ExamTemplate; runtime?: string }[] = [
 ];
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+/**
+ * Bu versiyada AI baholash o'chiq: mezonlar va AI sozlamalari formadan yashirilgan (kod keyingi versiya uchun qoladi),
+ * baholashni o'qituvchi "Topshirilgan ishlar" bo'limida qiladi.
+ */
+const SHOW_AI = false;
 const emptyTask = (): TaskForm => ({ title: "", type: "EXERCISE", description: "", expectedOutput: "", figmaUrl: "", images: [] });
 
 const readImage = (file: File) =>
   new Promise<DesignImage>((resolve, reject) => {
     const r = new FileReader();
     r.onerror = () => reject(new Error("read"));
-    r.onload = () => resolve({ name: file.name, dataUrl: String(r.result) });
+    r.onload = () => resolve({ name: file.name.slice(-100) || "dizayn.png", dataUrl: String(r.result) });
     r.readAsDataURL(file);
   });
 
@@ -58,8 +64,9 @@ export function ExamEdit() {
   const [template, setTemplate] = useState<ExamTemplate>("EMPTY");
   const [tasks, setTasks] = useState<TaskForm[]>([emptyTask()]);
   const [reference, setReference] = useState<FileForm[]>([]);
+  const [starter, setStarter] = useState<StarterFile[]>([]);
   const [criteria, setCriteria] = useState<CriterionForm[]>([{ name: "", weight: 100, description: "" }]);
-  const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(false);
   const [aiModel, setAiModel] = useState<"DEFAULT" | "STRONG">("DEFAULT");
   const [packages, setPackages] = useState<string[]>([...DEFAULT_ALLOWED_PACKAGES]);
   const [commands, setCommands] = useState<string[]>([...DEFAULT_ALLOWED_COMMANDS]);
@@ -78,7 +85,13 @@ export function ExamEdit() {
         setLoadState("ready");
         setTitle(e.title);
         setDuration(e.durationMin);
-        setTemplate(e.template === "CUSTOM" ? "EMPTY" : e.template);
+        setTemplate(e.template);
+        setStarter(
+          (e.starterFiles ?? []).map((f) => ({
+            ...f,
+            size: f.encoding === "base64" ? Math.floor((f.content.length * 3) / 4) : new Blob([f.content]).size,
+          })),
+        );
         setTasks(
           e.tasks.length
             ? e.tasks.map((t) => ({
@@ -136,23 +149,27 @@ export function ExamEdit() {
     if (!title.trim()) return setError(`${uz.edit.name}: ${uz.common.required}`);
     if (tasks.some((t) => !t.title.trim())) return setError(uz.edit.taskTitleRequired);
     if (tasks.some((t) => t.type === "FIGMA" && !t.figmaUrl.trim() && t.images.length === 0)) return setError(uz.edit.figmaSource);
-    if (weightSum !== 100) return setError(`${uz.edit.sumError}${weightSum})`);
+    if (SHOW_AI && aiEnabled && weightSum !== 100) return setError(`${uz.edit.sumError}${weightSum})`);
+    if (template === "CUSTOM" && starter.length === 0) return setError(uz.edit.starterEmpty);
     const body = {
       title: title.trim(),
       durationMin: Number(durationMin),
       template,
-      aiEnabled,
+      aiEnabled: SHOW_AI ? aiEnabled : false,
       aiModel,
       allowedPackages: packages,
       allowedCommands: commands,
       referenceFiles: reference.filter((f) => f.path.trim()),
-      starterFiles: [],
-      criteria: criteria.map((c) => ({ name: c.name.trim(), weight: Number(c.weight), description: c.description })),
+      starterFiles: template === "CUSTOM" ? starter.map(({ path, content, encoding }) => ({ path, content, ...(encoding && { encoding }) })) : [],
+      // Mezonlar ixtiyoriy — bo'sh nomlilar tashlanadi; AI o'chiq bo'lsa yuborilmaydi.
+      criteria: SHOW_AI ? criteria.filter((c) => c.name.trim()).map((c) => ({ name: c.name.trim(), weight: Number(c.weight), description: c.description })) : [],
       tasks: tasks.map((t) => ({
         title: t.title.trim(),
         type: t.type,
         description: t.description,
-        ...(t.type === "FIGMA" ? { figmaUrl: t.figmaUrl.trim() || undefined, images: t.images } : {}),
+        // Rasmlar HAR QANDAY turda yuboriladi (avval faqat FIGMA'da yuborilardi — rasm saqlanmay qolardi).
+        images: t.images,
+        ...(t.type === "FIGMA" ? { figmaUrl: t.figmaUrl.trim() || undefined } : {}),
         ...(t.expectedOutput.trim() ? { expectedOutput: t.expectedOutput } : {}),
       })),
     };
@@ -212,6 +229,14 @@ export function ExamEdit() {
           </div>
           <div className="hint">{uz.edit.templateHint}</div>
         </div>
+        <StarterFolder
+          files={starter}
+          active={template === "CUSTOM"}
+          onFiles={(files) => {
+            setStarter(files);
+            setTemplate(files.length ? "CUSTOM" : "EMPTY");
+          }}
+        />
       </section>
 
       <section className="card">
@@ -242,16 +267,22 @@ export function ExamEdit() {
               value={t.description}
               onChange={(e) => setTask(i, { description: e.target.value })}
             />
-            {t.type === "EXERCISE" ? (
+            {t.type === "EXERCISE" && (
               <input
                 className="input"
                 placeholder={uz.edit.expectedOutput}
                 value={t.expectedOutput}
                 onChange={(e) => setTask(i, { expectedOutput: e.target.value })}
               />
-            ) : (
-              <FigmaTask task={t} onUrl={(figmaUrl) => setTask(i, { figmaUrl })} onImages={(f) => void addImages(i, f)} onRemove={(j) => setTask(i, { images: t.images.filter((_, k) => k !== j) })} />
             )}
+            {/* Dizayn rasmlari har ikki turda ham (FIGMA'da havola bilan birga yoki o'rniga). */}
+            <FigmaTask
+              task={t}
+              showUrl={t.type === "FIGMA"}
+              onUrl={(figmaUrl) => setTask(i, { figmaUrl })}
+              onImages={(f) => void addImages(i, f)}
+              onRemove={(j) => setTask(i, { images: t.images.filter((_, k) => k !== j) })}
+            />
           </div>
         ))}
       </section>
@@ -277,6 +308,7 @@ export function ExamEdit() {
         ))}
       </section>
 
+      {SHOW_AI && (
       <section className="card">
         <div className="card-head">
           <h2>
@@ -300,6 +332,7 @@ export function ExamEdit() {
           </div>
         ))}
       </section>
+      )}
 
       <section className="card">
         <div className="card-head">
@@ -389,6 +422,7 @@ export function ExamEdit() {
         </div>
       </section>
 
+      {SHOW_AI && (
       <section className="card">
         <div className="card-head">
           <h2>{uz.edit.ai}</h2>
@@ -406,6 +440,7 @@ export function ExamEdit() {
           </label>
         )}
       </section>
+      )}
 
       {error && <div className="form-error">{error}</div>}
       {runtime && <div className="hint">{uz.edit.runtimeNote(runtime)}</div>}
@@ -423,11 +458,13 @@ export function ExamEdit() {
 
 function FigmaTask({
   task,
+  showUrl,
   onUrl,
   onImages,
   onRemove,
 }: {
   task: TaskForm;
+  showUrl: boolean;
   onUrl(url: string): void;
   onImages(files: FileList | File[]): void;
   onRemove(index: number): void;
@@ -438,8 +475,12 @@ function FigmaTask({
 
   return (
     <>
-      <input className="input" placeholder={uz.edit.figmaUrl} value={task.figmaUrl} onChange={(e) => onUrl(e.target.value)} />
-      <div className="hint">{uz.edit.figmaHint}</div>
+      {showUrl && (
+        <>
+          <input className="input" placeholder={uz.edit.figmaUrl} value={task.figmaUrl} onChange={(e) => onUrl(e.target.value)} />
+          <div className="hint">{uz.edit.figmaHint}</div>
+        </>
+      )}
       <div
         className={over ? "dropzone over" : "dropzone"}
         onClick={() => fileRef.current?.click()}
@@ -496,5 +537,89 @@ function FigmaTask({
         </div>
       )}
     </>
+  );
+}
+
+/** Tayyor papka: .zip yuklash yoki papka tanlash (rasmlar, ikonkalar, shriftlar, boshlang'ich fayllar). */
+function StarterFolder({ files, active, onFiles }: { files: StarterFile[]; active: boolean; onFiles(files: StarterFile[]): void }) {
+  const toast = useToast();
+  const zipRef = useRef<HTMLInputElement>(null);
+  const dirRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const total = files.reduce((s, f) => s + f.size, 0);
+
+  const load = async (fn: () => Promise<StarterFile[]>) => {
+    setBusy(true);
+    try {
+      const list = await fn();
+      onFiles(list);
+      toast.success(uz.edit.starterLoaded(list.length));
+    } catch (e) {
+      toast.error(uz.edit.starterFailed, e instanceof StarterError ? e.message : uz.common.error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={active ? "starter starter-on" : "starter"}>
+      <div className="card-head">
+        <div>
+          <div className="template-name">{uz.edit.starterTitle}</div>
+          <div className="template-desc">{uz.edit.starterHint}</div>
+        </div>
+        <div className="row-actions">
+          <button className="btn btn-sm" disabled={busy} onClick={() => zipRef.current?.click()}>
+            ⤒ {uz.edit.starterZip}
+          </button>
+          <button className="btn btn-sm" disabled={busy} onClick={() => dirRef.current?.click()}>
+            📁 {uz.edit.starterDir}
+          </button>
+          {files.length > 0 && (
+            <button className="btn btn-sm btn-danger" onClick={() => onFiles([])}>
+              {uz.edit.starterClear}
+            </button>
+          )}
+        </div>
+      </div>
+      <input
+        ref={zipRef}
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) void load(() => readZip(f));
+        }}
+      />
+      <input
+        ref={dirRef}
+        type="file"
+        multiple
+        hidden
+        {...{ webkitdirectory: "", directory: "" }}
+        onChange={(e) => {
+          const list = e.target.files ? Array.from(e.target.files) : [];
+          e.target.value = "";
+          if (list.length) void load(() => readFolder(list));
+        }}
+      />
+      {files.length > 0 && (
+        <>
+          <div className="small muted">{uz.edit.starterSummary(files.length, formatBytes(total))}</div>
+          <div className="starter-files">
+            {files.slice(0, 200).map((f) => (
+              <div key={f.path} className="starter-file">
+                <span className="mono">{f.path}</span>
+                <span className="muted small">
+                  {f.encoding ? uz.edit.binary : ""} {formatBytes(f.size)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }

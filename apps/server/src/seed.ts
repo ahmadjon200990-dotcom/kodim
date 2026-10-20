@@ -20,6 +20,7 @@ const demoExam = ExamInput.parse({
   title: DEMO_EXAM_TITLE,
   durationMin: 60,
   template: "HTML",
+  aiEnabled: false,
   tasks: [
     {
       title: "Massivdagi juft sonlar yig'indisi",

@@ -25,6 +25,8 @@ interface Menu {
 
 const isImage = (p: string) => /\.(png|jpe?g|gif|webp|svg|ico|bmp)$/i.test(p);
 const isMarkdown = (p: string) => /\.md$/i.test(p);
+/** Matn sifatida ochib bo'lmaydigan binar fayllar (shrift, arxiv, audio/video). */
+const isBinary = (p: string) => /\.(woff2?|ttf|otf|eot|pdf|zip|rar|7z|mp3|mp4|wav|ogg|webm|mov|exe|dll)$/i.test(p);
 
 export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, registerEditor }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -35,7 +37,8 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
 
   const showImage = path !== null && isImage(path);
   const showMarkdown = path !== null && isMarkdown(path) && isReadonlyPath(path) && markdownPreview;
-  const showMonaco = path !== null && !showImage && !showMarkdown;
+  const showBinary = path !== null && isBinary(path);
+  const showMonaco = path !== null && !showImage && !showMarkdown && !showBinary;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -158,6 +161,12 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
       <div ref={hostRef} className="editor-monaco" style={{ visibility: showMonaco ? "visible" : "hidden" }} />
       {showImage && path && <ImageView path={path} />}
       {showMarkdown && path && <MarkdownView path={path} />}
+      {showBinary && (
+        <div className="editor-welcome">
+          <div>{uz.editor.binary}</div>
+          <div className="muted small">{path}</div>
+        </div>
+      )}
       {!path && (
         <div className="editor-welcome">
           <div className="editor-welcome-logo">&lt;/&gt;</div>

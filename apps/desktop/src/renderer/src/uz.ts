@@ -121,6 +121,7 @@ export const uz = {
     selectAll: "Hammasini belgilash",
     loading: "Yuklanmoqda…",
     imageFailed: "Rasmni ochib bo'lmadi",
+    binary: "Bu binar fayl (masalan shrift) — editorda ochib bo'lmaydi, lekin loyihada ishlatish mumkin.",
     viewPreview: "Ko'rinish",
     zoomIn: "Kattalashtirish",
     zoomOut: "Kichraytirish",

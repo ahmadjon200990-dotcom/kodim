@@ -46,11 +46,10 @@ function questionsMarkdown(exam: Exam, tasks: Task[]): string {
   tasks.forEach((task, i) => {
     parts.push(`## ${i + 1}. ${task.title}`, "");
     if (task.description.trim()) parts.push(task.description.trim(), "");
-    if (task.type === "FIGMA") {
-      const imgs = ImageList.parse(task.images);
-      if (task.figmaUrl) parts.push(`Dizayn (Figma): \`${designPath(task, i)}\``, "");
-      if (imgs.length) parts.push(`Dizayn rasmlari: \`${designDir(task, i)}/\` papkasida`, "");
-    }
+    // Dizayn rasmlari har qanday topshiriq turida bo'lishi mumkin; Figma havolasi — faqat FIGMA turida.
+    const imgs = ImageList.parse(task.images);
+    if (task.type === "FIGMA" && task.figmaUrl) parts.push(`Dizayn (Figma): \`${designPath(task, i)}\``, "");
+    if (imgs.length) parts.push(`Dizayn rasmlari: \`${designDir(task, i)}/\` papkasida`, "");
   });
   return parts.join("\n");
 }
@@ -63,8 +62,7 @@ export function buildInitialFiles(exam: Exam, tasks: Task[]): FileEntry[] {
 
   files.push({ path: QUESTIONS_FILE, content: questionsMarkdown(exam, ordered) });
   ordered.forEach((task, i) => {
-    if (task.type !== "FIGMA") return;
-    if (task.figmaUrl) {
+    if (task.type === "FIGMA" && task.figmaUrl) {
       files.push({ path: designPath(task, i), content: `# ${task.title}\n\nFigma: ${task.figmaUrl}\n` });
     }
     const imgs = ImageList.parse(task.images);

@@ -42,7 +42,7 @@ export interface ExamFull {
   startedAt: string | null;
   endsAt: string | null;
   template: ExamTemplate;
-  starterFiles: { path: string; content: string }[];
+  starterFiles: { path: string; content: string; encoding?: "base64" }[];
   referenceFiles: { path: string; content: string }[];
   criteria: { name: string; weight: number; description: string }[];
   aiEnabled: boolean;

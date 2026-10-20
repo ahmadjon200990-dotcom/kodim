@@ -101,7 +101,8 @@ const filePath = z
 
 export const FileEntry = z.object({
   path: filePath,
-  content: z.string().max(6_000_000),
+  /** Matn yoki base64 (binar ~6 MB gacha → base64 ~8 MB). */
+  content: z.string().max(8_500_000),
   /** "base64" — binar fayl (dizayn rasmi). Yo'q bo'lsa matn (utf8). */
   encoding: z.enum(["base64"]).optional(),
 });
@@ -163,8 +164,10 @@ export const ExamInput = z.object({
   template: ExamTemplate,
   starterFiles: FileList.default([]),
   referenceFiles: FileList.default([]),
-  criteria: CriteriaList,
-  aiEnabled: z.boolean().default(true),
+  /** Bu versiyada ixtiyoriy (AI baholash o'chiq): bo'sh ro'yxat yoki yig'indisi 100 bo'lgan mezonlar. */
+  criteria: z.union([z.array(Criterion).length(0), CriteriaList]).default([]),
+  /** Bu versiyada AI baholash o'chiq — baholashni o'qituvchi qiladi. Kod keyingi versiya uchun qoladi. */
+  aiEnabled: z.boolean().default(false),
   aiModel: AiModelTier.default("DEFAULT"),
   allowedPackages: z.array(z.string().trim().min(1).max(214)).max(200).default([...DEFAULT_ALLOWED_PACKAGES]),
   /** Terminalda ruxsat etilgan buyruq naqshlari (CLAUDE.md 3). */

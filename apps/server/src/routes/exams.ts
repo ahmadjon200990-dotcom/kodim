@@ -33,7 +33,7 @@ function taskData(input: ExamInput) {
     description: t.description,
     type: t.type,
     figmaUrl: t.type === "FIGMA" ? (t.figmaUrl ?? null) : null,
-    images: t.type === "FIGMA" ? t.images : [],
+    images: t.images,
     expectedOutput: t.expectedOutput ?? null,
   }));
 }
