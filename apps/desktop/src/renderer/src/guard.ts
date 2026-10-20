@@ -46,15 +46,44 @@ async function onPaste(e: ClipboardEvent): Promise<void> {
   if (text && document.activeElement === field) document.execCommand("insertText", false, text);
 }
 
+/** Ilova ichidagi sudrash (fayllar paneli) — bu MIME bilan belgilanadi va bloklanmaydi. */
+export const INTERNAL_DRAG_TYPE = "application/x-kodim-path";
+
+function isInternalDrag(e: DragEvent): boolean {
+  const types = e.dataTransfer?.types;
+  return types ? Array.from(types).includes(INTERNAL_DRAG_TYPE) : false;
+}
+
 export function installGuards(): void {
   const block = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
   };
-  for (const type of ["dragstart", "dragenter", "dragover", "drop"] as const) {
-    document.addEventListener(type, block, true);
+  // dragstart: faqat fayllar panelidagi elementlardan ruxsat (tashqaridan matn tanlab sudrashni to'xtatamiz).
+  document.addEventListener(
+    "dragstart",
+    (e) => {
+      if (e.target instanceof Element && e.target.closest("[data-kodim-draggable]")) return;
+      block(e);
+    },
+    true,
+  );
+  for (const type of ["dragenter", "dragover"] as const) {
+    document.addEventListener(type, (e) => (isInternalDrag(e) ? undefined : block(e)), true);
   }
+  // Tashqaridan fayl/matn sudrab tashlash — bloklanadi va o'qituvchiga xabar. Ichki ko'chirish o'tadi.
+  document.addEventListener(
+    "drop",
+    (e) => {
+      if (isInternalDrag(e)) return;
+      block(e);
+      const files = e.dataTransfer?.files.length ?? 0;
+      const text = e.dataTransfer?.getData("text")?.length ?? 0;
+      if (files > 0 || text > 0) window.kodim.reportEvent("DROP_BLOCKED", { files, text });
+    },
+    true,
+  );
   document.addEventListener("copy", onCopyOrCut(false), true);
   document.addEventListener("cut", onCopyOrCut(true), true);
   document.addEventListener("paste", (e) => void onPaste(e), true);

@@ -55,4 +55,11 @@ export const store = {
     d.lastName = session.name;
     save();
   },
+  clearSession(code: string): void {
+    const d = get();
+    if (d.sessions[code]) {
+      delete d.sessions[code];
+      save();
+    }
+  },
 };

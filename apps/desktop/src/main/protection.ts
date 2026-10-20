@@ -48,12 +48,16 @@ export function hardenDefaultSession(): void {
 }
 
 /** Asosiy oyna: screenshot/yozuvdan himoya, tashqi navigatsiya va DevTools tugmalari bloki. */
-export function hardenWindow(win: BrowserWindow, isAppUrl: (url: string) => boolean): void {
+export function hardenWindow(win: BrowserWindow, isAppUrl: (url: string) => boolean, onBlockedKey?: (key: string) => void): void {
   win.setContentProtection(true);
-  hardenContents(win.webContents, isAppUrl);
+  hardenContents(win.webContents, isAppUrl, onBlockedKey);
 }
 
-export function hardenContents(contents: WebContents, isAllowedUrl: (url: string) => boolean): void {
+export function hardenContents(
+  contents: WebContents,
+  isAllowedUrl: (url: string) => boolean,
+  onBlockedKey?: (key: string) => void,
+): void {
   contents.on("will-navigate", (e, url) => {
     if (!isAllowedUrl(url)) e.preventDefault();
   });
@@ -61,7 +65,13 @@ export function hardenContents(contents: WebContents, isAllowedUrl: (url: string
     if (!isAllowedUrl(url)) e.preventDefault();
   });
   contents.on("before-input-event", (e, input) => {
-    if (input.type === "keyDown" && isBlockedShortcut(input)) e.preventDefault();
+    if (input.type === "keyDown" && isBlockedShortcut(input)) {
+      e.preventDefault();
+      if (onBlockedKey) {
+        const combo = [input.control && "Ctrl", input.shift && "Shift", input.alt && "Alt", input.key].filter(Boolean).join("+");
+        onBlockedKey(combo);
+      }
+    }
   });
   if (app.isPackaged) {
     contents.on("devtools-opened", () => contents.closeDevTools());

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BRAND } from "@exam-ide/shared";
 import type { ClientState } from "../../../common/api";
 import { useDialog } from "../Dialog";
@@ -35,6 +35,26 @@ export function TopBar({ state }: { state: ClientState }) {
   const dialog = useDialog();
   const left = useRemaining(state.endsAt, state.serverOffsetMs);
   const [busy, setBusy] = useState(false);
+  const [warn, setWarn] = useState<string | null>(null);
+  const shown = useRef({ five: false, one: false });
+
+  // Vaqt tugashiga 5 va 1 daqiqa qolganda bir marta ogohlantirish.
+  useEffect(() => {
+    if (left === null) return;
+    if (!shown.current.one && left <= 60_000) {
+      shown.current.one = true;
+      setWarn(uz.warn.one);
+    } else if (!shown.current.five && left <= 5 * 60_000) {
+      shown.current.five = true;
+      setWarn(uz.warn.five);
+    }
+  }, [left]);
+
+  useEffect(() => {
+    if (!warn) return;
+    const t = window.setTimeout(() => setWarn(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [warn]);
 
   const submit = async () => {
     const yes = await dialog.confirm(uz.top.confirmTitle, uz.top.confirmText, uz.top.confirmYes, true);
@@ -48,6 +68,7 @@ export function TopBar({ state }: { state: ClientState }) {
 
   return (
     <header className="topbar">
+      {warn && <div className={`time-banner ${left !== null && left <= 60_000 ? "time-banner-red" : ""}`}>{warn}</div>}
       <div className="topbar-left">
         <span className="topbar-brand">{BRAND.name}</span>
         <span className="topbar-sep" />

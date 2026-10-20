@@ -13,4 +13,6 @@ export const uz = {
   tooManyTerminals: "Terminallar soni 5 tadan oshmasligi kerak",
   terminalFailed: "Terminalni ochib bo'lmadi",
   urlNotAllowed: "Bu manzil ruxsat etilmagan. Faqat localhost va Figma ochiladi",
+  packageBlocked: (pkgs: string[]) =>
+    `Bu paket(lar) imtihonda ruxsat etilmagan: ${pkgs.join(", ")}. O'rnatish bloklandi.`,
 } as const;

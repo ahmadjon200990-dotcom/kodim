@@ -34,7 +34,7 @@ const send = (channel: string, ...args: unknown[]) => mainWindow?.webContents.se
 const terminals = new Terminals({
   data: (id, data) => send(IPC.termData, id, data),
   exit: (id, code) => send(IPC.termExit, id, code),
-  command: (info) => monitor.onCommand(info),
+  busy: (id, busy) => send(IPC.termBusy, id, busy),
 });
 const live = new LiveServer();
 const monitor = new Monitor();
@@ -74,6 +74,7 @@ const browser = new ExamBrowser(
   () => mainWindow,
   (state) => send(IPC.browserState, state),
   (details) => session.reportEvent("PASTE_BLOCKED", details),
+  (url) => session.reportEvent("BROWSER_BLOCKED", { url: url.slice(0, 200) }),
 );
 
 function registerAppProtocol(): void {
@@ -106,7 +107,8 @@ function createWindow(): void {
     },
   });
   mainWindow = win;
-  hardenWindow(win, isAppUrl);
+  // DevTools/qayta yuklash tugmalari bosilsa — o'qituvchiga ogohlantirish (tugma baribir bloklangan).
+  hardenWindow(win, isAppUrl, (key) => session.reportEvent("DEVTOOLS_ATTEMPT", { key }));
   win.once("ready-to-show", () => {
     win.maximize();
     win.show();
@@ -119,7 +121,7 @@ function createWindow(): void {
   else void win.loadURL("app://kodim/index.html");
 }
 
-registerIpc({ session, terminals, browser, live, getRenderer: () => mainWindow?.webContents ?? null });
+registerIpc({ session, terminals, browser, live, monitor, getRenderer: () => mainWindow?.webContents ?? null });
 
 void app.whenReady().then(() => {
   hardenDefaultSession();

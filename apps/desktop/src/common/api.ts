@@ -4,6 +4,13 @@ import type { AckResult, ExamPublic } from "@exam-ide/shared";
 
 export type Screen = "login" | "lobby" | "workspace" | "submitted";
 
+/** Kompyuterda mavjud dasturlash muhitlari (Status Bar'da ko'rinadi). */
+export interface RuntimeInfo {
+  node: boolean;
+  npm: boolean;
+  python: boolean;
+}
+
 export interface ClientState {
   screen: Screen;
   /** Server bilan socket ulanishi bormi. */
@@ -19,6 +26,8 @@ export interface ClientState {
   locked: boolean;
   /** Ish papkasi qayta yozilganda oshadi — renderer fayllar daraxtini qayta yuklaydi. */
   workspaceVersion: number;
+  /** Kompyuterdagi muhitlar. */
+  runtime: RuntimeInfo;
 }
 
 export interface FsEntry {
@@ -27,6 +36,8 @@ export interface FsEntry {
   path: string;
   type: "file" | "dir";
   readonly: boolean;
+  /** Rasm fayli (png/jpg/...) — editorda rasm sifatida ko'rsatiladi. */
+  image?: boolean;
 }
 
 export type Result = AckResult<object>;
@@ -54,6 +65,8 @@ export interface KodimApi {
   onDiskChange(listener: (path: string) => void): () => void;
   /** Editorda katta qo'shimcha (ichki paste emas) — LARGE_INSERT. */
   reportLargeInsert(chars: number): void;
+  /** Renderer aniqlagan qoidabuzarlik (screenshot tugmasi, DevTools tugmasi, tashqariga nusxalash). */
+  reportEvent(type: string, details?: Record<string, unknown>): void;
   join(code: string, name: string): Promise<Result>;
   submit(): Promise<Result>;
   /** Ichki clipboard (tizim clipboard'i ishlatilmaydi). */
@@ -64,11 +77,18 @@ export interface KodimApi {
   };
   terminal: {
     create(cols: number, rows: number): Promise<AckResult<{ id: number }>>;
-    write(id: number, data: string): void;
+    /** Buyruq qatorini yuboradi: bo'sh (idle) bo'lsa ruxsat tekshiriladi, aks holda jarayon kiritmasi (raw). */
+    submit(id: number, line: string): Promise<TerminalSubmit>;
+    /** Ctrl+C — ishlayotgan jarayonni to'xtatish. */
+    interrupt(id: number): void;
+    /** Ish papkasidagi fayl/papka nomlari — Tab bilan to'ldirish uchun. */
+    complete(id: number, prefix: string): Promise<string[]>;
     resize(id: number, cols: number, rows: number): void;
     kill(id: number): void;
     onData(listener: (id: number, data: string) => void): () => void;
     onExit(listener: (id: number, code: number) => void): () => void;
+    /** Terminal jarayon ishlayaptimi (busy) — kiritma raw yuboriladi. */
+    onBusy(listener: (id: number, busy: boolean) => void): () => void;
   };
   browser: {
     /** Brauzer paneli joyi (CSS px); `null` — yashirish. */
@@ -84,30 +104,43 @@ export interface KodimApi {
   fs: {
     list(dir: string): Promise<FsEntry[]>;
     read(path: string): Promise<string>;
+    /** Rasm fayli data: URL sifatida (editorda ko'rsatish uchun). */
+    readImage(path: string): Promise<string>;
     write(path: string, content: string): Promise<Result>;
     createFile(path: string): Promise<Result>;
     createDir(path: string): Promise<Result>;
     rename(from: string, to: string): Promise<Result>;
+    /** Ilova ichida sudrab ko'chirish: `from` ni `toDir` papkasiga. */
+    move(from: string, toDir: string): Promise<Result>;
     remove(path: string): Promise<Result>;
   };
 }
+
+/** terminal.submit natijasi — renderer kiritma qatorini shunga qarab tozalaydi yoki xato ko'rsatadi. */
+export type TerminalSubmit =
+  | { ok: true; forwarded: boolean }
+  | { ok: false; error: string };
 
 export const IPC = {
   getState: "state:get",
   state: "state:changed",
   diskChange: "fs:disk-change",
   reportLargeInsert: "monitor:large-insert",
+  reportEvent: "monitor:event",
   lastName: "store:last-name",
   join: "session:join",
   submit: "session:submit",
   clipboardWrite: "clipboard:write",
   clipboardPaste: "clipboard:paste",
   termCreate: "terminal:create",
-  termWrite: "terminal:write",
+  termSubmit: "terminal:submit",
+  termInterrupt: "terminal:interrupt",
+  termComplete: "terminal:complete",
   termResize: "terminal:resize",
   termKill: "terminal:kill",
   termData: "terminal:data",
   termExit: "terminal:exit",
+  termBusy: "terminal:busy",
   browserBounds: "browser:bounds",
   browserNavigate: "browser:navigate",
   browserBack: "browser:back",
@@ -117,9 +150,11 @@ export const IPC = {
   browserState: "browser:state",
   fsList: "fs:list",
   fsRead: "fs:read",
+  fsReadImage: "fs:read-image",
   fsWrite: "fs:write",
   fsCreateFile: "fs:create-file",
   fsCreateDir: "fs:create-dir",
   fsRename: "fs:rename",
+  fsMove: "fs:move",
   fsRemove: "fs:remove",
 } as const;

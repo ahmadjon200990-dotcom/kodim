@@ -12,7 +12,7 @@ interface WatcherDeps {
   session: ExamSession;
   workspace: Workspace;
   /** readonly fayl buzilsa — asl tarkibni qaytaradi (server bergan). */
-  readonlyContent(rel: string): string | null;
+  readonlyContent(rel: string): { content: string; encoding?: "base64" } | null;
   /** Ochiq faylni renderer'da qayta yuklash uchun. */
   onDiskChange(rel: string): void;
 }
@@ -60,12 +60,17 @@ export class Watcher {
     if (isReadonlyPath(rel)) {
       const original = deps.readonlyContent(rel);
       let tampered = removed;
-      if (!removed) {
-        const content = await readFile(abs, "utf8").catch(() => null);
-        tampered = content !== null && original !== null && content !== original;
+      if (!removed && original) {
+        if (original.encoding === "base64") {
+          const buf = await readFile(abs).catch(() => null);
+          tampered = buf !== null && buf.toString("base64") !== original.content;
+        } else {
+          const content = await readFile(abs, "utf8").catch(() => null);
+          tampered = content !== null && content !== original.content;
+        }
       }
-      if (tampered && original !== null) {
-        await deps.workspace.restoreReadonly(rel, original);
+      if (tampered && original) {
+        await deps.workspace.restoreReadonly(rel, original.content, original.encoding);
         deps.onDiskChange(rel);
         this.report("READONLY_TAMPER", { path: rel, removed });
       }

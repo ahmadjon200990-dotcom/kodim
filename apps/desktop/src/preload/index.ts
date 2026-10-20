@@ -18,6 +18,7 @@ const api: KodimApi = {
   getLastName: () => ipcRenderer.invoke(IPC.lastName),
   onDiskChange: (listener) => subscribe<[string]>(IPC.diskChange, listener),
   reportLargeInsert: (chars) => ipcRenderer.send(IPC.reportLargeInsert, chars),
+  reportEvent: (type, details) => ipcRenderer.send(IPC.reportEvent, type, details ?? {}),
   join: (code, name) => ipcRenderer.invoke(IPC.join, code, name),
   submit: () => ipcRenderer.invoke(IPC.submit),
   clipboard: {
@@ -26,11 +27,14 @@ const api: KodimApi = {
   },
   terminal: {
     create: (cols, rows) => ipcRenderer.invoke(IPC.termCreate, cols, rows),
-    write: (id, data) => ipcRenderer.send(IPC.termWrite, id, data),
+    submit: (id, line) => ipcRenderer.invoke(IPC.termSubmit, id, line),
+    interrupt: (id) => ipcRenderer.send(IPC.termInterrupt, id),
+    complete: (id, prefix) => ipcRenderer.invoke(IPC.termComplete, id, prefix),
     resize: (id, cols, rows) => ipcRenderer.send(IPC.termResize, id, cols, rows),
     kill: (id) => ipcRenderer.send(IPC.termKill, id),
     onData: (listener) => subscribe<[number, string]>(IPC.termData, listener),
     onExit: (listener) => subscribe<[number, number]>(IPC.termExit, listener),
+    onBusy: (listener) => subscribe<[number, boolean]>(IPC.termBusy, listener),
   },
   browser: {
     setBounds: (rect) => ipcRenderer.send(IPC.browserBounds, rect),
@@ -44,10 +48,12 @@ const api: KodimApi = {
   fs: {
     list: (dir) => ipcRenderer.invoke(IPC.fsList, dir),
     read: (path) => ipcRenderer.invoke(IPC.fsRead, path),
+    readImage: (path) => ipcRenderer.invoke(IPC.fsReadImage, path),
     write: (path, content) => ipcRenderer.invoke(IPC.fsWrite, path, content),
     createFile: (path) => ipcRenderer.invoke(IPC.fsCreateFile, path),
     createDir: (path) => ipcRenderer.invoke(IPC.fsCreateDir, path),
     rename: (from, to) => ipcRenderer.invoke(IPC.fsRename, from, to),
+    move: (from, toDir) => ipcRenderer.invoke(IPC.fsMove, from, toDir),
     remove: (path) => ipcRenderer.invoke(IPC.fsRemove, path),
   },
 };

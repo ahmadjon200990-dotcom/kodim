@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
@@ -8,15 +8,18 @@ import { uz } from "../uz";
 interface Tab {
   id: number;
   exited: boolean;
+  busy: boolean;
 }
 
 interface Instance {
   term: Terminal;
   fit: FitAddon;
+  history: string[];
+  historyIndex: number;
 }
 
 const THEME = {
-  background: "#1f1f1f",
+  background: "#1e1e1e",
   foreground: "#cccccc",
   cursor: "#aeafad",
   selectionBackground: "#264f78",
@@ -38,41 +41,18 @@ const THEME = {
   brightWhite: "#e5e5e5",
 };
 
-/** Terminal clipboard'i ham faqat ilova ichida (CLAUDE.md 5.4). */
-function bindClipboard(term: Terminal): void {
-  term.attachCustomKeyEventHandler((e) => {
-    if (e.type !== "keydown") return true;
-    const ctrl = e.ctrlKey || e.metaKey;
-    const key = e.key.toLowerCase();
-    const copy = (ctrl && key === "c" && (e.shiftKey || term.hasSelection())) || (ctrl && key === "insert");
-    const paste = (ctrl && key === "v") || (e.shiftKey && key === "insert");
-    if (copy) {
-      e.preventDefault();
-      const text = term.getSelection();
-      if (text) void window.kodim.clipboard.write(text);
-      term.clearSelection();
-      return false;
-    }
-    if (paste) {
-      e.preventDefault();
-      void window.kodim.clipboard.paste("terminal").then((text) => {
-        if (text) term.paste(text);
-      });
-      return false;
-    }
-    return true;
-  });
-}
-
+/** Terminal: xterm faqat CHIQISHni ko'rsatadi; kiritma pastdagi input orqali (ruxsat tekshiriladi). */
 export function TerminalPanel({ locked }: { locked: boolean }) {
   const dialog = useDialog();
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [current, setCurrent] = useState<number | null>(null);
+  const [value, setValue] = useState("");
   const instances = useRef(new Map<number, Instance>());
-  /** Terminal DOM'ga ulanguncha kelgan chiqish. */
   const pending = useRef(new Map<number, string[]>());
   const bodyRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const creating = useRef(false);
+  const focusOnMount = useRef(new Set<number>());
 
   const fitCurrent = useCallback(() => {
     if (current === null) return;
@@ -86,22 +66,22 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
     }
   }, [current]);
 
-  /** Faqat foydalanuvchi ochgan terminal fokus oladi (avtomatik ochilgani editordan fokusni tortmasin). */
-  const focusOnMount = useRef(new Set<number>());
-
-  const create = useCallback(async (focus: boolean) => {
-    if (creating.current) return;
-    creating.current = true;
-    const res = await window.kodim.terminal.create(100, 12);
-    creating.current = false;
-    if (!res.ok) {
-      await dialog.alert(res.error);
-      return;
-    }
-    if (focus) focusOnMount.current.add(res.id);
-    setTabs((t) => [...t, { id: res.id, exited: false }]);
-    setCurrent(res.id);
-  }, [dialog]);
+  const create = useCallback(
+    async (focus: boolean) => {
+      if (creating.current) return;
+      creating.current = true;
+      const res = await window.kodim.terminal.create(100, 12);
+      creating.current = false;
+      if (!res.ok) {
+        await dialog.alert(res.error);
+        return;
+      }
+      if (focus) focusOnMount.current.add(res.id);
+      setTabs((t) => [...t, { id: res.id, exited: false, busy: false }]);
+      setCurrent(res.id);
+    },
+    [dialog],
+  );
 
   const close = (id: number) => {
     window.kodim.terminal.kill(id);
@@ -121,23 +101,21 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
       theme: THEME,
       fontFamily: "Consolas, 'Courier New', monospace",
       fontSize: 13,
-      cursorBlink: true,
+      cursorBlink: false,
+      disableStdin: true,
       scrollback: 5000,
-      disableStdin: locked,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
-    bindClipboard(term);
-    term.onData((data) => window.kodim.terminal.write(id, data));
-    instances.current.set(id, { term, fit });
+    instances.current.set(id, { term, fit, history: [], historyIndex: 0 });
     for (const chunk of pending.current.get(id) ?? []) term.write(chunk);
     pending.current.delete(id);
     requestAnimationFrame(() => {
       try {
         fit.fit();
         window.kodim.terminal.resize(id, term.cols, term.rows);
-        if (focusOnMount.current.delete(id)) term.focus();
+        if (focusOnMount.current.delete(id)) inputRef.current?.focus();
       } catch {
         // e'tiborsiz
       }
@@ -154,23 +132,20 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
       instances.current.get(id)?.term.write(`\r\n\x1b[90m${uz.terminal.exited}\x1b[0m\r\n`);
       setTabs((t) => t.map((x) => (x.id === id ? { ...x, exited: true } : x)));
     });
+    const offBusy = window.kodim.terminal.onBusy((id, busy) => setTabs((t) => t.map((x) => (x.id === id ? { ...x, busy } : x))));
     return () => {
       offData();
       offExit();
+      offBusy();
     };
   }, []);
 
-  // Birinchi terminal avtomatik ochiladi (bir marta).
   const autoStarted = useRef(false);
   useEffect(() => {
     if (autoStarted.current || locked) return;
     autoStarted.current = true;
     void create(false);
   }, [create, locked]);
-
-  useEffect(() => {
-    for (const { term } of instances.current.values()) term.options.disableStdin = locked;
-  }, [locked]);
 
   useEffect(() => {
     const el = bodyRef.current;
@@ -195,21 +170,76 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
     [],
   );
 
+  const submit = async () => {
+    if (current === null || locked) return;
+    const line = value;
+    setValue("");
+    const inst = instances.current.get(current);
+    if (inst && line.trim()) {
+      inst.history.push(line);
+      if (inst.history.length > 200) inst.history.shift();
+      inst.historyIndex = inst.history.length;
+    }
+    await window.kodim.terminal.submit(current, line);
+    inst?.term.scrollToBottom();
+  };
+
+  const complete = async () => {
+    if (current === null) return;
+    const matches = await window.kodim.terminal.complete(current, value.split(/\s+/).pop() ?? "");
+    if (matches.length === 0) return;
+    const head = value.slice(0, value.length - (value.split(/\s+/).pop() ?? "").length);
+    if (matches.length === 1) {
+      setValue(head + matches[0]);
+    } else {
+      // Umumiy boshlang'ich qismgacha to'ldirish.
+      let prefix = matches[0]!;
+      for (const m of matches) while (!m.startsWith(prefix)) prefix = prefix.slice(0, -1);
+      setValue(head + prefix);
+      instances.current.get(current)?.term.write(`\r\n\x1b[90m${matches.join("  ")}\x1b[0m\r\n`);
+    }
+  };
+
+  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (current === null) return;
+    const inst = instances.current.get(current);
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void submit();
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      void complete();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+      // Tanlov bo'lsa nusxalash guard orqali ketadi; bo'lmasa jarayonni to'xtatamiz.
+      if (!window.getSelection()?.toString()) {
+        e.preventDefault();
+        window.kodim.terminal.interrupt(current);
+        setValue("");
+      }
+    } else if (e.key === "ArrowUp" && inst) {
+      e.preventDefault();
+      inst.historyIndex = Math.max(0, inst.historyIndex - 1);
+      setValue(inst.history[inst.historyIndex] ?? "");
+    } else if (e.key === "ArrowDown" && inst) {
+      e.preventDefault();
+      inst.historyIndex = Math.min(inst.history.length, inst.historyIndex + 1);
+      setValue(inst.history[inst.historyIndex] ?? "");
+    }
+  };
+
+  const busy = tabs.find((t) => t.id === current)?.busy ?? false;
+
   return (
     <div className="bottom-panel">
-      <div className="pane-header">
+      <div className="panel-tabbar">
         <div className="term-tabs">
-          <span>{uz.panel.terminal}</span>
           {tabs.map((t, i) => (
-            <div
-              key={t.id}
-              className={t.id === current ? "term-tab term-tab-active" : "term-tab"}
-              onClick={() => setCurrent(t.id)}
-            >
-              {`${i + 1}: powershell`}
+            <div key={t.id} className={t.id === current ? "term-tab term-tab-active" : "term-tab"} onClick={() => setCurrent(t.id)}>
+              <span className="term-tab-icon">▶</span>
+              {`powershell ${i + 1}`}
               {t.exited && " ✕"}
               <button
-                className="tab-close term-close"
+                className="term-close"
                 title={uz.terminal.close}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -221,23 +251,35 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
             </div>
           ))}
         </div>
-        <div className="pane-actions">
+        <div className="panel-actions">
+          <span className="term-hint">{uz.terminal.hint}</span>
           <button className="icon-btn" title={uz.terminal.new} disabled={locked} onClick={() => void create(true)}>
             ＋
           </button>
         </div>
       </div>
-      <div className="term-body" ref={bodyRef}>
+      <div className="term-body" ref={bodyRef} onClick={() => inputRef.current?.focus()}>
         {tabs.map((t) => (
-          <div
-            key={t.id}
-            className="term-host"
-            style={{ display: t.id === current ? "block" : "none" }}
-            ref={(el) => mount(t.id, el)}
-          />
+          <div key={t.id} className="term-host" style={{ display: t.id === current ? "block" : "none" }} ref={(el) => mount(t.id, el)} />
         ))}
         {tabs.length === 0 && <div className="muted small term-empty">{locked ? uz.editor.locked : uz.terminal.none}</div>}
       </div>
+      {tabs.length > 0 && current !== null && (
+        <div className="term-inputbar">
+          <span className="term-prompt">{busy ? "…" : "›"}</span>
+          <input
+            ref={inputRef}
+            className="term-input"
+            spellCheck={false}
+            autoComplete="off"
+            disabled={locked}
+            placeholder={locked ? uz.editor.locked : busy ? uz.terminal.placeholderBusy : uz.terminal.placeholder}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={onKey}
+          />
+        </div>
+      )}
     </div>
   );
 }

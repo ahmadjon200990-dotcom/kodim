@@ -11,6 +11,24 @@ export class WorkspaceError extends Error {}
 
 const WINDOWS_RESERVED = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
 
+const IMAGE_EXT: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  ico: "image/x-icon",
+  bmp: "image/bmp",
+};
+
+function imageMime(path: string): string | null {
+  const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+  return IMAGE_EXT[ext] ?? null;
+}
+
+export const isImagePath = (path: string): boolean => imageMime(path) !== null;
+
 /** Ish papkasiga nisbatan yo'l: `/` bilan, `..` siz, Windows uchun yaroqli nomlar. */
 function checkRelPath(rel: string): string {
   const parts = rel.split("/");
@@ -94,8 +112,13 @@ export class Workspace {
       await mkdir(dirname(abs), { recursive: true });
       // Faqat-o'qish fayllari: yozishdan oldin atributni olib, keyin qaytaramiz (Windows'da read-only atribut).
       if (readonly) await chmod(abs, 0o666).catch(() => undefined);
-      this.mark(f.path, f.content);
-      await writeFile(abs, f.content, "utf8");
+      // Binar (dizayn rasmi) base64 dan yoziladi; matn utf8.
+      if (f.encoding === "base64") {
+        await writeFile(abs, Buffer.from(f.content, "base64"));
+      } else {
+        this.mark(f.path, f.content);
+        await writeFile(abs, f.content, "utf8");
+      }
       if (readonly) await chmod(abs, 0o444);
     }
   }
@@ -107,13 +130,38 @@ export class Workspace {
       .filter((e) => e.isFile() || e.isDirectory())
       .map((e): FsEntry => {
         const path = this.toRel(join(absDir, e.name));
-        return { name: e.name, path, type: e.isDirectory() ? "dir" : "file", readonly: isReadonlyPath(path) };
+        return {
+          name: e.name,
+          path,
+          type: e.isDirectory() ? "dir" : "file",
+          readonly: isReadonlyPath(path),
+          ...(e.isFile() && isImagePath(path) ? { image: true } : {}),
+        };
       })
       .sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1));
   }
 
   async read(rel: string): Promise<string> {
     return readFile(this.abs(rel), "utf8");
+  }
+
+  /** Rasm faylini data: URL sifatida qaytaradi (editorda ko'rsatish uchun). */
+  async readImage(rel: string): Promise<string> {
+    const mime = imageMime(rel);
+    if (!mime) throw new WorkspaceError(uz.notFound);
+    const buf = await readFile(this.abs(rel));
+    if (buf.length > 8 * 1024 * 1024) throw new WorkspaceError(uz.failed);
+    return `data:${mime};base64,${buf.toString("base64")}`;
+  }
+
+  /** Ilova ichida ko'chirish: `from` ni `toDir` papkasiga (fayl nomi saqlanadi). */
+  async move(from: string, toDir: string): Promise<void> {
+    this.guardWritable(from);
+    const name = from.split("/").pop() ?? from;
+    const target = toDir ? `${toDir}/${name}` : name;
+    if (target === from) return;
+    if (target.startsWith(`${from}/`)) throw new WorkspaceError(uz.invalidName);
+    await this.rename(from, target);
   }
 
   async write(rel: string, content: string): Promise<void> {
@@ -157,13 +205,27 @@ export class Workspace {
     await rm(this.abs(rel), { recursive: true, force: true });
   }
 
+  /** Imtihon tugagach butun ish papkasini o'chiradi (read-only atributlarni ham). */
+  async destroy(): Promise<void> {
+    const walk = async (dir: string): Promise<void> => {
+      for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+        const abs = join(dir, e.name);
+        if (e.isDirectory()) await walk(abs);
+        else await chmod(abs, 0o666).catch(() => undefined);
+      }
+    };
+    await walk(this.root);
+    await rm(this.root, { recursive: true, force: true }).catch(() => undefined);
+  }
+
   /** Buzilgan yoki o'chirilgan read-only faylni asl tarkib bilan tiklaydi (READONLY_TAMPER). */
-  async restoreReadonly(rel: string, content: string): Promise<void> {
+  async restoreReadonly(rel: string, content: string, encoding?: "base64"): Promise<void> {
     if (!isReadonlyPath(rel)) return;
     const abs = this.abs(rel);
     await mkdir(dirname(abs), { recursive: true });
     await chmod(abs, 0o666).catch(() => undefined);
-    await writeFile(abs, content, "utf8");
+    if (encoding === "base64") await writeFile(abs, Buffer.from(content, "base64"));
+    else await writeFile(abs, content, "utf8");
     await chmod(abs, 0o444);
   }
 

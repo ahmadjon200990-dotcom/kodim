@@ -44,6 +44,7 @@ export class ExamBrowser {
     private readonly getWindow: () => BrowserWindow | null,
     private readonly push: (state: BrowserState) => void,
     private readonly reportPaste: (details: { source: "browser"; length: number }) => void,
+    private readonly reportBlocked: (url: string) => void,
   ) {}
 
   private configureSession(): void {
@@ -52,7 +53,11 @@ export class ExamBrowser {
     const s = session.fromPartition(BROWSER_PARTITION);
     s.webRequest.onBeforeRequest((details, callback) => {
       const allowed = isAllowedBrowserUrl(details.url);
-      if (!allowed && !app.isPackaged) console.log("[brauzer] bloklandi:", details.url.slice(0, 120));
+      if (!allowed) {
+        if (!app.isPackaged) console.log("[brauzer] bloklandi:", details.url.slice(0, 120));
+        // Faqat sahifaga o'tish urinishlari xabar qilinadi (analitika/resurslar emas).
+        if (details.resourceType === "mainFrame") this.reportBlocked(details.url);
+      }
       callback({ cancel: !allowed });
     });
     s.setPermissionRequestHandler((_wc, _p, cb) => cb(false));

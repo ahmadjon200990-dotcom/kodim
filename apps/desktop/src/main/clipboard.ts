@@ -10,11 +10,18 @@ const MAX_INTERNAL = 5_000_000;
 
 let internal = "";
 let cleared = false;
+let lastCopyAt = 0;
 /** Har bir tashqi matn bir marta xabar qilinadi (shovqin bo'lmasin). */
 const reported = new Set<string>();
 
 export function writeInternal(text: string): void {
   internal = text.slice(0, MAX_INTERNAL);
+  lastCopyAt = Date.now();
+}
+
+/** Oxirgi ichki nusxalash vaqti (COPY_OUT_ATTEMPT uchun). */
+export function lastInternalCopyAt(): number {
+  return lastCopyAt;
 }
 
 /**

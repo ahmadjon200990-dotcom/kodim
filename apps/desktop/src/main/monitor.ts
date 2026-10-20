@@ -7,9 +7,15 @@ import {
   parseInstalledPackages,
   PROCESS_SCAN_INTERVAL_MS,
 } from "@exam-ide/shared";
-import { BrowserWindow, screen } from "electron";
+import { BrowserWindow, globalShortcut, screen } from "electron";
+import { lastInternalCopyAt } from "./clipboard";
 import type { CommandInfo } from "./terminal";
 import type { ExamSession } from "./session";
+
+/** Ichki nusxalashdan keyin shuncha vaqt ichida ilovadan chiqsa — tashqariga nusxalash urinishi. */
+const COPY_OUT_WINDOW_MS = 10_000;
+/** Ekran rasmini olish tugmalari (globalShortcut orqali ushlanadi va ogohlantiriladi). */
+const SCREENSHOT_KEYS = ["PrintScreen", "Alt+PrintScreen", "Super+Shift+S", "CommandOrControl+Shift+S"];
 
 // Jarayon va oyna darajasidagi kuzatuv (CLAUDE.md 5.5). Fayl kuzatuvi — watcher.ts.
 
@@ -56,6 +62,15 @@ export class Monitor {
     screen.on("display-added", onDisplay);
     this.listeners.push(() => screen.off("display-added", onDisplay));
 
+    // Ekran rasmini olish tugmalarini ushlaymiz (ushlanganida bosilishi bloklanadi).
+    for (const accel of SCREENSHOT_KEYS) {
+      try {
+        globalShortcut.register(accel, () => this.deps?.session.reportEvent("SCREENSHOT_ATTEMPT", { key: accel }));
+      } catch {
+        // ba'zi tugmalar ro'yxatdan o'tmasligi mumkin
+      }
+    }
+
     // Boshlanishda bir marta: ochiq taqiqlangan dasturlar va qo'shimcha monitor.
     this.checkDisplays();
     void this.scanProcesses();
@@ -65,6 +80,7 @@ export class Monitor {
   stop(): void {
     for (const t of this.timers) clearInterval(t);
     for (const off of this.listeners) off();
+    for (const accel of SCREENSHOT_KEYS) globalShortcut.unregister(accel);
     this.timers = [];
     this.listeners = [];
     this.focusHandle = null;
@@ -74,12 +90,19 @@ export class Monitor {
   private onFocusLost(): void {
     if (!this.deps || this.focusLostAt) return;
     this.focusLostAt = Date.now();
+    // Ichki nusxalashdan so'ng darhol ilovadan chiqish — tashqariga nusxalash urinishi.
+    if (Date.now() - lastInternalCopyAt() < COPY_OUT_WINDOW_MS) {
+      this.deps.session.reportEvent("COPY_OUT_ATTEMPT", {
+        afterSec: Math.round((Date.now() - lastInternalCopyAt()) / 1000),
+      });
+    }
     // Qisqa chalkashliklar (bildirishnoma) xabar qilinmasin — kechiktirib yuboramiz.
     setTimeout(() => {
       if (!this.deps || !this.focusLostAt || this.focusHandle) return;
       const win = this.deps.getWindow();
       if (win?.isFocused()) return;
-      this.focusHandle = this.deps.session.reportEvent("FOCUS_LOST", {});
+      const type = win?.isMinimized() ? "WINDOW_MINIMIZED" : "FOCUS_LOST";
+      this.focusHandle = this.deps.session.reportEvent(type, {});
     }, FOCUS_LOST_MIN_MS);
   }
 
@@ -121,22 +144,19 @@ export class Monitor {
     });
   }
 
-  /** Terminaldan kelgan har bir buyruq qatori. */
-  onCommand(info: CommandInfo): void {
+  /** Ruxsat berilib, bajarilgan buyruq (TERMINAL_COMMAND + xavfli naqsh bo'lsa ogohlantirish). */
+  onAllowedCommand(info: CommandInfo): void {
     if (!this.deps) return;
     const line = info.line;
-    this.deps.session.reportEvent("TERMINAL_COMMAND", { line, terminalId: info.terminalId, approximate: info.approximate });
-
+    this.deps.session.reportEvent("TERMINAL_COMMAND", { line, terminalId: info.terminalId });
     const danger = matchDangerousCommand(line);
     if (danger) this.deps.session.reportEvent("DANGEROUS_COMMAND", { line, pattern: danger });
-
-    const pkgs = parseInstalledPackages(line);
-    if (pkgs.length) {
-      const allowed = this.deps.allowedPackages();
-      const unknown = pkgs.filter((p) => !allowed.has(p));
-      if (unknown.length) this.deps.session.reportEvent("UNKNOWN_PACKAGE", { packages: unknown, line });
-    }
-
     if (isSafeFileCommand(line)) this.deps.onSafeCommand();
+  }
+
+  /** `npm install <pkg>` dagi ruxsat etilmagan paketlar (bloklash uchun). */
+  unknownPackages(line: string): string[] {
+    const allowed = this.deps?.allowedPackages() ?? new Set<string>();
+    return parseInstalledPackages(line).filter((p) => !allowed.has(p));
   }
 }
