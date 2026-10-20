@@ -1546,3 +1546,139 @@ button {
     font-size: 19px;
   }
 }
+
+/* ---------- Topshirilgan ishlar ---------- */
+.subs-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.subs-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.subs-list .segmented {
+  margin-bottom: 8px;
+}
+.sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.sub-item:hover {
+  background: var(--surface-2);
+}
+.sub-item.active {
+  background: var(--primary-soft);
+  border-color: #c7d2fe;
+}
+.sub-folder {
+  font-size: 18px;
+}
+.sub-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sub-name .mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grade-box {
+  display: grid;
+  grid-template-columns: 140px 1fr 200px;
+  gap: 16px;
+  align-items: start;
+}
+.grade-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding-top: 20px;
+}
+.file-dir {
+  color: var(--muted);
+  font-weight: 600;
+}
+.image-host {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  min-height: 420px;
+  background: repeating-conic-gradient(#f1f2f4 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+  overflow: auto;
+}
+.image-host img {
+  max-width: 100%;
+  max-height: 65vh;
+  box-shadow: var(--shadow);
+}
+.row-ungraded td {
+  background: #fffbeb;
+}
+@media (max-width: 1000px) {
+  .subs-layout {
+    grid-template-columns: 1fr;
+  }
+  .subs-list {
+    position: static;
+    max-height: 320px;
+  }
+  .grade-box {
+    grid-template-columns: 1fr;
+  }
+  .grade-side {
+    padding-top: 0;
+  }
+}
+
+/* ---------- Tayyor papka ---------- */
+.starter {
+  margin-top: 12px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--surface-2);
+}
+.starter-on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.starter .card-head {
+  margin-bottom: 6px;
+}
+.starter-files {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.starter-file {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.starter-file:last-child {
+  border-bottom: 0;
+}

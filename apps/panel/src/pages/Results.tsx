@@ -58,7 +58,12 @@ export function Results() {
   );
 
   const submitted = sorted.filter((a) => a.status === "SUBMITTED").length;
-  const avg = sorted.length ? Math.round(sorted.reduce((s, a) => s + a.finalScore, 0) / sorted.length) : 0;
+  const graded = (a: AttemptSummary) => a.teacherScore !== null || a.aiScore !== null;
+  const gradedRows = sorted.filter((a) => graded(a) || a.status === "ANNULLED");
+  const avg = gradedRows.length ? Math.round(gradedRows.reduce((s, a) => s + a.finalScore, 0) / gradedRows.length) : 0;
+  const ungradedCount = sorted.filter((a) => !graded(a) && a.status !== "ANNULLED" && a.status !== "JOINED").length;
+  // AI baholash bu versiyada o'chiq — AI ustunlari faqat AI yoqilgan (eski) imtihonlarda.
+  const ai = exam.aiEnabled;
 
   return (
     <div>
@@ -76,6 +81,9 @@ export function Results() {
           <Link to={`/exams/${exam.id}/live`} className="btn btn-sm">
             {uz.live.title}
           </Link>
+          <Link to={`/exams/${exam.id}/submissions`} className="btn btn-sm">
+            📁 {uz.subs.title}
+          </Link>
           <button className="btn btn-primary btn-sm" onClick={() => void exportXlsx()} disabled={sorted.length === 0}>
             ⤓ {uz.results.export}
           </button>
@@ -90,6 +98,10 @@ export function Results() {
         <div className="stat-card">
           <div className="stat-label">{uz.results.statSubmitted}</div>
           <div className="stat-value">{submitted}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">{uz.results.statUngraded}</div>
+          <div className="stat-value" style={{ color: ungradedCount ? "var(--warn)" : undefined }}>{ungradedCount}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">{uz.results.statAverage}</div>
@@ -108,8 +120,8 @@ export function Results() {
               <tr>
                 <th className="num">{uz.results.col.n}</th>
                 {th("name", uz.results.col.name)}
-                <th>{uz.results.col.aiState}</th>
-                {th("ai", uz.results.col.ai, "num")}
+                {ai && <th>{uz.results.col.aiState}</th>}
+                {ai && th("ai", uz.results.col.ai, "num")}
                 <th className="num">{uz.results.col.teacher}</th>
                 <th className="num">{uz.results.col.penalties}</th>
                 {th("final", uz.results.col.final, "num")}
@@ -120,27 +132,31 @@ export function Results() {
             </thead>
             <tbody>
               {sorted.map((a, i) => (
-                <tr key={a.id} className={a.status === "ANNULLED" ? "annulled-row" : ""}>
+                <tr key={a.id} className={a.status === "ANNULLED" ? "annulled-row" : !graded(a) && a.status !== "JOINED" ? "row-ungraded" : ""}>
                   <td className="num">{i + 1}</td>
                   <td className="cell-main">
                     <Link to={`/attempts/${a.id}`} className="title-cell">
                       {a.studentName}
                     </Link>
                   </td>
-                  <td data-label={uz.results.col.aiState}>
-                    <AiState a={a} exam={exam} />
-                  </td>
-                  <td className="num" data-label={uz.results.col.ai}>
-                    {a.aiScore ?? uz.common.none}
-                  </td>
+                  {ai && (
+                    <td data-label={uz.results.col.aiState}>
+                      <AiState a={a} exam={exam} />
+                    </td>
+                  )}
+                  {ai && (
+                    <td className="num" data-label={uz.results.col.ai}>
+                      {a.aiScore ?? uz.common.none}
+                    </td>
+                  )}
                   <td className="num" data-label={uz.results.col.teacher}>
-                    {a.teacherScore ?? uz.common.none}
+                    {a.teacherScore ?? (a.status === "ANNULLED" || a.status === "JOINED" ? uz.common.none : <span className="badge badge-plain badge-warn">{uz.subs.notGraded}</span>)}
                   </td>
                   <td className="num" data-label={uz.results.col.penalties}>
                     {a.penaltyTotal > 0 ? <span className="badge badge-plain badge-danger">−{a.penaltyTotal}</span> : uz.common.none}
                   </td>
                   <td className="num" data-label={uz.results.col.final}>
-                    <b>{a.finalScore}</b>
+                    <b>{graded(a) || a.status === "ANNULLED" ? a.finalScore : uz.common.none}</b>
                   </td>
                   <td data-label={uz.results.col.status}>{uz.attemptStatus[a.status]}</td>
                   <td className="num" data-label={uz.results.col.warnings}>
@@ -148,6 +164,9 @@ export function Results() {
                   </td>
                   <td>
                     <div className="row-actions">
+                      <Link to={`/exams/${exam.id}/submissions`} className="btn btn-xs">
+                        {uz.subs.grade}
+                      </Link>
                       <Link to={`/attempts/${a.id}`} className="btn btn-xs">
                         {uz.results.col.detail}
                       </Link>

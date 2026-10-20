@@ -136,9 +136,14 @@ export function ExamsList() {
                         </button>
                       )}
                       {(e.status === "GRADING" || e.status === "FINISHED" || e.status === "RUNNING") && (
-                        <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/results`)}>
-                          {uz.exams.results}
-                        </button>
+                        <>
+                          <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/submissions`)}>
+                            📁 {uz.subs.open}
+                          </button>
+                          <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/results`)}>
+                            {uz.exams.results}
+                          </button>
+                        </>
                       )}
                       {e.status === "DRAFT" && (
                         <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/edit`)}>

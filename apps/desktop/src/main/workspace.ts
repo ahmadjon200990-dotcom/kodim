@@ -295,9 +295,9 @@ export class Workspace {
     await chmod(abs, 0o444);
   }
 
-  /** Sync uchun: e'tiborga olinmaydiganlar va faqat-o'qish fayllarisiz matn fayllari (≤ 1 MB, ≤ 300 ta). */
-  async snapshot(): Promise<Map<string, string>> {
-    const files = new Map<string, string>();
+  /** Sync uchun: e'tiborga olinmaydiganlar va faqat-o'qish fayllarisiz fayllar (≤ 1 MB, ≤ 300 ta); binarlar base64. */
+  async snapshot(present?: Set<string>): Promise<Map<string, { content: string; encoding?: "base64" }>> {
+    const files = new Map<string, { content: string; encoding?: "base64" }>();
     const walk = async (absDir: string): Promise<void> => {
       const entries = await readdir(absDir, { withFileTypes: true }).catch(() => []);
       for (const e of entries) {
@@ -309,11 +309,15 @@ export class Workspace {
           continue;
         }
         if (!e.isFile() || isIgnoredPath(rel) || isReadonlyPath(rel)) continue;
+        // Diskda bor (hajmi tufayli yuborilmasa ham) — sync uni "o'chirilgan" deb hisoblamasin.
+        present?.add(rel);
         const info = await stat(abs).catch(() => null);
         if (!info || info.size > SYNC_LIMITS.maxFileBytes) continue;
         const buf = await readFile(abs).catch(() => null);
-        if (!buf || buf.subarray(0, 8000).includes(0)) continue; // binar fayl
-        files.set(rel, buf.toString("utf8"));
+        if (!buf) continue;
+        // Binar fayl (rasm, shrift, ikonka) base64 bilan — topshirilgan ishda ham to'liq bo'lsin.
+        if (buf.subarray(0, 8000).includes(0) || isImagePath(rel)) files.set(rel, { content: buf.toString("base64"), encoding: "base64" });
+        else files.set(rel, { content: buf.toString("utf8") });
       }
     };
     await walk(this.root);

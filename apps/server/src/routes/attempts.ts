@@ -6,6 +6,7 @@ import { prisma } from "../db.js";
 import { getOwnedAttempt, getOwnedExam } from "../lib/access.js";
 import { requireAuth } from "../lib/auth.js";
 import { HttpError, IdParams } from "../lib/http.js";
+import { attachmentHeader, attemptZip, examZip } from "../services/archive.js";
 import { listAttemptSummaries } from "../services/attempts.js";
 import { notifyAttempt } from "../services/notify.js";
 import { uz } from "../uz.js";
@@ -31,6 +32,25 @@ export async function attemptRoutes(app: FastifyInstance) {
       },
     });
     return { ...attempt, penaltyTotal: sumPenalties(attempt.penalties), finalScore: computeFinalScore(attempt) };
+  });
+
+  // Topshirilgan ishlar: bitta o'quvchi papkasi yoki imtihondagi hammasi bitta .zip da (har biri ismi bilan).
+  app.get("/api/attempts/:id/download.zip", async (req, reply) => {
+    const { id } = IdParams.parse(req.params);
+    await getOwnedAttempt(req.teacher, id);
+    const { name, data } = await attemptZip(id);
+    reply.header("content-type", "application/zip");
+    reply.header("content-disposition", attachmentHeader(name, "zip"));
+    return reply.send(data);
+  });
+
+  app.get("/api/exams/:id/download.zip", async (req, reply) => {
+    const { id } = IdParams.parse(req.params);
+    await getOwnedExam(req.teacher, id);
+    const { name, data } = await examZip(id);
+    reply.header("content-type", "application/zip");
+    reply.header("content-disposition", attachmentHeader(name, "zip"));
+    return reply.send(data);
   });
 
   app.post("/api/attempts/:id/penalties", async (req, reply) => {

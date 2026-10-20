@@ -107,9 +107,11 @@ export function AttemptDetailPage() {
           <h1>{attempt.studentName}</h1>
           <div className="page-sub row-actions">
             <span className="badge badge-plain badge-info">{uz.attemptStatus[attempt.status]}</span>
-            <span className={attempt.gradedBy === "TEACHER" ? "badge badge-plain badge-lobby" : "badge badge-plain badge-info"}>
-              {uz.gradedBy[attempt.gradedBy]}
-            </span>
+            {exam.aiEnabled && (
+              <span className={attempt.gradedBy === "TEACHER" ? "badge badge-plain badge-lobby" : "badge badge-plain badge-info"}>
+                {uz.gradedBy[attempt.gradedBy]}
+              </span>
+            )}
           </div>
         </div>
         <div className="row-actions">
@@ -125,10 +127,12 @@ export function AttemptDetailPage() {
       </div>
 
       <div className="stats">
-        <div className="stat-card">
-          <div className="stat-label">{uz.results.col.ai}</div>
-          <div className="stat-value">{attempt.aiScore ?? uz.common.none}</div>
-        </div>
+        {exam.aiEnabled && (
+          <div className="stat-card">
+            <div className="stat-label">{uz.results.col.ai}</div>
+            <div className="stat-value">{attempt.aiScore ?? uz.common.none}</div>
+          </div>
+        )}
         <div className="stat-card">
           <div className="stat-label">{uz.results.col.teacher}</div>
           <div className="stat-value">{attempt.teacherScore ?? uz.common.none}</div>
@@ -145,48 +149,54 @@ export function AttemptDetailPage() {
 
       <div className="detail-cols">
         <div className="detail-left">
-          <section className="card">
-            <div className="card-head">
-              <h2>
-                {uz.detail.criteria} <span className="muted">({totalScore} / 100)</span>
-              </h2>
-            </div>
-            {crits.map((c, i) => (
-              <div className="grade-crit" key={c.name}>
-                <div className="gc-top">
-                  <span className="gc-name">{c.name}</span>
-                  <input
-                    className={c.score > c.weight ? "input input-weight invalid" : "input input-weight"}
-                    type="number"
-                    min={0}
-                    max={c.weight}
-                    value={c.score}
-                    onChange={(e) => setCrits((x) => x.map((y, j) => (j === i ? { ...y, score: Number(e.target.value) } : y)))}
-                  />
-                  <span className="muted">/ {c.weight}</span>
-                </div>
-                <textarea
-                  className="input textarea-sm"
-                  placeholder={uz.detail.comment}
-                  value={c.comment}
-                  onChange={(e) => setCrits((x) => x.map((y, j) => (j === i ? { ...y, comment: e.target.value } : y)))}
-                />
+          {exam.aiEnabled ? (
+            <>
+            <section className="card">
+              <div className="card-head">
+                <h2>
+                  {uz.detail.criteria} <span className="muted">({totalScore} / 100)</span>
+                </h2>
               </div>
-            ))}
-            <label className="field" style={{ marginTop: 12 }}>
-              <span>{uz.detail.overall}</span>
-              <textarea className="input textarea-sm" value={comment} onChange={(e) => setComment(e.target.value)} />
-            </label>
-            <div className="grade-foot">
-              <span className="final-note">
-                {uz.results.col.final}: <b>{attempt.finalScore}</b>
-              </span>
-              <button className="btn btn-primary btn-sm" disabled={busy !== ""} onClick={() => void saveGrade()}>
-                {uz.detail.save}
-              </button>
-            </div>
-          </section>
+              {crits.map((c, i) => (
+                <div className="grade-crit" key={c.name}>
+                  <div className="gc-top">
+                    <span className="gc-name">{c.name}</span>
+                    <input
+                      className={c.score > c.weight ? "input input-weight invalid" : "input input-weight"}
+                      type="number"
+                      min={0}
+                      max={c.weight}
+                      value={c.score}
+                      onChange={(e) => setCrits((x) => x.map((y, j) => (j === i ? { ...y, score: Number(e.target.value) } : y)))}
+                    />
+                    <span className="muted">/ {c.weight}</span>
+                  </div>
+                  <textarea
+                    className="input textarea-sm"
+                    placeholder={uz.detail.comment}
+                    value={c.comment}
+                    onChange={(e) => setCrits((x) => x.map((y, j) => (j === i ? { ...y, comment: e.target.value } : y)))}
+                  />
+                </div>
+              ))}
+              <label className="field" style={{ marginTop: 12 }}>
+                <span>{uz.detail.overall}</span>
+                <textarea className="input textarea-sm" value={comment} onChange={(e) => setComment(e.target.value)} />
+              </label>
+              <div className="grade-foot">
+                <span className="final-note">
+                  {uz.results.col.final}: <b>{attempt.finalScore}</b>
+                </span>
+                <button className="btn btn-primary btn-sm" disabled={busy !== ""} onClick={() => void saveGrade()}>
+                  {uz.detail.save}
+                </button>
+              </div>
+            </section>
 
+            </>
+          ) : (
+            <TeacherGrade attempt={attempt} onSaved={() => void reload(true)} />
+          )}
           {ai && (
             <section className="card">
               <div className="card-head">
@@ -207,7 +217,7 @@ export function AttemptDetailPage() {
               )}
             </section>
           )}
-          {attempt.aiError && <div className="form-error">{uz.detail.aiError}: {attempt.aiError}</div>}
+          {exam.aiEnabled && attempt.aiError && <div className="form-error">{uz.detail.aiError}: {attempt.aiError}</div>}
 
           <section className="card">
             <div className="card-head">
@@ -269,5 +279,55 @@ export function AttemptDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Bu versiyada baholashni faqat o'qituvchi qiladi: ball (0–100) + izoh. */
+function TeacherGrade({ attempt, onSaved }: { attempt: AttemptDetail; onSaved(): void }) {
+  const toast = useToast();
+  const [score, setScore] = useState(attempt.teacherScore === null ? "" : String(attempt.teacherScore));
+  const [comment, setComment] = useState(attempt.teacherComment ?? "");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    const n = Number(score);
+    if (score.trim() === "" || !Number.isInteger(n) || n < 0 || n > 100) return toast.error(uz.subs.scoreRange);
+    setBusy(true);
+    try {
+      await api.put(`/attempts/${attempt.id}/grade`, { teacherScore: n, teacherComment: comment });
+      toast.success(uz.subs.saved);
+      onSaved();
+    } catch (e) {
+      toast.error(uz.common.error, errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (attempt.status === "ANNULLED") return <div className="form-error">{uz.subs.annulled}</div>;
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2>{uz.subs.grade}</h2>
+        {attempt.teacherScore === null && <span className="badge badge-plain badge-warn">{uz.subs.notGraded}</span>}
+      </div>
+      <label className="field">
+        <span>{uz.subs.score}</span>
+        <input className="input input-weight" type="number" min={0} max={100} value={score} placeholder="0–100" onChange={(e) => setScore(e.target.value)} />
+      </label>
+      <label className="field">
+        <span>{uz.subs.comment}</span>
+        <textarea className="input textarea-sm" value={comment} onChange={(e) => setComment(e.target.value)} />
+      </label>
+      <div className="grade-foot">
+        <span className="final-note">
+          {uz.results.col.final}: <b>{score.trim() === "" ? uz.common.none : Math.max(0, (Number(score) || 0) - attempt.penaltyTotal)}</b>
+          {attempt.penaltyTotal > 0 && <span className="muted"> (−{attempt.penaltyTotal})</span>}
+        </span>
+        <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => void save()}>
+          {uz.subs.save}
+        </button>
+      </div>
+    </section>
   );
 }

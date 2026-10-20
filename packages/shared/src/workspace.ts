@@ -26,3 +26,28 @@ export const SYNC_LIMITS = {
   maxFiles: 300,
   intervalMs: 5000,
 } as const;
+
+/** Topshirilgan ish papkasi nomi: "Ali Valiyev" → "Ali_Valiyev" (Windows uchun yaroqli). */
+export function studentFolderName(name: string): string {
+  const safe = name
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[<>:"/\\|?*]/g, "")
+    .split("")
+    .filter((ch) => ch.charCodeAt(0) >= 32)
+    .join("")
+    .replace(/[. ]+$/, "");
+  return safe || "oquvchi";
+}
+
+/** Bir xil ismlar uchun: "Ali_Valiyev", "Ali_Valiyev_2", ... */
+export function uniqueFolderNames(names: readonly string[]): string[] {
+  const used = new Map<string, number>();
+  return names.map((n) => {
+    const base = studentFolderName(n);
+    const key = base.toLowerCase();
+    const count = (used.get(key) ?? 0) + 1;
+    used.set(key, count);
+    return count === 1 ? base : `${base}_${count}`;
+  });
+}

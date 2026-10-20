@@ -72,7 +72,10 @@ export const AttemptSyncInput = z.object({
    * O'zgargan yoki yangi fayllar. Yo'l va hajm bu yerda emas, server tomonida har bir fayl uchun
    * alohida tekshiriladi — bitta yaroqsiz fayl butun sync'ni buzmasin (`SyncRejection`).
    */
-  files: z.array(z.object({ path: z.string().min(1).max(1000), content: z.string() })).max(300).default([]),
+  files: z
+    .array(z.object({ path: z.string().min(1).max(1000), content: z.string(), encoding: z.enum(["base64"]).optional() }))
+    .max(300)
+    .default([]),
   /** O'chirilgan fayllar yo'llari. */
   deleted: z.array(z.string().min(1).max(260)).max(300).default([]),
 });

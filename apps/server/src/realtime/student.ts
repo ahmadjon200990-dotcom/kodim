@@ -161,10 +161,12 @@ async function sync(attemptId: string, payload: unknown): Promise<{ rejected: Sy
     if (!FileEntry.shape.path.safeParse(f.path).success) rejected.push({ path: f.path, reason: "INVALID_PATH" });
     else if (isIgnoredPath(f.path)) rejected.push({ path: f.path, reason: "IGNORED" });
     else if (isReadonlyPath(f.path)) rejected.push({ path: f.path, reason: "READONLY" });
-    else if (Buffer.byteLength(f.content, "utf8") > SYNC_LIMITS.maxFileBytes) rejected.push({ path: f.path, reason: "TOO_LARGE" });
-    else if (f.content.includes("\u0000")) rejected.push({ path: f.path, reason: "BINARY" });
+    else if ((f.encoding === "base64" ? Buffer.from(f.content, "base64").length : Buffer.byteLength(f.content, "utf8")) > SYNC_LIMITS.maxFileBytes)
+      rejected.push({ path: f.path, reason: "TOO_LARGE" });
+    else if (!f.encoding && f.content.includes("\u0000")) rejected.push({ path: f.path, reason: "BINARY" });
     else if (!files.has(f.path) && files.size >= SYNC_LIMITS.maxFiles) rejected.push({ path: f.path, reason: "TOO_MANY_FILES" });
-    else files.set(f.path, { path: f.path, content: f.content });
+    // Binar fayllar (rasm, shrift) base64 bilan saqlanadi.
+    else files.set(f.path, { path: f.path, content: f.content, ...(f.encoding && { encoding: f.encoding }) });
   }
   await prisma.attempt.update({
     where: { id: attemptId },

@@ -6,6 +6,7 @@ import { ExamsList } from "./pages/ExamsList";
 import { ExamEdit } from "./pages/ExamEdit";
 import { Live } from "./pages/Live";
 import { Results } from "./pages/Results";
+import { Submissions } from "./pages/Submissions";
 import { AttemptDetailPage } from "./pages/AttemptDetail";
 import { Teachers } from "./pages/Teachers";
 import { uz } from "./uz";
@@ -24,6 +25,7 @@ export function App() {
         <Route path="/exams/:id/edit" element={<ExamEdit />} />
         <Route path="/exams/:id/live" element={<Live />} />
         <Route path="/exams/:id/results" element={<Results />} />
+        <Route path="/exams/:id/submissions" element={<Submissions />} />
         <Route path="/attempts/:id" element={<AttemptDetailPage />} />
         {me.role === "ADMIN" && <Route path="/teachers" element={<Teachers />} />}
         <Route path="*" element={<Navigate to="/" replace />} />

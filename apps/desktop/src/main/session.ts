@@ -222,13 +222,14 @@ export class ExamSession {
   private async doSync(): Promise<void> {
     const ws = this.workspace;
     if (!ws || !this.socket.connected) return;
-    const snapshot = await ws.snapshot();
-    const changed: { path: string; content: string; hash: string }[] = [];
-    for (const [path, content] of snapshot) {
+    const present = new Set<string>();
+    const snapshot = await ws.snapshot(present);
+    const changed: { path: string; content: string; encoding?: "base64"; hash: string }[] = [];
+    for (const [path, { content, encoding }] of snapshot) {
       const hash = sha1(content);
-      if (this.synced.get(path) !== hash) changed.push({ path, content, hash });
+      if (this.synced.get(path) !== hash) changed.push({ path, content, encoding, hash });
     }
-    let deleted = [...this.synced.keys()].filter((p) => !snapshot.has(p) && !isReadonlyPath(p));
+    let deleted = [...this.synced.keys()].filter((p) => !present.has(p) && !isReadonlyPath(p));
     if (changed.length === 0 && deleted.length === 0) return;
 
     // Katta o'zgarishlarni (masalan `npm create vite`) bir nechta bo'lakka bo'lamiz.
@@ -246,7 +247,7 @@ export class ExamSession {
     for (const batch of batches) {
       const res = await this.socket
         .timeout(ACK_TIMEOUT_MS)
-        .emitWithAck("attempt:sync", { files: batch.map(({ path, content }) => ({ path, content })), deleted })
+        .emitWithAck("attempt:sync", { files: batch.map(({ path, content, encoding }) => ({ path, content, ...(encoding && { encoding }) })), deleted })
         .catch(() => null);
       if (!res?.ok) return; // keyingi urinishda qayta yuboriladi
       // Rad etilganlar ham belgilanadi — o'zgarmaguncha qayta yuborilmaydi.

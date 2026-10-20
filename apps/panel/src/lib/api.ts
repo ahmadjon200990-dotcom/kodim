@@ -70,17 +70,29 @@ export const api = {
   del: <T>(path: string) => request<T>("DELETE", path),
 };
 
-/** Excel yuklab olish (JWT bilan). */
-export async function downloadExport(examId: string, filename: string): Promise<void> {
-  const res = await fetch(`/api/exams/${examId}/export.xlsx`, {
-    headers: { authorization: `Bearer ${tokenStore.get() ?? ""}` },
-  });
+/** Fayl yuklab olish (JWT bilan): Excel, .zip. Nom server Content-Disposition'idan, bo'lmasa `fallback`. */
+export async function downloadFile(path: string, fallback: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, { headers: { authorization: `Bearer ${tokenStore.get() ?? ""}` } });
+  } catch {
+    throw new ApiError(0, "Server bilan aloqa yo'q");
+  }
+  if (res.status === 401) {
+    onUnauthorized();
+    throw new ApiError(401, "Avtorizatsiya kerak");
+  }
   if (!res.ok) throw new ApiError(res.status, "Yuklab bo'lmadi");
+  const cd = res.headers.get("content-disposition") ?? "";
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(cd)?.[1];
+  const name = star ? decodeURIComponent(star) : fallback;
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = filename;
+  a.download = name;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export const downloadExport = (examId: string, filename: string) => downloadFile(`/exams/${examId}/export.xlsx`, filename);
