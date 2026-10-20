@@ -3,9 +3,12 @@ import { ExamInput } from "@exam-ide/shared";
 import { env } from "./env.js";
 import { prisma } from "./db.js";
 
-// Demo o'qituvchi faqat lokal sinov uchun.
-const DEMO_TEACHER = { name: "Demo o'qituvchi", email: "demo@kodim.uz", password: "demo12345" };
-const DEMO_EXAM_TITLE = "Demo: JavaScript va Figma";
+// Namuna o'qituvchi faqat lokal sinov uchun (kirish ma'lumotlari hujjatlarda shu).
+// Interfeysda "Demo" so'zi ko'rinmasin — ko'rinadigan nom va sarlavha oddiy.
+const DEMO_TEACHER = { name: "Namuna o'qituvchi", email: "demo@kodim.uz", password: "demo12345" };
+const DEMO_EXAM_TITLE = "JavaScript va Figma";
+/** Eski seed nomi — qayta ishga tushirilganda u ham almashtiriladi. */
+const OLD_DEMO_TITLES = ["Demo: JavaScript va Figma"];
 
 async function upsertTeacher(name: string, email: string, password: string, role: "ADMIN" | "TEACHER") {
   const passwordHash = await bcrypt.hash(password, 10);
@@ -99,7 +102,7 @@ async function main() {
   const teacher = await upsertTeacher(DEMO_TEACHER.name, DEMO_TEACHER.email, DEMO_TEACHER.password, "TEACHER");
 
   // Qayta ishga tushirilganda demo imtihon yangidan yaratiladi.
-  await prisma.exam.deleteMany({ where: { teacherId: teacher.id, title: DEMO_EXAM_TITLE } });
+  await prisma.exam.deleteMany({ where: { teacherId: teacher.id, title: { in: [DEMO_EXAM_TITLE, ...OLD_DEMO_TITLES] } } });
   const { tasks, ...examFields } = demoExam;
   const exam = await prisma.exam.create({
     data: {
@@ -120,8 +123,8 @@ async function main() {
   });
 
   console.log(`Admin: ${admin.email}`);
-  console.log(`Demo o'qituvchi: ${teacher.email} / ${DEMO_TEACHER.password}`);
-  console.log(`Demo imtihon: ${exam.title} (${exam.id})`);
+  console.log(`Namuna o'qituvchi: ${teacher.email} / ${DEMO_TEACHER.password}`);
+  console.log(`Namuna imtihon: ${exam.title} (${exam.id})`);
 }
 
 try {
