@@ -8,6 +8,7 @@ import { attemptEndsAt } from "../services/attempts.js";
 import { openExamWithCode } from "../services/exam-code.js";
 import { notifyAttempt, notifyExam } from "../services/notify.js";
 import { buildResultsWorkbook } from "../services/export.js";
+import { ensureExamFigma, examFilesCache } from "../services/figma.js";
 import { finishExamNow, sendTimeSync, startExam } from "../services/runtime.js";
 import { uz } from "../uz.js";
 
@@ -68,6 +69,8 @@ export async function examRoutes(app: FastifyInstance) {
       data: { ...examData(input), teacherId: req.teacher.id, tasks: { create: taskData(input) } },
       include: withTasks,
     });
+    // Figma dizaynlari fonda olinadi (javobni kutdirmaydi); holati — GET /api/exams/:id/figma.
+    void ensureExamFigma(exam.teacherId, exam.tasks).catch((err: unknown) => req.log.warn(err));
     return reply.code(201).send(exam);
   });
 
@@ -90,6 +93,8 @@ export async function examRoutes(app: FastifyInstance) {
         include: withTasks,
       }),
     ]);
+    examFilesCache.delete(id);
+    void ensureExamFigma(updated.teacherId, updated.tasks).catch((err: unknown) => req.log.warn(err));
     return updated;
   });
 
@@ -107,6 +112,10 @@ export async function examRoutes(app: FastifyInstance) {
     const { id } = IdParams.parse(req.params);
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "DRAFT") throw new HttpError(409, uz.examMustBeDraft);
+    // Kutish xonasi ochilganda Figma dizaynlari tayyor bo'lsin (xato bo'lsa keshda qoladi, panel ko'rsatadi).
+    const tasks = await prisma.task.findMany({ where: { examId: id }, select: { type: true, figmaUrl: true } });
+    await ensureExamFigma(exam.teacherId, tasks).catch((err: unknown) => req.log.warn(err));
+    examFilesCache.delete(id);
     const opened = await openExamWithCode(id);
     notifyExam(opened);
     return opened;

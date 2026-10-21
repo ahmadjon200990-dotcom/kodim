@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { COMMAND_PRESETS, DEFAULT_ALLOWED_COMMANDS, DEFAULT_ALLOWED_PACKAGES } from "@exam-ide/shared";
+import { COMMAND_PRESETS, DEFAULT_ALLOWED_COMMANDS, DEFAULT_ALLOWED_PACKAGES, parseFigmaUrl } from "@exam-ide/shared";
 import type { DesignImage, ExamTemplate, TaskType } from "@exam-ide/shared";
 import { api, ApiError } from "../lib/api";
 import { formatBytes, readFolder, readZip, StarterError, type StarterFile } from "../lib/starter";
 import { errorLines } from "../lib/errors";
 import type { ExamFull } from "../lib/types";
 import { PageMessage, PageSkeleton, useToast } from "../components/ui";
+import { FigmaStatus } from "../components/FigmaStatus";
 import { uz } from "../uz";
 
 interface TaskForm {
@@ -149,6 +150,7 @@ export function ExamEdit() {
     if (!title.trim()) return setError(`${uz.edit.name}: ${uz.common.required}`);
     if (tasks.some((t) => !t.title.trim())) return setError(uz.edit.taskTitleRequired);
     if (tasks.some((t) => t.type === "FIGMA" && !t.figmaUrl.trim() && t.images.length === 0)) return setError(uz.edit.figmaSource);
+    if (tasks.some((t) => t.type === "FIGMA" && t.figmaUrl.trim() && !parseFigmaUrl(t.figmaUrl))) return setError(uz.figma.badLink);
     if (SHOW_AI && aiEnabled && weightSum !== 100) return setError(`${uz.edit.sumError}${weightSum})`);
     if (template === "CUSTOM" && starter.length === 0) return setError(uz.edit.starterEmpty);
     const body = {
@@ -200,6 +202,7 @@ export function ExamEdit() {
       <div className="page-head">
         <h1>{editing ? uz.edit.editTitle : uz.edit.newTitle}</h1>
       </div>
+      {editing && id && <FigmaStatus examId={id} />}
 
       <section className="card">
         <div className="grid-2">
@@ -478,7 +481,11 @@ function FigmaTask({
       {showUrl && (
         <>
           <input className="input" placeholder={uz.edit.figmaUrl} value={task.figmaUrl} onChange={(e) => onUrl(e.target.value)} />
-          <div className="hint">{uz.edit.figmaHint}</div>
+          {task.figmaUrl.trim() && !parseFigmaUrl(task.figmaUrl) ? (
+            <div className="field-error">{uz.figma.badLink}</div>
+          ) : (
+            <div className="hint">{uz.edit.figmaHint}</div>
+          )}
         </>
       )}
       <div

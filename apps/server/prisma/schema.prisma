@@ -62,8 +62,13 @@ model Teacher {
   passwordHash String
   role         TeacherRole @default(TEACHER)
   createdAt    DateTime    @default(now())
+  /// Figma Personal Access Token — AES-256-GCM bilan shifrlangan (lib/crypto.ts). Klientga hech qachon yuborilmaydi.
+  figmaToken   String?
+  /// Token egasining Figma nomi (tekshirilganda /v1/me dan)
+  figmaHandle  String?
   exams        Exam[]
   penalties    Penalty[]
+  figmaCaches  FigmaCache[]
 }
 
 model Exam {
@@ -170,4 +175,36 @@ model Penalty {
   createdAt DateTime @default(now())
 
   @@index([attemptId])
+}
+
+/// Figma havolasidan olingan dizayn (o'qituvchi tokeni bilan). Task qayta yaratilsa ham saqlanadi (url bo'yicha).
+model FigmaCache {
+  id        String       @id @default(cuid())
+  teacherId String
+  teacher   Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  url       String
+  /// PENDING | READY | ERROR
+  status    String       @default("PENDING")
+  /// Xato kodi (FigmaErrorCode)
+  error     String?
+  /// FigmaDesign (freymlar va qatlamlar; rasm yo'llari o'quvchi papkasiga yozilganda qo'yiladi)
+  data      Json?
+  fetchedAt DateTime?
+  updatedAt DateTime     @updatedAt
+  images    FigmaImage[]
+
+  @@unique([teacherId, url])
+}
+
+model FigmaImage {
+  id      String     @id @default(cuid())
+  cacheId String
+  cache   FigmaCache @relation(fields: [cacheId], references: [id], onDelete: Cascade)
+  frameId String
+  /// png | jpg
+  format  String     @default("png")
+  scale   Int        @default(2)
+  bytes   Bytes
+
+  @@unique([cacheId, frameId])
 }

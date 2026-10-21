@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { isReadonlyPath } from "@exam-ide/shared";
+import { isFigmaDesignFile, isReadonlyPath } from "@exam-ide/shared";
 import { bindEditorClipboard, editorCopy, editorCut, editorPaste } from "../editorClipboard";
 import { attachEditorFeatures, installEditorFeatures } from "../editorFeatures";
 import { monaco } from "../monaco";
 import { openModel, save } from "../models";
 import { uz } from "../uz";
+import { DesignView } from "./DesignView";
 import { ImageView } from "./ImageView";
 import { MarkdownView } from "./MarkdownView";
 
@@ -16,6 +17,8 @@ interface Props {
   markdownPreview: boolean;
   onCursor(pos: { line: number; col: number } | null): void;
   registerEditor(editor: monaco.editor.IStandaloneCodeEditor | null): void;
+  /** Figma havolasini ichki brauzerda ochish (dizayn ko'rinishidan). */
+  onOpenLive(url: string): void;
 }
 
 interface Menu {
@@ -28,7 +31,7 @@ const isMarkdown = (p: string) => /\.md$/i.test(p);
 /** Matn sifatida ochib bo'lmaydigan binar fayllar (shrift, arxiv, audio/video). */
 const isBinary = (p: string) => /\.(woff2?|ttf|otf|eot|pdf|zip|rar|7z|mp3|mp4|wav|ogg|webm|mov|exe|dll)$/i.test(p);
 
-export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, registerEditor }: Props) {
+export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, registerEditor, onOpenLive }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const pathRef = useRef<string | null>(null);
@@ -38,7 +41,8 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
   const showImage = path !== null && isImage(path);
   const showMarkdown = path !== null && isMarkdown(path) && isReadonlyPath(path) && markdownPreview;
   const showBinary = path !== null && isBinary(path);
-  const showMonaco = path !== null && !showImage && !showMarkdown && !showBinary;
+  const showDesign = path !== null && isFigmaDesignFile(path);
+  const showMonaco = path !== null && !showImage && !showMarkdown && !showBinary && !showDesign;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -161,6 +165,7 @@ export function EditorPane({ path, readOnly, locked, markdownPreview, onCursor, 
       <div ref={hostRef} className="editor-monaco" style={{ visibility: showMonaco ? "visible" : "hidden" }} />
       {showImage && path && <ImageView path={path} />}
       {showMarkdown && path && <MarkdownView path={path} />}
+      {showDesign && path && <DesignView path={path} onOpenLive={onOpenLive} />}
       {showBinary && (
         <div className="editor-welcome">
           <div>{uz.editor.binary}</div>

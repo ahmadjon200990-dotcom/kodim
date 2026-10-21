@@ -25,7 +25,7 @@ import { HttpError } from "../lib/http.js";
 import { attemptEndsAt, examPublic } from "../services/attempts.js";
 import { notifyAttempt, notifyLobby, recordEvent, updateEventDetails } from "../services/notify.js";
 import { beginEnding, isEnding } from "../services/runtime.js";
-import { buildInitialFiles } from "../services/workspace.js";
+import { examReadonlyFiles, mergeStudentFiles, starterFiles } from "../services/workspace.js";
 import { uz } from "../uz.js";
 import { rooms, type StudentNsp, type StudentSocketData } from "./io.js";
 import { respond, serialize } from "./util.js";
@@ -83,7 +83,7 @@ async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): P
       deviceId: input.deviceId,
       // Imtihon boshlangandan keyin kirgan o'quvchi darhol ishlaydi.
       status: exam.status === "RUNNING" ? "WORKING" : "JOINED",
-      files: exam.status === "RUNNING" ? buildInitialFiles(exam, exam.tasks) : [],
+      files: exam.status === "RUNNING" ? starterFiles(exam) : [],
     },
   });
   const attemptId = attempt.id;
@@ -140,7 +140,7 @@ async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): P
       joinedCount: await prisma.attempt.count({ where: { examId: exam.id } }),
       endsAt: endsAt?.toISOString() ?? null,
       serverNow: new Date().toISOString(),
-      files: attempt.status === "WORKING" ? StoredFiles.parse(attempt.files) : null,
+      files: attempt.status === "WORKING" ? mergeStudentFiles(await examReadonlyFiles(exam), StoredFiles.parse(attempt.files)) : null,
     },
   };
 }

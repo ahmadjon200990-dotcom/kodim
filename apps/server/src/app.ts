@@ -12,6 +12,7 @@ import { authRoutes } from "./routes/auth.js";
 import { teacherRoutes } from "./routes/teachers.js";
 import { examRoutes } from "./routes/exams.js";
 import { attemptRoutes } from "./routes/attempts.js";
+import { settingsRoutes } from "./routes/settings.js";
 import { createRealtime } from "./realtime/io.js";
 import { registerStudentHandlers } from "./realtime/student.js";
 import { registerTeacherHandlers } from "./realtime/teacher.js";
@@ -46,6 +47,7 @@ export async function buildApp() {
   await app.register(teacherRoutes);
   await app.register(examRoutes);
   await app.register(attemptRoutes);
+  await app.register(settingsRoutes);
 
   const realtime = createRealtime(app);
   registerStudentHandlers(realtime.students, app.log);

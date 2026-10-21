@@ -35,6 +35,10 @@ export function Layout({ children }: { children: ReactNode }) {
               {uz.nav.teachers}
             </Link>
           )}
+          <Link to="/settings" className={loc.pathname.startsWith("/settings") ? "nav-link nav-active" : "nav-link"}>
+            <span className="nav-icon">⚙</span>
+            {uz.nav.settings}
+          </Link>
         </nav>
         <div className="nav-user">
           <span className="avatar" title={me?.name}>

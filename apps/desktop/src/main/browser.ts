@@ -4,12 +4,21 @@ import type { BrowserState, Rect } from "../common/api";
 import { pasteInternal, writeInternal } from "./clipboard";
 import { hardenContents } from "./protection";
 
-// Ichki brauzer (CLAUDE.md 5.6): alohida session, faqat localhost va Figma.
+// Ichki brauzer (CLAUDE.md 5.6, 0.8.1 B): alohida session, faqat localhost va Figma.
+// Session xotirada (`persist:` siz) — Figma'ga kirish faqat joriy imtihon uchun: imtihon tugaganda tozalanadi,
+// ilova yopilganda o'zi yo'qoladi.
 
-export const BROWSER_PARTITION = "persist:exam-browser";
+export const BROWSER_PARTITION = "kodim-exam-browser";
 
-/** Figma ishlashi uchun kerakli domenlar (subdomenlari bilan). Sinovda aniqlangan. */
-const FIGMA_DOMAINS = ["figma.com", "figmausercontent.com", "figma.net"];
+/**
+ * Figma ishlashi va email/parol bilan kirish uchun kerakli domenlar (subdomenlari bilan). Sinovda aniqlangan:
+ * - figma.com, figmausercontent.com, figma.net — sahifa, statik fayllar, rasmlar;
+ * - verify.figma.com (figma.com ichida) + arkoselabs.com — kirishdagi bot tekshiruvi (Arkose captcha), Figma uni
+ *   email/parol bilan kirishda talab qiladi. Arkose — faqat captcha xizmati, umumiy sayt emas.
+ * Google/Apple OAuth (accounts.google.com, appleid.apple.com) ATAYLAB ruxsat etilmagan: ular orqali qidiruv va
+ * AI xizmatlariga yo'l ochilardi. "Continue with Google" bosilsa — bloklanadi va BROWSER_BLOCKED yuboriladi.
+ */
+const FIGMA_DOMAINS = ["figma.com", "figmausercontent.com", "figma.net", "arkoselabs.com"];
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 export function isAllowedBrowserUrl(raw: string): boolean {
@@ -153,8 +162,11 @@ export class ExamBrowser {
     this.view?.webContents.reload();
   }
 
-  /** Vaqt tugaganda: sahifa bo'shatiladi va yashiriladi. */
+  /** Vaqt tugaganda: sahifa bo'shatiladi, yashiriladi va Figma sessiyasi (cookie, kesh) o'chiriladi. */
   reset(): void {
+    const s = session.fromPartition(BROWSER_PARTITION);
+    void s.clearStorageData().catch(() => undefined);
+    void s.clearCache().catch(() => undefined);
     if (!this.view) return;
     void this.view.webContents.loadURL("about:blank");
     this.view.setVisible(false);

@@ -8,13 +8,16 @@ interface Props {
   full: boolean;
   onToggleFull(): void;
   onClose(): void;
+  /** Figma sahifasi uchun ichki dizayn ko'rinishi fayli (bo'lsa). */
+  inspectFor(url: string): string | null;
+  onInspect(file: string): void;
 }
 
 /**
  * Ichki brauzer paneli. Sahifaning o'zi main process'dagi WebContentsView'da —
  * bu komponent faqat boshqaruv va view joylashadigan joyni (o'lchamini) beradi.
  */
-export function BrowserPanel({ full, onToggleFull, onClose }: Props) {
+export function BrowserPanel({ full, onToggleFull, onClose, inspectFor, onInspect }: Props) {
   const dialogOpen = useDialogOpen();
   const slotRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<BrowserState>({ url: "", title: "", canGoBack: false, canGoForward: false, loading: false });
@@ -48,6 +51,8 @@ export function BrowserPanel({ full, onToggleFull, onClose }: Props) {
 
   useEffect(() => () => window.kodim.browser.setBounds(null), []);
 
+  const inspect = state.url ? inspectFor(state.url) : null;
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setEditing(false);
@@ -79,6 +84,11 @@ export function BrowserPanel({ full, onToggleFull, onClose }: Props) {
             onChange={(e) => setAddress(e.target.value)}
           />
         </form>
+        {inspect && (
+          <button className="browser-inspect" title={uz.design.toInspectHint} onClick={() => onInspect(inspect)}>
+            {uz.design.toInspect}
+          </button>
+        )}
         <button className="icon-btn" title={full ? uz.browser.toSide : uz.browser.toFull} onClick={onToggleFull}>
           {full ? "⤡" : "⤢"}
         </button>
@@ -87,9 +97,20 @@ export function BrowserPanel({ full, onToggleFull, onClose }: Props) {
         </button>
       </div>
       {error && <div className="browser-error">{error}</div>}
+      {isFigmaLogin(state.url) && <div className="browser-note">{uz.browser.figmaLogin}</div>}
       <div className="browser-slot" ref={slotRef}>
         {!state.url && <div className="browser-empty muted">{uz.browser.empty}</div>}
       </div>
     </aside>
   );
+}
+
+/** Figma kirish sahifasi — Google orqali kirish ishlamasligi haqida eslatma. */
+function isFigmaLogin(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return /(^|\.)figma\.com$/.test(u.hostname) && /^\/(login|signup|email_only)/.test(u.pathname);
+  } catch {
+    return false;
+  }
 }

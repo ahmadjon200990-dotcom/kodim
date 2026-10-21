@@ -8,6 +8,7 @@ import { eventSummary } from "../lib/events";
 import type { AttemptDetail } from "../lib/types";
 import { useExamSocket } from "../lib/useExamSocket";
 import { AlertsFeed } from "../components/AlertsFeed";
+import { FigmaStatus } from "../components/FigmaStatus";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState, errorText, PageMessage, PageSkeleton, Skeleton, useModal, useToast } from "../components/ui";
 import { uz } from "../uz";
@@ -181,6 +182,7 @@ export function Live() {
         )}
 
         {exam.status === "DRAFT" && <div className="card muted">{uz.live.draftHint}</div>}
+        {(exam.status === "DRAFT" || lobby) && <FigmaStatus examId={exam.id} compact />}
 
         <div className="stats">
           <div className="stat-card">

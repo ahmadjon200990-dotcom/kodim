@@ -4,7 +4,7 @@ import { prisma } from "../db.js";
 import { rooms, students } from "../realtime/io.js";
 import { attemptEndsAt } from "./attempts.js";
 import { notifyAttempt, notifyExam, notifyLobby } from "./notify.js";
-import { buildInitialFiles } from "./workspace.js";
+import { examReadonlyFiles, mergeStudentFiles, starterFiles } from "./workspace.js";
 
 // Imtihon jarayoni: boshlash, server timeri, topshirish, imtihonni yakunlash.
 // Holat bazada; xotirada faqat 15 soniyalik topshirish taymerlari (server qayta ishga tushsa, tick ularni qayta yaratadi).
@@ -77,11 +77,13 @@ async function releaseStuckGrading(): Promise<void> {
 
 export async function startExam(examId: string) {
   const exam = await prisma.exam.findUniqueOrThrow({ where: { id: examId }, include: { tasks: true } });
-  const files = buildInitialFiles(exam, exam.tasks);
+  // Bazada har o'quvchiga faqat boshlang'ich fayllar; o'qituvchi materiallari (savollar.md, dizaynlar/, Figma) yuborishda qo'shiladi.
+  const starter = starterFiles(exam);
+  const files = mergeStudentFiles(await examReadonlyFiles(exam), starter);
   const startedAt = new Date();
   const endsAt = new Date(startedAt.getTime() + exam.durationMin * 60_000);
   const [, started] = await prisma.$transaction([
-    prisma.attempt.updateMany({ where: { examId, status: "JOINED" }, data: { status: "WORKING", files } }),
+    prisma.attempt.updateMany({ where: { examId, status: "JOINED" }, data: { status: "WORKING", files: starter } }),
     prisma.exam.update({ where: { id: examId }, data: { status: "RUNNING", startedAt, endsAt } }),
   ]);
   students()

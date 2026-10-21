@@ -14,6 +14,10 @@ const EnvSchema = z.object({
   HOST: z.string().default("0.0.0.0"),
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  /** Bazadagi maxfiy qiymatlarni (Figma token) shifrlash kaliti. Bo'lmasa JWT_SECRET dan hosil qilinadi. */
+  DATA_ENCRYPTION_KEY: z.string().default(""),
+  /** Figma REST API manzili (sinov uchun soxta server: src/dev/fake-figma.ts). */
+  FIGMA_API_BASE: z.string().default("https://api.figma.com"),
 });
 
 export const env = EnvSchema.parse(process.env);

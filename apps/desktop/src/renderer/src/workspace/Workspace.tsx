@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { DESIGNS_DIR, isIgnoredPath, isReadonlyPath, QUESTIONS_FILE } from "@exam-ide/shared";
+import { DESIGNS_DIR, FIGMA_DESIGN_FILE, FIGMA_DIR, isFigmaDesignFile, isIgnoredPath, isReadonlyPath, parseFigmaUrl, QUESTIONS_FILE } from "@exam-ide/shared";
 import type { ClientState } from "../../../common/api";
 import type { monaco } from "../monaco";
 import { useDialog } from "../Dialog";
@@ -16,6 +16,8 @@ import { TerminalPanel } from "./TerminalPanel";
 import { TopBar } from "./TopBar";
 
 const baseName = (p: string) => p.slice(p.lastIndexOf("/") + 1);
+/** Tab nomi: Figma dizayn fayli uchun "Dizayn · 1-profil-kartasi". */
+const tabName = (p: string) => (isFigmaDesignFile(p) ? `${uz.design.tab} · ${p.split("/").slice(-3, -2)[0] ?? ""}` : baseName(p));
 const isUnder = (p: string, root: string) => p === root || p.startsWith(`${root}/`);
 const isMd = (p: string) => /\.md$/i.test(p);
 /** Tabni boshqa guruhga sudrashda manba guruhi (ko'chirish uchun). */
@@ -156,13 +158,59 @@ export function Workspace({ state }: { state: ClientState }) {
     else await dialog.alert(res.error);
   }, [dialog]);
 
+  /** Figma sahifasini ichki brauzerda — standart to'liq ekranda — ochadi (CLAUDE.md 0.8.1 B). */
+  const openLive = useCallback(
+    async (url: string) => {
+      const res = await window.kodim.browser.navigate(url);
+      if (!res.ok) return dialog.alert(res.error);
+      setBrowserOpen(true);
+      setBrowserFull(true);
+    },
+    [dialog],
+  );
+
   const openDesign = async (path: string) => {
     const text = await window.kodim.fs.read(path);
     const url = /https:\/\/(?:[\w-]+\.)?figma\.com\/\S+/i.exec(text)?.[0];
     if (!url) return dialog.alert(uz.browser.noDesignUrl);
-    const res = await window.kodim.browser.navigate(url);
-    if (!res.ok) return dialog.alert(res.error);
-    setBrowserOpen(true);
+    await openLive(url);
+  };
+
+  /** `dizaynlar/1-karta.md` → `dizaynlar/1-karta/figma/design.json` (server tayyorlagan bo'lsa). */
+  const designFileFor = (mdPath: string) => `${mdPath.replace(/\.md$/i, "")}/${FIGMA_DIR}/${FIGMA_DESIGN_FILE}`;
+  const [designFiles, setDesignFiles] = useState<Map<string, string>>(new Map());
+  // Ish papkasidagi Figma dizaynlari: fileKey → design.json (brauzerdan "Ichki ko'rinish" ga o'tish uchun).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const map = new Map<string, string>();
+      for (const e of await window.kodim.fs.list(DESIGNS_DIR).catch(() => [])) {
+        if (e.type !== "dir") continue;
+        const file = `${e.path}/${FIGMA_DIR}/${FIGMA_DESIGN_FILE}`;
+        const text = await window.kodim.fs.read(file).catch(() => null);
+        if (!text) continue;
+        try {
+          const key = (JSON.parse(text) as { fileKey?: string }).fileKey;
+          if (key) map.set(key, file);
+        } catch {
+          // buzilgan fayl — e'tiborsiz
+        }
+      }
+      if (!cancelled) setDesignFiles(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state.workspaceVersion]);
+
+  const inspectFor = (url: string): string | null => {
+    const key = parseFigmaUrl(url)?.fileKey;
+    return key ? (designFiles.get(key) ?? null) : null;
+  };
+  const openInspect = (file: string) => {
+    setBrowserFull(false);
+    setBrowserOpen(false);
+    open(file);
   };
 
   const newFile = useCallback(async () => {
@@ -419,6 +467,8 @@ export function Workspace({ state }: { state: ClientState }) {
               {groups.map((grp, index) => {
                 const path = grp.active;
                 const isDesign = path !== null && path.startsWith(`${DESIGNS_DIR}/`) && path.endsWith(".md");
+                const designFile = isDesign && path ? designFileFor(path) : null;
+                const hasInspect = designFile !== null && [...designFiles.values()].includes(designFile);
                 const showMdToggle = path !== null && isMd(path) && isReadonlyPath(path);
                 const preview = path !== null && !mdSource.has(path);
                 return (
@@ -444,7 +494,7 @@ export function Workspace({ state }: { state: ClientState }) {
                           onMouseDown={(e) => e.button === 1 && void closeTab(index, p)}
                         >
                           <FileIcon name={baseName(p)} />
-                          <span className="tab-name">{baseName(p)}</span>
+                          <span className="tab-name">{tabName(p)}</span>
                           {isReadonlyPath(p) && <span className="tab-lock">🔒</span>}
                           <button
                             className="tab-close"
@@ -464,9 +514,14 @@ export function Workspace({ state }: { state: ClientState }) {
                             {preview ? uz.editor.viewSource : uz.editor.viewPreview}
                           </button>
                         )}
+                        {hasInspect && designFile && (
+                          <button className="tab-action tab-action-primary" title={uz.design.openHint} onClick={() => open(designFile)}>
+                            {uz.design.open}
+                          </button>
+                        )}
                         {isDesign && !state.locked && path && (
-                          <button className="tab-action" onClick={() => void openDesign(path)}>
-                            {uz.browser.openDesign}
+                          <button className="tab-action" title={uz.design.liveHint} onClick={() => void openDesign(path)}>
+                            {uz.design.live}
                           </button>
                         )}
                         {path && groups.length < MAX_GROUPS && (
@@ -501,6 +556,7 @@ export function Workspace({ state }: { state: ClientState }) {
                         markdownPreview={preview}
                         onCursor={(c) => setCursors((cs) => cs.map((x, i) => (i === index ? c : x)))}
                         registerEditor={(ed) => (editorRefs.current[index] = ed)}
+                        onOpenLive={(url) => void openLive(url)}
                       />
                       {dropHint?.group === index && <div className={`drop-overlay drop-${dropHint.zone}`} />}
                     </div>
@@ -508,7 +564,9 @@ export function Workspace({ state }: { state: ClientState }) {
                 );
               })}
             </div>
-            {showBrowserFull && <BrowserPanel full onToggleFull={() => setBrowserFull(false)} onClose={() => setBrowserOpen(false)} />}
+            {showBrowserFull && (
+              <BrowserPanel full onToggleFull={() => setBrowserFull(false)} onClose={() => setBrowserOpen(false)} inspectFor={inspectFor} onInspect={openInspect} />
+            )}
           </div>
           {panelOpen && (
             <>
@@ -524,7 +582,7 @@ export function Workspace({ state }: { state: ClientState }) {
           <>
             <div className="splitter splitter-v" onMouseDown={drag((dx) => setBrowserW((w) => Math.max(320, Math.min(900, w - dx))))} />
             <div style={{ width: browserW, display: "flex" }}>
-              <BrowserPanel full={false} onToggleFull={() => setBrowserFull(true)} onClose={() => setBrowserOpen(false)} />
+              <BrowserPanel full={false} onToggleFull={() => setBrowserFull(true)} onClose={() => setBrowserOpen(false)} inspectFor={inspectFor} onInspect={openInspect} />
             </div>
           </>
         )}
@@ -543,7 +601,7 @@ export function Workspace({ state }: { state: ClientState }) {
             {uz.statusbar.ln} {cursor.line}, {uz.statusbar.col} {cursor.col}
           </span>
         )}
-        {active && <span className="sb-item">{language(active)}</span>}
+        {active && <span className="sb-item">{isFigmaDesignFile(active) ? uz.design.tab : language(active)}</span>}
         {!state.locked && (
           <>
             <button
