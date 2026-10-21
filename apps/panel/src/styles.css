@@ -1814,3 +1814,29 @@ button {
   font-size: 12.5px;
   margin-top: 4px;
 }
+.check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.check-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--surface);
+  user-select: none;
+}
+.check-pill.on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.check-pill input {
+  accent-color: var(--primary);
+  margin: 0;
+}

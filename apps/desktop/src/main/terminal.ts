@@ -1,6 +1,8 @@
 import * as pty from "node-pty";
+import type { ShellKind } from "@exam-ide/shared";
+import { shellProfile } from "./shells";
 
-// Terminal (CLAUDE.md 3): node-pty + PowerShell, ish papkasida.
+// Terminal (CLAUDE.md 3, 0.8.2): node-pty + tanlangan profil (PowerShell, cmd, Git Bash, WSL), ish papkasida.
 // Kiritish qatorini ilova boshqaradi — buyruq pty'ga YUBORILISHIDAN OLDIN ruxsat tekshiriladi (ipc.ts).
 // Jarayon ishlayotganda (busy) kiritma to'g'ridan-to'g'ri o'tadi (interaktiv savollar uchun).
 
@@ -10,6 +12,7 @@ export interface CommandInfo {
 }
 
 interface Term {
+  kind: ShellKind;
   proc: pty.IPty;
   cwd: string;
   busy: boolean;
@@ -30,7 +33,7 @@ const MAX_TERMINALS = 5;
  * shuning uchun "buyruq tugadi, shell kutmoqda" holatini ishonchli bildiradi. Avvalgi "PS ...>" matnini
  * qidirish ConPTY qayta chizganda xato ishlardi (masalan `node` REPL'da kiritma buyruq deb bloklanardi).
  */
-const PROMPT_MARK = "\x1b]633;A\x07";
+const PROMPT_MARK = "\x1b]633;A"; // BEL (PowerShell, bash) yoki ESC \ (cmd) bilan yopiladi
 
 export class Terminals {
   private readonly terms = new Map<number, Term>();
@@ -38,25 +41,27 @@ export class Terminals {
 
   constructor(private readonly events: TerminalEvents) {}
 
-  create(cwd: string, cols: number, rows: number): number | null {
+  /** `null` — terminallar soni chegarada; `undefined` — bu shell kompyuterda yo'q. */
+  create(kind: ShellKind, cwd: string, cols: number, rows: number): number | null | undefined {
     if (this.terms.size >= MAX_TERMINALS) return null;
-    const isWin = process.platform === "win32";
+    const profile = shellProfile(kind, cwd);
+    if (!profile) return undefined;
     const env: Record<string, string> = {};
     for (const [k, v] of Object.entries(process.env)) {
       if (v !== undefined && !k.startsWith("ELECTRON_")) env[k] = v;
     }
     env.BROWSER = "none";
     env.KODIM_ROOT = cwd;
-    const prompt =
-      "function global:prompt { $p = (Get-Location).Path; $r = $env:KODIM_ROOT; " +
-      "if ($p.StartsWith($r)) { $p = '~' + $p.Substring($r.Length) }; \"$([char]27)]633;A$([char]7)PS $p> \" }";
-    const proc = pty.spawn(
-      isWin ? "powershell.exe" : (process.env.SHELL ?? "bash"),
-      isWin ? ["-NoLogo", "-NoExit", "-ExecutionPolicy", "Bypass", "-Command", prompt] : [],
-      { name: "xterm-256color", cols: clamp(cols, 20, 500), rows: clamp(rows, 5, 200), cwd, env },
-    );
+    Object.assign(env, profile.env);
+    const proc = pty.spawn(profile.file, profile.args, {
+      name: "xterm-256color",
+      cols: clamp(cols, 20, 500),
+      rows: clamp(rows, 5, 200),
+      cwd,
+      env,
+    });
     const id = this.nextId++;
-    const term: Term = { proc, cwd, busy: false, carry: "" };
+    const term: Term = { kind, proc, cwd, busy: false, carry: "" };
     this.terms.set(id, term);
     proc.onData((data) => {
       this.events.data(id, data);
@@ -76,6 +81,11 @@ export class Terminals {
 
   cwd(id: number): string | null {
     return this.terms.get(id)?.cwd ?? null;
+  }
+
+  /** Terminal qaysi shell'da (ruxsat tekshiruvi shu sintaksis bilan). */
+  kind(id: number): ShellKind | null {
+    return this.terms.get(id)?.kind ?? null;
   }
 
   /** Ruxsat etilgan buyruqni yuboradi: busy deb belgilanadi (prompt qaytguncha). */

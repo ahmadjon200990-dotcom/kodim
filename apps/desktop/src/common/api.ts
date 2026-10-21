@@ -1,6 +1,6 @@
 // Main ↔ renderer IPC shartnomasi (faqat desktop ichida). Renderer Node API'ga ega emas,
 // hamma narsa preload'dagi `window.kodim` orqali.
-import type { AckResult, ExamPublic } from "@exam-ide/shared";
+import type { AckResult, ExamPublic, ShellKind } from "@exam-ide/shared";
 
 export type Screen = "login" | "lobby" | "workspace" | "submitted";
 
@@ -76,7 +76,11 @@ export interface KodimApi {
     paste(source: "editor" | "input" | "terminal"): Promise<string>;
   };
   terminal: {
-    create(cols: number, rows: number): Promise<AckResult<{ id: number }>>;
+    /** Shu kompyuterda mavjud VA imtihonda ruxsat etilgan profillar; `defaultKind` — oxirgi tanlangan. */
+    profiles(): Promise<TerminalProfiles>;
+    /** Standart profilni eslab qolish ("+" bosilganda shu ochiladi). */
+    setDefault(kind: ShellKind): void;
+    create(kind: ShellKind | null, cols: number, rows: number): Promise<AckResult<{ id: number; kind: ShellKind }>>;
     /** Buyruq qatorini yuboradi: bo'sh (idle) bo'lsa ruxsat tekshiriladi, aks holda jarayon kiritmasi (raw). */
     submit(id: number, line: string): Promise<TerminalSubmit>;
     /** Ctrl+C — ishlayotgan jarayonni to'xtatish. */
@@ -120,9 +124,16 @@ export interface KodimApi {
   };
 }
 
+export interface TerminalProfiles {
+  profiles: { kind: ShellKind; label: string }[];
+  defaultKind: ShellKind | null;
+}
+
 /** terminal.submit natijasi — renderer kiritma qatorini shunga qarab tozalaydi yoki xato ko'rsatadi. */
 export type TerminalSubmit =
-  | { ok: true; forwarded: boolean }
+  | { ok: true; forwarded: true }
+  /** Bloklandi: sabab (o'zbekcha) — kiritma ustida ko'rsatiladi. */
+  | { ok: true; forwarded: false; blocked: string }
   | { ok: false; error: string };
 
 export const IPC = {
@@ -137,6 +148,8 @@ export const IPC = {
   clipboardWrite: "clipboard:write",
   clipboardPaste: "clipboard:paste",
   termCreate: "terminal:create",
+  termProfiles: "terminal:profiles",
+  termSetDefault: "terminal:set-default",
   termSubmit: "terminal:submit",
   termInterrupt: "terminal:interrupt",
   termComplete: "terminal:complete",

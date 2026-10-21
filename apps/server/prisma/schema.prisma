@@ -96,6 +96,8 @@ model Exam {
   allowedPackages Json
   /// ["npm install", "node", ...] — terminalda ruxsat etilgan buyruq naqshlari
   allowedCommands Json         @default("[]")
+  /// ["powershell","cmd","gitbash","wsl"] — ruxsat etilgan terminal profillari (bo'sh — hammasi)
+  allowedShells   Json         @default("[]")
   createdAt       DateTime     @default(now())
   tasks           Task[]
   attempts        Attempt[]

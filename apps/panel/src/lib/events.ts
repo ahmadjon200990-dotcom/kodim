@@ -1,3 +1,4 @@
+import { SHELL_LABELS, type ShellKind } from "@exam-ide/shared";
 // Event tafsilotlarini o'qituvchi uchun tushunarli o'zbekcha matnga aylantirish (jonli oqim va batafsil sahifa).
 const str = (v: unknown) => (v === undefined || v === null ? "" : String(v));
 
@@ -22,6 +23,14 @@ const SHOT_SOURCE: Record<string, string> = {
   snipping: "Ekran qirqish vositasi (Win+Shift+S)",
 };
 
+const BLOCK_REASONS: Record<string, string> = {
+  CHAINING: "zanjirlash/yo'naltirish",
+  BYPASS: "boshqa shell yoki eval",
+  INLINE_CODE: "kodni buyruq qatorida bajarish",
+  NOT_ALLOWED: "ruxsat etilmagan buyruq",
+  UNKNOWN_PACKAGE: "ruxsatsiz paket",
+};
+
 export function eventSummary(type: string, details: unknown): string {
   const d = (details && typeof details === "object" ? details : {}) as Record<string, unknown>;
   switch (type) {
@@ -40,7 +49,7 @@ export function eventSummary(type: string, details: unknown): string {
     case "DANGEROUS_COMMAND":
       return `Buyruq: ${str(d.line)}`;
     case "BLOCKED_COMMAND":
-      return `Bajarilmadi: ${str(d.line)}${d.reason ? ` — ${str(d.reasonText ?? d.reason)}` : ""}`;
+      return `Bajarilmadi${d.shell ? ` (${SHELL_LABELS[d.shell as ShellKind] ?? str(d.shell)})` : ""}: ${str(d.line)}${d.reason ? ` — ${BLOCK_REASONS[str(d.reason)] ?? str(d.reason)}` : ""}`;
     case "TERMINAL_COMMAND":
       return str(d.line);
     case "UNKNOWN_PACKAGE":

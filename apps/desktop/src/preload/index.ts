@@ -26,7 +26,9 @@ const api: KodimApi = {
     paste: (source) => ipcRenderer.invoke(IPC.clipboardPaste, source),
   },
   terminal: {
-    create: (cols, rows) => ipcRenderer.invoke(IPC.termCreate, cols, rows),
+    profiles: () => ipcRenderer.invoke(IPC.termProfiles),
+    setDefault: (kind) => ipcRenderer.send(IPC.termSetDefault, kind),
+    create: (kind, cols, rows) => ipcRenderer.invoke(IPC.termCreate, kind, cols, rows),
     submit: (id, line) => ipcRenderer.invoke(IPC.termSubmit, id, line),
     interrupt: (id) => ipcRenderer.send(IPC.termInterrupt, id),
     complete: (id, prefix) => ipcRenderer.invoke(IPC.termComplete, id, prefix),

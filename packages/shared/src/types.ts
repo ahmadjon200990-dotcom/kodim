@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DEFAULT_ALLOWED_COMMANDS } from "./commands.js";
+import { DEFAULT_ALLOWED_COMMANDS, SHELL_KINDS } from "./commands.js";
 import { uzShared } from "./uz.js";
 
 // ---------- Enumlar ----------
@@ -172,6 +172,12 @@ export const ExamInput = z.object({
   allowedPackages: z.array(z.string().trim().min(1).max(214)).max(200).default([...DEFAULT_ALLOWED_PACKAGES]),
   /** Terminalda ruxsat etilgan buyruq naqshlari (CLAUDE.md 3). */
   allowedCommands: z.array(z.string().trim().min(1).max(100)).max(100).default([...DEFAULT_ALLOWED_COMMANDS]),
+  /** Ruxsat etilgan terminal profillari (CLAUDE.md 0.8.2). Standart — hammasi (o'quvchi kompyuterida bori). */
+  allowedShells: z
+    .array(z.enum(SHELL_KINDS))
+    .min(1, uzShared.shellsRequired)
+    .max(SHELL_KINDS.length)
+    .default([...SHELL_KINDS]),
   tasks: z.array(TaskInput).min(1).max(50),
 });
 export type ExamInput = z.infer<typeof ExamInput>;

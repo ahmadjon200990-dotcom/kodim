@@ -118,6 +118,10 @@ export const uz = {
     packagesHint: "npm install bilan o'rnatiladigan paketlar. Ro'yxatda yo'q paket o'rnatilsa — ogohlantirish.",
     packagePlaceholder: "paket nomi (masalan: axios)",
     commands: "Ruxsat etilgan terminal buyruqlari",
+    shells: "Ruxsat etilgan terminallar",
+    shellsHint:
+      "O'quvchi kompyuterida mavjud bo'lganlari ko'rinadi. Har birida ruxsat tekshiruvi o'sha shell sintaksisi bilan ishlaydi (zanjirlash, yo'naltirish, eval va boshqa shell'ni chaqirish bloklanadi).",
+    shellsRequired: "Kamida bitta terminal turini tanlang",
     commandsHint: "Faqat shu buyruqlar terminalda ishlaydi. Boshqasi bloklanadi va o'qituvchiga xabar ketadi. Zanjirlash (; && | > …) har doim bloklanadi.",
     commandPlaceholder: "buyruq (masalan: npm run)",
     addCommand: "Buyruq qo'shish",

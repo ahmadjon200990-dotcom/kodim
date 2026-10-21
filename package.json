@@ -15,7 +15,8 @@
     "dev:desktop": "pnpm --filter @exam-ide/desktop dev",
     "start:desktop": "pnpm --filter @exam-ide/desktop build && pnpm --filter @exam-ide/desktop start",
     "dev:panel": "pnpm --filter @exam-ide/panel dev",
-    "build:panel": "pnpm --filter @exam-ide/panel build"
+    "build:panel": "pnpm --filter @exam-ide/panel build",
+    "test": "pnpm -r --if-present test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

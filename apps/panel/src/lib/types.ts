@@ -1,5 +1,5 @@
 // Server javoblari uchun panel tomonidagi tiplar (shared tiplarni to'ldiradi).
-import type { AttemptStatus, ExamStatus, ExamTemplate, GradedBy, TaskType, TeacherRole } from "@exam-ide/shared";
+import type { AttemptStatus, ExamStatus, ExamTemplate, GradedBy, ShellKind, TaskType, TeacherRole } from "@exam-ide/shared";
 
 export interface Teacher {
   id: string;
@@ -49,6 +49,7 @@ export interface ExamFull {
   aiModel: "DEFAULT" | "STRONG";
   allowedPackages: string[];
   allowedCommands: string[];
+  allowedShells?: ShellKind[];
   tasks: TaskDto[];
 }
 

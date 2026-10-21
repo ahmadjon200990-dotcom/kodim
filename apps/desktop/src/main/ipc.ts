@@ -1,7 +1,8 @@
 import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from "electron";
-import { checkCommand } from "@exam-ide/shared";
+import { checkCommand, isShellAllowed, SHELL_KINDS, SHELL_LABELS, type ShellKind } from "@exam-ide/shared";
 import { EventType } from "@exam-ide/shared";
-import { IPC, type Rect, type Result, type TerminalSubmit } from "../common/api";
+import { IPC, type Rect, type Result, type TerminalProfiles, type TerminalSubmit } from "../common/api";
+import { detectShells } from "./shells";
 import type { ExamBrowser } from "./browser";
 import { pasteInternal, writeInternal } from "./clipboard";
 import type { LiveServer } from "./liveServer";
@@ -69,14 +70,35 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
     return pasteInternal(src, (details) => session.reportEvent("PASTE_BLOCKED", details));
   });
 
-  // ---- Terminal (CLAUDE.md 3): buyruq pty'ga YUBORILISHIDAN OLDIN ruxsat tekshiriladi.
-  handle(IPC.termCreate, (cols, rows) => {
+  // ---- Terminal (CLAUDE.md 3, 0.8.2): profillar; buyruq pty'ga YUBORILISHIDAN OLDIN shell sintaksisi bilan tekshiriladi.
+  const usableShells = async (): Promise<ShellKind[]> =>
+    (await detectShells()).filter((k) => isShellAllowed(k, session.allowedShells()));
+
+  handle(IPC.termProfiles, async (): Promise<TerminalProfiles> => {
+    const kinds = await usableShells();
+    const saved = store.terminalProfile();
+    return {
+      profiles: kinds.map((kind) => ({ kind, label: SHELL_LABELS[kind] })),
+      defaultKind: saved && kinds.includes(saved) ? saved : (kinds[0] ?? null),
+    };
+  });
+  on(IPC.termSetDefault, (kind) => {
+    if ((SHELL_KINDS as readonly unknown[]).includes(kind)) store.setTerminalProfile(kind as ShellKind);
+  });
+
+  handle(IPC.termCreate, async (kindArg, cols, rows) => {
     const ws = session.workspace;
     if (!ws) return { ok: false, error: uz.noWorkspace };
     if (session.state.locked) return { ok: false, error: uz.locked };
+    const usable = await usableShells();
+    const saved = store.terminalProfile();
+    const kind: ShellKind | undefined =
+      kindArg === null || kindArg === undefined ? (saved && usable.includes(saved) ? saved : usable[0]) : (kindArg as ShellKind);
+    if (!kind || !usable.includes(kind)) return { ok: false, error: uz.shellNotAllowed };
     try {
-      const id = terminals.create(ws.root, num(cols), num(rows));
-      return id === null ? { ok: false, error: uz.tooManyTerminals } : { ok: true, id };
+      const id = terminals.create(kind, ws.root, num(cols), num(rows));
+      if (id === undefined) return { ok: false, error: uz.shellMissing };
+      return id === null ? { ok: false, error: uz.tooManyTerminals } : { ok: true, id, kind };
     } catch {
       return { ok: false, error: uz.terminalFailed };
     }
@@ -95,19 +117,20 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
       terminals.raw(id, "\r");
       return { ok: true, forwarded: true };
     }
-    const verdict = checkCommand(line, session.allowedCommands());
+    const shell = terminals.kind(id) ?? "powershell";
+    const verdict = checkCommand(line, session.allowedCommands(), shell);
     if (!verdict.ok) {
       terminals.echo(id, `\r\n\x1b[31m${line}\x1b[0m\r\n\x1b[33m${verdict.message}\x1b[0m\r\n`);
-      session.reportEvent("BLOCKED_COMMAND", { line, reason: verdict.reason });
-      return { ok: true, forwarded: false };
+      session.reportEvent("BLOCKED_COMMAND", { line, reason: verdict.reason, shell });
+      return { ok: true, forwarded: false, blocked: verdict.message };
     }
     // Ruxsat etilmagan paket o'rnatish ham bloklanadi.
     const unknown = monitor.unknownPackages(line);
     if (unknown.length) {
       terminals.echo(id, `\r\n\x1b[31m${line}\x1b[0m\r\n\x1b[33m${uz.packageBlocked(unknown)}\x1b[0m\r\n`);
       session.reportEvent("UNKNOWN_PACKAGE", { packages: unknown, line, blocked: true });
-      session.reportEvent("BLOCKED_COMMAND", { line, reason: "UNKNOWN_PACKAGE" });
-      return { ok: true, forwarded: false };
+      session.reportEvent("BLOCKED_COMMAND", { line, reason: "UNKNOWN_PACKAGE", shell });
+      return { ok: true, forwarded: false, blocked: uz.packageBlocked(unknown) };
     }
     monitor.onAllowedCommand({ line, terminalId: id });
     terminals.forward(id, line);

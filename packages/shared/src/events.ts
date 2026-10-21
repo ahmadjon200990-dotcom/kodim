@@ -2,6 +2,7 @@
 // Event nomlari quyidagi interfeyslarning kalitlari; socket.io generic'lari bilan ishlatiladi.
 import { z } from "zod";
 import { EventType, FileEntry } from "./types.js";
+import type { ShellKind } from "./commands.js";
 import type {
   AttemptStatus,
   EventSeverity,
@@ -110,6 +111,8 @@ export interface ExamPublic {
   allowedPackages: string[];
   /** Terminalda ruxsat etilgan buyruq naqshlari (CLAUDE.md 3). */
   allowedCommands: string[];
+  /** Ruxsat etilgan terminal profillari (bo'sh — hammasi). */
+  allowedShells: ShellKind[];
 }
 
 export interface ExamLive extends ExamPublic {

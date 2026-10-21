@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { COMMAND_PRESETS, DEFAULT_ALLOWED_COMMANDS, DEFAULT_ALLOWED_PACKAGES, parseFigmaUrl } from "@exam-ide/shared";
-import type { DesignImage, ExamTemplate, TaskType } from "@exam-ide/shared";
+import { COMMAND_PRESETS, DEFAULT_ALLOWED_COMMANDS, DEFAULT_ALLOWED_PACKAGES, parseFigmaUrl, SHELL_KINDS, SHELL_LABELS } from "@exam-ide/shared";
+import type { DesignImage, ExamTemplate, ShellKind, TaskType } from "@exam-ide/shared";
 import { api, ApiError } from "../lib/api";
 import { formatBytes, readFolder, readZip, StarterError, type StarterFile } from "../lib/starter";
 import { errorLines } from "../lib/errors";
@@ -71,6 +71,7 @@ export function ExamEdit() {
   const [aiModel, setAiModel] = useState<"DEFAULT" | "STRONG">("DEFAULT");
   const [packages, setPackages] = useState<string[]>([...DEFAULT_ALLOWED_PACKAGES]);
   const [commands, setCommands] = useState<string[]>([...DEFAULT_ALLOWED_COMMANDS]);
+  const [shells, setShells] = useState<ShellKind[]>([...SHELL_KINDS]);
   const [newPackage, setNewPackage] = useState("");
   const [newCommand, setNewCommand] = useState("");
   const [error, setError] = useState("");
@@ -111,6 +112,7 @@ export function ExamEdit() {
         setAiModel(e.aiModel);
         setPackages(e.allowedPackages);
         setCommands(e.allowedCommands ?? [...DEFAULT_ALLOWED_COMMANDS]);
+        setShells(e.allowedShells?.length ? e.allowedShells : [...SHELL_KINDS]);
       },
       (err: unknown) => {
         setLoadError(err instanceof Error ? err.message : "");
@@ -153,6 +155,7 @@ export function ExamEdit() {
     if (tasks.some((t) => t.type === "FIGMA" && t.figmaUrl.trim() && !parseFigmaUrl(t.figmaUrl))) return setError(uz.figma.badLink);
     if (SHOW_AI && aiEnabled && weightSum !== 100) return setError(`${uz.edit.sumError}${weightSum})`);
     if (template === "CUSTOM" && starter.length === 0) return setError(uz.edit.starterEmpty);
+    if (shells.length === 0) return setError(uz.edit.shellsRequired);
     const body = {
       title: title.trim(),
       durationMin: Number(durationMin),
@@ -161,6 +164,7 @@ export function ExamEdit() {
       aiModel,
       allowedPackages: packages,
       allowedCommands: commands,
+      allowedShells: shells,
       referenceFiles: reference.filter((f) => f.path.trim()),
       starterFiles: template === "CUSTOM" ? starter.map(({ path, content, encoding }) => ({ path, content, ...(encoding && { encoding }) })) : [],
       // Mezonlar ixtiyoriy — bo'sh nomlilar tashlanadi; AI o'chiq bo'lsa yuborilmaydi.
@@ -342,6 +346,22 @@ export function ExamEdit() {
           <h2>{uz.edit.commands}</h2>
         </div>
         <div className="hint">{uz.edit.commandsHint}</div>
+        <div className="field">
+          <span>{uz.edit.shells}</span>
+          <div className="check-row">
+            {SHELL_KINDS.map((k) => (
+              <label key={k} className={shells.includes(k) ? "check-pill on" : "check-pill"}>
+                <input
+                  type="checkbox"
+                  checked={shells.includes(k)}
+                  onChange={(e) => setShells((x) => (e.target.checked ? SHELL_KINDS.filter((q) => q === k || x.includes(q)) : x.filter((q) => q !== k)))}
+                />
+                {SHELL_LABELS[k]}
+              </label>
+            ))}
+          </div>
+          <div className="hint">{uz.edit.shellsHint}</div>
+        </div>
         <div className="presets">
           {COMMAND_PRESETS.map((p) => (
             <button key={p.id} className="btn btn-xs" onClick={() => applyPreset(p.id)}>

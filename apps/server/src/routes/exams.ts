@@ -24,6 +24,7 @@ function examData(input: ExamInput) {
     aiModel: input.aiModel,
     allowedPackages: input.allowedPackages,
     allowedCommands: input.allowedCommands,
+    allowedShells: input.allowedShells,
   };
 }
 

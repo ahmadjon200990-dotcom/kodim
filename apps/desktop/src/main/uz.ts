@@ -12,6 +12,8 @@ export const uz = {
   failed: "Amalni bajarib bo'lmadi",
   tooManyTerminals: "Terminallar soni 5 tadan oshmasligi kerak",
   terminalFailed: "Terminalni ochib bo'lmadi",
+  shellNotAllowed: "Bu terminal turi imtihonda ruxsat etilmagan",
+  shellMissing: "Bu terminal kompyuterda topilmadi",
   urlNotAllowed: "Bu manzil ruxsat etilmagan. Faqat localhost va Figma ochiladi",
   packageBlocked: (pkgs: string[]) =>
     `Bu paket(lar) imtihonda ruxsat etilmagan: ${pkgs.join(", ")}. O'rnatish bloklandi.`,

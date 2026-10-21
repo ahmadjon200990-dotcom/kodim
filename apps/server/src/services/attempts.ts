@@ -1,5 +1,5 @@
 import type { Exam, Prisma } from "@prisma/client";
-import { computeFinalScore, sumPenalties } from "@exam-ide/shared";
+import { computeFinalScore, SHELL_KINDS, sumPenalties } from "@exam-ide/shared";
 import type { AttemptSummary, ExamLive, ExamPublic } from "@exam-ide/shared";
 import { z } from "zod";
 import { prisma } from "../db.js";
@@ -44,6 +44,7 @@ export async function getAttemptSummary(attemptId: string): Promise<AttemptSumma
 }
 
 const PackageList = z.array(z.string()).catch([]);
+const ShellList = z.array(z.enum(SHELL_KINDS)).catch([]);
 
 export function examPublic(exam: Exam): ExamPublic {
   return {
@@ -54,6 +55,7 @@ export function examPublic(exam: Exam): ExamPublic {
     status: exam.status,
     allowedPackages: PackageList.parse(exam.allowedPackages),
     allowedCommands: PackageList.parse(exam.allowedCommands),
+    allowedShells: ShellList.parse(exam.allowedShells),
   };
 }
 

@@ -92,6 +92,11 @@ export class ExamSession {
     return this.state.exam?.allowedCommands ?? [];
   }
 
+  /** Ruxsat etilgan terminal profillari (bo'sh — hammasi). */
+  allowedShells(): string[] {
+    return this.state.exam?.allowedShells ?? [];
+  }
+
   constructor(private readonly hooks: SessionHooks) {
     this.socket = io(`${__SERVER_URL__}${STUDENT_NAMESPACE}`, {
       transports: ["websocket"],
