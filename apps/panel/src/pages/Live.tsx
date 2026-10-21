@@ -12,6 +12,7 @@ import { FigmaStatus } from "../components/FigmaStatus";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState, errorText, PageMessage, PageSkeleton, Skeleton, useModal, useToast } from "../components/ui";
 import { uz } from "../uz";
+import { Icon } from "../components/Icon";
 
 const CodeBrowser = lazy(() => import("../components/DiffView").then((m) => ({ default: m.CodeBrowser })));
 
@@ -137,7 +138,7 @@ export function Live() {
             )}
             {lobby && (
               <button className="btn btn-primary" disabled={busy !== ""} onClick={() => void start()}>
-                ▶ {uz.live.start}
+                <Icon name="play" /> {uz.live.start}
               </button>
             )}
             {running && (
@@ -151,7 +152,7 @@ export function Live() {
                   ))}
                 </div>
                 <button className="btn btn-danger-solid" disabled={busy !== ""} onClick={() => void finish()}>
-                  ■ {uz.live.finish}
+                  <Icon name="stop" /> {uz.live.finish}
                 </button>
               </>
             )}
@@ -287,7 +288,7 @@ function StudentCard({
       <div className="sc-stats">
         {a.warningCount > 0 && (
           <button className={danger > 0 ? "badge badge-plain badge-danger" : "badge badge-plain badge-warn"} onClick={onAlerts} style={{ cursor: "pointer" }} title={uz.live.filterStudent}>
-            ⚠ {a.warningCount}
+            <Icon name="alert" size={13} /> {a.warningCount}
           </button>
         )}
         {a.penaltyTotal > 0 && <span className="badge badge-plain badge-danger">−{a.penaltyTotal}</span>}

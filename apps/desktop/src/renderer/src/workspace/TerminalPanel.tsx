@@ -6,6 +6,7 @@ import type { ShellKind } from "@exam-ide/shared";
 import type { TerminalProfiles } from "../../../common/api";
 import { useDialog } from "../Dialog";
 import { uz } from "../uz";
+import { Codicon } from "./Codicon";
 
 // Terminal paneli (CLAUDE.md 0.3, 0.8.2) — VS Code kabi: profillar (PowerShell, cmd, Git Bash, WSL), nomlash,
 // bo'lish (2 ta yonma-yon), tozalash, o'chirish. xterm faqat CHIQISHni ko'rsatadi; kiritma har terminal ostidagi
@@ -404,7 +405,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
               disabled={locked}
               onClick={() => void create(null, true)}
             >
-              ＋
+              <Codicon name="add" />
             </button>
             <button
               className="icon-btn term-new-drop"
@@ -415,7 +416,7 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
                 setProfileMenu((o) => !o);
               }}
             >
-              ▾
+              <Codicon name="chevronDown" size={12} />
             </button>
             {profileMenu && profiles && (
               <div className="context-menu term-profile-menu" onClick={(e) => e.stopPropagation()}>
@@ -434,13 +435,13 @@ export function TerminalPanel({ locked }: { locked: boolean }) {
             )}
           </div>
           <button className="icon-btn" title={uz.terminal.split} disabled={!canSplit} onClick={() => focusedTab && void create(focusedTab.kind, true, focusedTab.id)}>
-            ◫
+            <Codicon name="split" />
           </button>
           <button className="icon-btn" title={uz.terminal.clear} disabled={focused === null} onClick={() => clear(focused)}>
-            ⌫
+            <Codicon name="clear" />
           </button>
           <button className="icon-btn" title={uz.terminal.kill} disabled={focused === null} onClick={() => focused !== null && close(focused)}>
-            🗑
+            <Codicon name="trash" />
           </button>
         </div>
       </div>

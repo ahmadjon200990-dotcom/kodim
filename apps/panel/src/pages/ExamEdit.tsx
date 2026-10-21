@@ -9,6 +9,7 @@ import type { ExamFull } from "../lib/types";
 import { PageMessage, PageSkeleton, useToast } from "../components/ui";
 import { FigmaStatus } from "../components/FigmaStatus";
 import { uz } from "../uz";
+import { Icon } from "../components/Icon";
 
 interface TaskForm {
   title: string;
@@ -78,6 +79,8 @@ export function ExamEdit() {
   const [busy, setBusy] = useState(false);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "notFound" | "error">(id ? "loading" : "ready");
   const [loadError, setLoadError] = useState("");
+  /** Imtihon faqat qoralama holatida tahrirlanadi (server ham rad etadi) — oldindan aniq ko'rsatamiz. */
+  const [locked, setLocked] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -85,6 +88,7 @@ export function ExamEdit() {
     void api.get<ExamFull>(`/exams/${id}`).then(
       (e) => {
         setLoadState("ready");
+        setLocked(e.status !== "DRAFT");
         setTitle(e.title);
         setDuration(e.durationMin);
         setTemplate(e.template);
@@ -206,6 +210,7 @@ export function ExamEdit() {
       <div className="page-head">
         <h1>{editing ? uz.edit.editTitle : uz.edit.newTitle}</h1>
       </div>
+      {locked && <div className="callout callout-warn">{uz.edit.lockedNotice}</div>}
       {editing && id && <FigmaStatus examId={id} />}
 
       <section className="card">
@@ -471,7 +476,7 @@ export function ExamEdit() {
         <button className="btn" onClick={() => nav("/")}>
           {uz.edit.cancel}
         </button>
-        <button className="btn btn-primary" disabled={busy} onClick={() => void save()}>
+        <button className="btn btn-primary" disabled={busy || locked} title={locked ? uz.edit.lockedNotice : undefined} onClick={() => void save()}>
           {busy ? uz.edit.saving : uz.edit.save}
         </button>
       </div>
@@ -600,7 +605,7 @@ function StarterFolder({ files, active, onFiles }: { files: StarterFile[]; activ
             ⤒ {uz.edit.starterZip}
           </button>
           <button className="btn btn-sm" disabled={busy} onClick={() => dirRef.current?.click()}>
-            📁 {uz.edit.starterDir}
+            <Icon name="folder" /> {uz.edit.starterDir}
           </button>
           {files.length > 0 && (
             <button className="btn btn-sm btn-danger" onClick={() => onFiles([])}>

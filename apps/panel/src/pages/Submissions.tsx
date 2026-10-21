@@ -8,6 +8,7 @@ import { useLoad } from "../lib/useLoad";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState, errorText, PageMessage, PageSkeleton, Skeleton, useToast } from "../components/ui";
 import { uz } from "../uz";
+import { Icon } from "../components/Icon";
 
 const CodeBrowser = lazy(() => import("../components/DiffView").then((m) => ({ default: m.CodeBrowser })));
 
@@ -96,7 +97,7 @@ export function Submissions() {
             </div>
             {visible.map(({ a, folder }) => (
               <button key={a.id} className={a.id === selected ? "sub-item active" : "sub-item"} onClick={() => setSelected(a.id)}>
-                <span className="sub-folder">📁</span>
+                <span className="sub-folder"><Icon name="folder" /></span>
                 <span className="sub-name">
                   <span className="mono">{folder}</span>
                   <span className="small muted">{uz.attemptStatus[a.status]}</span>
@@ -178,7 +179,7 @@ function SubmissionDetail({ attemptId, folder, onSaved }: { attemptId: string; f
         <div className="card-head">
           <div>
             <h2>
-              📁 <span className="mono">{folder}</span>
+              <Icon name="folder" /> <span className="mono">{folder}</span>
             </h2>
             <div className="card-sub">
               {a.studentName} · {uz.attemptStatus[a.status]}

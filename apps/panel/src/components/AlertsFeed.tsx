@@ -5,6 +5,7 @@ import { eventSummary } from "../lib/events";
 import type { LiveAlert } from "../lib/useExamSocket";
 import { errorText, useModal, useToast } from "./ui";
 import { uz } from "../uz";
+import { Icon } from "./Icon";
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString("uz", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -181,7 +182,7 @@ function AlertItem({ alert }: { alert: LiveAlert }) {
           </button>
         </div>
       )}
-      {done && <div className="alert-done">✓ {done}</div>}
+      {done && <div className="alert-done"><Icon name="check" size={14} /> {done}</div>}
     </div>
   );
 }

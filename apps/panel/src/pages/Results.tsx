@@ -7,6 +7,7 @@ import { useLoad } from "../lib/useLoad";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState, PageMessage, PageSkeleton, useToast } from "../components/ui";
 import { uz } from "../uz";
+import { Icon } from "../components/Icon";
 
 type SortKey = "name" | "final" | "ai" | "warnings";
 
@@ -82,7 +83,7 @@ export function Results() {
             {uz.live.title}
           </Link>
           <Link to={`/exams/${exam.id}/submissions`} className="btn btn-sm">
-            📁 {uz.subs.title}
+            <Icon name="folder" /> {uz.subs.title}
           </Link>
           <button className="btn btn-primary btn-sm" onClick={() => void exportXlsx()} disabled={sorted.length === 0}>
             ⤓ {uz.results.export}

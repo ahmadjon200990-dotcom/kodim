@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { BRAND } from "@exam-ide/shared";
 import { useAuth } from "../lib/auth";
 import { uz } from "../uz";
+import { Icon } from "./Icon";
 
 const initials = (name: string) =>
   name
@@ -26,17 +27,17 @@ export function Layout({ children }: { children: ReactNode }) {
         </Link>
         <nav className="nav-links">
           <Link to="/" className={isExams ? "nav-link nav-active" : "nav-link"}>
-            <span className="nav-icon">▤</span>
+            <span className="nav-icon"><Icon name="exams" /></span>
             {uz.nav.exams}
           </Link>
           {me?.role === "ADMIN" && (
             <Link to="/teachers" className={loc.pathname.startsWith("/teachers") ? "nav-link nav-active" : "nav-link"}>
-              <span className="nav-icon">◎</span>
+              <span className="nav-icon"><Icon name="teachers" /></span>
               {uz.nav.teachers}
             </Link>
           )}
           <Link to="/settings" className={loc.pathname.startsWith("/settings") ? "nav-link nav-active" : "nav-link"}>
-            <span className="nav-icon">⚙</span>
+            <span className="nav-icon"><Icon name="settings" /></span>
             {uz.nav.settings}
           </Link>
         </nav>
@@ -48,8 +49,8 @@ export function Layout({ children }: { children: ReactNode }) {
             <div className="nav-user-name">{me?.name}</div>
             <div className="nav-user-role">{me?.role === "ADMIN" ? uz.teachers.admin : uz.teachers.teacher}</div>
           </div>
-          <button className="nav-logout" onClick={logout} title={uz.nav.logout}>
-            {uz.nav.logout}
+          <button className="nav-logout" onClick={logout} title={uz.nav.logout} aria-label={uz.nav.logout}>
+            <Icon name="logout" />
           </button>
         </div>
       </aside>

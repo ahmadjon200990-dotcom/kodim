@@ -1,0 +1,125 @@
+/*
+ * Kodim — yagona dizayn tokenlari (panel va landing). Rang, tipografiya, oraliq, radius, soya faqat shu yerda.
+ * Desktop ilova VS Code Dark Modern tokenlariga qat'iy amal qiladi (apps/desktop/src/renderer/src/styles.css).
+ */
+:root {
+  /* ---- Palitra ---- */
+  --k-white: #ffffff;
+  --k-gray-25: #fcfcfd;
+  --k-gray-50: #fafafa;
+  --k-gray-100: #f4f4f5;
+  --k-gray-150: #ececee;
+  --k-gray-200: #e4e4e7;
+  --k-gray-300: #d4d4d8;
+  --k-gray-400: #a1a1aa;
+  --k-gray-500: #71717a;
+  --k-gray-600: #52525b;
+  --k-gray-700: #3f3f46;
+  --k-gray-800: #27272a;
+  --k-gray-900: #18181b;
+  --k-gray-950: #09090b;
+
+  --k-brand-50: #eef2ff;
+  --k-brand-100: #e0e7ff;
+  --k-brand-200: #c7d2fe;
+  --k-brand-400: #818cf8;
+  --k-brand-500: #6366f1;
+  --k-brand-600: #4f46e5;
+  --k-brand-700: #4338ca;
+  --k-brand-900: #312e81;
+
+  --k-red-50: #fef2f2;
+  --k-red-200: #fecaca;
+  --k-red-500: #ef4444;
+  --k-red-600: #dc2626;
+  --k-red-700: #b91c1c;
+  --k-amber-50: #fffbeb;
+  --k-amber-200: #fde68a;
+  --k-amber-500: #f59e0b;
+  --k-amber-700: #b45309;
+  --k-green-50: #f0fdf4;
+  --k-green-200: #bbf7d0;
+  --k-green-500: #22c55e;
+  --k-green-700: #15803d;
+  --k-violet-50: #f5f3ff;
+  --k-violet-700: #6d28d9;
+  --k-blue-50: #eff6ff;
+  --k-blue-700: #1d4ed8;
+
+  /* ---- Semantik ranglar ---- */
+  --color-bg: var(--k-gray-50);
+  --color-surface: var(--k-white);
+  --color-surface-2: var(--k-gray-25);
+  --color-surface-sunken: var(--k-gray-100);
+  --color-border: var(--k-gray-200);
+  --color-border-strong: var(--k-gray-300);
+  --color-text: var(--k-gray-900);
+  --color-text-2: var(--k-gray-700);
+  --color-muted: var(--k-gray-500);
+  --color-primary: var(--k-brand-600);
+  --color-primary-hover: var(--k-brand-700);
+  --color-primary-soft: var(--k-brand-50);
+  --color-primary-border: var(--k-brand-200);
+  --color-danger: var(--k-red-600);
+  --color-danger-hover: var(--k-red-700);
+  --color-danger-soft: var(--k-red-50);
+  --color-danger-border: var(--k-red-200);
+  --color-warn: var(--k-amber-700);
+  --color-warn-strong: var(--k-amber-500);
+  --color-warn-soft: var(--k-amber-50);
+  --color-warn-border: var(--k-amber-200);
+  --color-success: var(--k-green-700);
+  --color-success-strong: var(--k-green-500);
+  --color-success-soft: var(--k-green-50);
+  --color-success-border: var(--k-green-200);
+  --color-info: var(--k-gray-600);
+  --color-info-soft: var(--k-gray-100);
+
+  /* ---- Tipografiya ---- */
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", monospace;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-display: 52px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --leading: 1.5;
+  --tracking-tight: -0.015em;
+
+  /* ---- Oraliq (4px qadam) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  /* ---- Soya va fokus ---- */
+  --shadow-xs: 0 1px 2px rgb(9 9 11 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(9 9 11 / 0.05), 0 1px 1px rgb(9 9 11 / 0.03);
+  --shadow: 0 2px 6px rgb(9 9 11 / 0.06), 0 1px 2px rgb(9 9 11 / 0.04);
+  --shadow-lg: 0 16px 40px rgb(9 9 11 / 0.14), 0 2px 6px rgb(9 9 11 / 0.06);
+  --ring: 0 0 0 3px rgb(99 102 241 / 0.28);
+
+  /* ---- Harakat ---- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --duration: 140ms;
+}

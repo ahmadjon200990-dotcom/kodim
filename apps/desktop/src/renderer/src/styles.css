@@ -1,28 +1,40 @@
 /* Kodim — o'quvchi ilovasi. VS Code "Dark Modern" ko'rinishi. */
 :root {
-  --bg: #1e1e1e;
-  --bg-2: #252526;
-  --bg-3: #2d2d2d;
-  --panel: #181818;
-  --activity: #333333;
-  --sidebar: #252526;
-  --statusbar: #007acc;
-  --statusbar-off: #68217a;
-  --border: #2b2b2b;
-  --border-2: #3c3c3c;
-  --text: #cccccc;
-  --text-dim: #9d9d9d;
-  --muted: #858585;
-  --accent: #0e639c;
-  --accent-hover: #1177bb;
-  --focus: #007fd4;
-  --danger: #f14c4c;
-  --warn: #cca700;
-  --tab-active: #1e1e1e;
-  --tab-inactive: #2d2d2d;
-  --row-hover: #2a2d2e;
-  --row-active: #37373d;
-  --row-focus: #04395e;
+  /* VS Code "Dark Modern" (1.8x standart tema) tokenlari — workbench.colorCustomizations nomlari izohda. */
+  --bg: #1f1f1f; /* editor.background */
+  --bg-2: #181818; /* sideBar.background, panel.background */
+  --bg-3: #181818; /* titleBar.activeBackground, editorGroupHeader.tabsBackground */
+  --panel: #181818; /* panel.background */
+  --activity: #181818; /* activityBar.background */
+  --activity-fg: #d7d7d7; /* activityBar.foreground */
+  --activity-inactive: #868686; /* activityBar.inactiveForeground */
+  --activity-border: #0078d4; /* activityBar.activeBorder */
+  --sidebar: #181818; /* sideBar.background */
+  --statusbar: #0078d4; /* statusBarItem.remoteBackground — Kodim'da butun Status Bar ko'k */
+  --statusbar-off: #c72e0f; /* aloqa uzilganda (statusBar.debuggingBackground uslubi) */
+  --border: #2b2b2b; /* sideBar.border, panel.border, tab.border */
+  --border-2: #3c3c3c; /* input.border, widget.border */
+  --text: #cccccc; /* foreground */
+  --text-dim: #9d9d9d; /* descriptionForeground */
+  --muted: #868686; /* tab.inactiveForeground */
+  --accent: #0078d4; /* button.background */
+  --accent-hover: #026ec1; /* button.hoverBackground */
+  --btn-secondary: #313131; /* button.secondaryBackground */
+  --btn-secondary-hover: #3c3c3c; /* button.secondaryHoverBackground */
+  --input-bg: #313131; /* input.background */
+  --focus: #0078d4; /* focusBorder */
+  --danger: #f85149; /* errorForeground */
+  --warn: #cca700; /* editorWarning.foreground */
+  --tab-active: #1f1f1f; /* tab.activeBackground */
+  --tab-inactive: #181818; /* tab.inactiveBackground */
+  --tab-active-top: #0078d4; /* tab.activeBorderTop */
+  --row-hover: #2a2d2e; /* list.hoverBackground */
+  --row-active: #37373d; /* list.inactiveSelectionBackground */
+  --row-focus: #04395e; /* list.activeSelectionBackground */
+  --menu-bg: #1f1f1f; /* menu.background */
+  --menu-border: #454545; /* menu.border */
+  --menu-select: #0078d4; /* menu.selectionBackground */
+  --badge: #616161; /* badge.background */
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
@@ -63,18 +75,18 @@ button {
   height: 100%;
   display: grid;
   place-items: center;
-  background: radial-gradient(900px 500px at 50% -10%, #2a2d3a 0%, var(--bg) 60%);
+  background: var(--bg-2);
   padding: 20px;
   overflow: auto;
 }
 .card {
-  background: var(--bg-2);
-  border: 1px solid var(--border-2);
-  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 28px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 16px 40px rgb(0 0 0 / 0.4);
+  box-shadow: 0 0 8px 2px rgb(0 0 0 / 0.36); /* widget.shadow */
 }
 .login,
 .lobby {
@@ -114,8 +126,8 @@ button {
 }
 .input {
   width: 100%;
-  background: #3c3c3c;
-  border: 1px solid #3c3c3c;
+  background: var(--input-bg);
+  border: 1px solid var(--border-2);
   border-radius: 4px;
   padding: 9px 11px;
   color: var(--text);
@@ -130,6 +142,12 @@ button {
   font-size: 22px;
   letter-spacing: 0.4em;
   text-align: center;
+}
+.input-code:placeholder-shown {
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: normal;
+  padding: 13px 11px;
 }
 .btn {
   display: inline-flex;
@@ -156,10 +174,11 @@ button {
   margin-top: 6px;
 }
 .btn-secondary {
-  background: #3a3d41;
+  background: var(--btn-secondary);
+  color: var(--text);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: #45494e;
+  background: var(--btn-secondary-hover);
 }
 .btn-danger {
   background: #a1260d;
@@ -180,7 +199,7 @@ button {
   width: 30px;
   height: 30px;
   margin: 14px auto;
-  border: 3px solid #3c3c3c;
+  border: 3px solid var(--border-2);
   border-top-color: var(--accent-hover);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -336,6 +355,7 @@ button {
   width: 48px;
   flex: none;
   background: var(--activity);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -344,24 +364,30 @@ button {
 }
 .act-btn {
   width: 48px;
-  height: 44px;
+  height: 48px;
   border: 0;
   background: transparent;
-  color: #868686;
-  font-size: 22px;
+  color: var(--activity-inactive);
   cursor: pointer;
   border-left: 2px solid transparent;
+  display: grid;
+  place-items: center;
 }
 .act-btn:hover {
-  color: var(--text);
+  color: var(--activity-fg);
 }
 .act-on {
-  color: #fff;
-  border-left-color: #fff;
+  color: var(--activity-fg);
+  border-left-color: var(--activity-border);
+}
+.codicon {
+  flex: none;
+  display: block;
 }
 .sidebar {
   flex: none;
   background: var(--sidebar);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -403,6 +429,8 @@ button {
   gap: 2px;
 }
 .icon-btn {
+  display: inline-grid;
+  place-items: center;
   width: 24px;
   height: 24px;
   border: 0;
@@ -493,7 +521,7 @@ button {
   padding: 6px 12px;
 }
 .search-box .input {
-  background: #3c3c3c;
+  background: var(--border-2);
   padding: 6px 9px;
 }
 .search-results {
@@ -558,7 +586,8 @@ button {
 .tab-active {
   background: var(--tab-active);
   color: #fff;
-  border-top: 1px solid var(--focus);
+  box-shadow: inset 0 1px 0 var(--tab-active-top);
+  border-bottom-color: var(--tab-active);
 }
 .tab-ico {
   width: 6px;
@@ -593,7 +622,7 @@ button {
   padding: 0 8px;
 }
 .tab-action {
-  background: var(--btn-secondary, #313131);
+  background: var(--btn-secondary, var(--btn-secondary));
   color: var(--text);
   border: 1px solid var(--border-2);
   border-radius: 4px;
@@ -603,7 +632,7 @@ button {
   white-space: nowrap;
 }
 .tab-action:hover {
-  background: var(--btn-secondary-hover, #3c3c3c);
+  background: var(--btn-secondary-hover, var(--border-2));
 }
 .tab-action-primary {
   background: var(--accent);
@@ -652,7 +681,7 @@ button {
 .editor-welcome-logo {
   font-family: Consolas, monospace;
   font-size: 54px;
-  color: #3c3c3c;
+  color: var(--border-2);
 }
 .image-view {
   position: absolute;
@@ -726,7 +755,7 @@ button {
   margin: 4px 0;
 }
 .md-code {
-  background: #2d2d2d;
+  background: var(--btn-secondary);
   border-radius: 4px;
   padding: 1px 5px;
   font-family: Consolas, monospace;
@@ -824,7 +853,10 @@ button {
 .term-pane + .term-pane {
   border-left-color: var(--border-2);
 }
-.term-pane-focused .term-blocked {
+.term-pane-focused .term-inputbar {
+  box-shadow: inset 0 1px 0 var(--focus);
+}
+.term-blocked {
   flex: none;
   display: flex;
   align-items: baseline;
@@ -978,7 +1010,7 @@ button {
 }
 .browser-address {
   width: 100%;
-  background: #3c3c3c;
+  background: var(--border-2);
   padding: 5px 10px;
   font-size: 12px;
   border-radius: 4px;
@@ -1047,8 +1079,8 @@ button {
   position: fixed;
   z-index: 60;
   min-width: 180px;
-  background: #252526;
-  border: 1px solid #454545;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
   border-radius: 6px;
   padding: 4px;
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
@@ -1078,7 +1110,7 @@ button {
 }
 .context-sep {
   height: 1px;
-  background: #454545;
+  background: var(--menu-border);
   margin: 4px 0;
 }
 .context-key {
@@ -1100,8 +1132,8 @@ button {
   width: 600px;
   max-width: calc(100vw - 40px);
   max-height: 60vh;
-  background: #252526;
-  border: 1px solid #454545;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
   border-radius: 8px;
   box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
   display: flex;
@@ -1109,7 +1141,7 @@ button {
   overflow: hidden;
 }
 .palette-input {
-  background: #3c3c3c;
+  background: var(--border-2);
   border: 1px solid var(--focus);
   margin: 8px;
   padding: 8px 10px;
@@ -1163,8 +1195,8 @@ button {
   padding: 16px;
 }
 .modal {
-  background: #252526;
-  border: 1px solid #454545;
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
   border-radius: 10px;
   padding: 20px;
   width: 100%;
@@ -1327,7 +1359,7 @@ button {
   min-width: 0;
 }
 .dv-live {
-  background: var(--btn-secondary, #313131);
+  background: var(--btn-secondary, var(--btn-secondary));
   color: var(--text);
   border: 1px solid var(--border-2);
   border-radius: 4px;
@@ -1337,7 +1369,7 @@ button {
   white-space: nowrap;
 }
 .dv-live:hover {
-  background: var(--btn-secondary-hover, #3c3c3c);
+  background: var(--btn-secondary-hover, var(--border-2));
 }
 .dv-body {
   flex: 1;
@@ -1419,7 +1451,7 @@ button {
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  box-shadow: 0 0 0 1px #3c3c3c, 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px var(--border-2), 0 8px 32px rgba(0, 0, 0, 0.5);
   background: #fff;
 }
 .dv-img {
@@ -1637,4 +1669,13 @@ button {
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* VS Code focusBorder: klaviatura fokusida bir xil ko'k chiziq. */
+:focus-visible {
+  outline: 1px solid var(--focus);
+  outline-offset: -1px;
+}
+.btn:focus-visible {
+  outline-offset: 2px;
 }

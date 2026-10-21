@@ -6,6 +6,7 @@ import { useDialog } from "../Dialog";
 import { INTERNAL_DRAG_TYPE } from "../guard";
 import { closeModel, discardUnder, disposeAll, onSaveError, reloadFromDisk, saveAll } from "../models";
 import { uz } from "../uz";
+import { Codicon } from "./Codicon";
 import { BrowserPanel } from "./BrowserPanel";
 import { EditorPane } from "./EditorPane";
 import { FileTree } from "./FileTree";
@@ -423,7 +424,7 @@ export function Workspace({ state }: { state: ClientState }) {
               }
             }}
           >
-            🗀
+            <Codicon name="files" size={24} />
           </button>
           <button
             className={sidebarOpen && sidebarView === "search" ? "act-btn act-on" : "act-btn"}
@@ -436,7 +437,7 @@ export function Workspace({ state }: { state: ClientState }) {
               }
             }}
           >
-            ⌕
+            <Codicon name="search" size={24} />
           </button>
         </div>
 

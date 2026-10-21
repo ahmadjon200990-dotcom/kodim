@@ -5,6 +5,7 @@ import { useLoad } from "../lib/useLoad";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState, errorText, PageMessage, Skeleton, useModal, useToast } from "../components/ui";
 import { uz } from "../uz";
+import { Icon } from "../components/Icon";
 
 export function ExamsList() {
   const nav = useNavigate();
@@ -138,7 +139,7 @@ export function ExamsList() {
                       {(e.status === "GRADING" || e.status === "FINISHED" || e.status === "RUNNING") && (
                         <>
                           <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/submissions`)}>
-                            📁 {uz.subs.open}
+                            <Icon name="folder" /> {uz.subs.open}
                           </button>
                           <button className="btn btn-sm" onClick={() => nav(`/exams/${e.id}/results`)}>
                             {uz.exams.results}

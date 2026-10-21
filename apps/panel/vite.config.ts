@@ -6,7 +6,10 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@exam-ide/shared": resolve(__dirname, "../../packages/shared/src/index.ts") },
+    alias: [
+      { find: "@exam-ide/shared/tokens.css", replacement: resolve(__dirname, "../../packages/shared/design/tokens.css") },
+      { find: /^@exam-ide\/shared$/, replacement: resolve(__dirname, "../../packages/shared/src/index.ts") },
+    ],
   },
   build: {
     outDir: resolve(__dirname, "../server/public"),

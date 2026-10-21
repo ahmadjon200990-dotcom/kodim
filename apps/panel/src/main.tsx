@@ -5,6 +5,7 @@ import { BRAND } from "@exam-ide/shared";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth";
 import { UiProvider } from "./components/ui";
+import "@exam-ide/shared/tokens.css";
 import "./styles.css";
 
 document.title = BRAND.panelName;

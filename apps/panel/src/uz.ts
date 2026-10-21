@@ -118,6 +118,8 @@ export const uz = {
     packagesHint: "npm install bilan o'rnatiladigan paketlar. Ro'yxatda yo'q paket o'rnatilsa — ogohlantirish.",
     packagePlaceholder: "paket nomi (masalan: axios)",
     commands: "Ruxsat etilgan terminal buyruqlari",
+    lockedNotice:
+      "Bu imtihon allaqachon ochilgan yoki o'tkazilgan — uni o'zgartirib bo'lmaydi. Ma'lumotlar faqat ko'rish uchun. Yangi imtihon uchun nusxa yarating.",
     shells: "Ruxsat etilgan terminallar",
     shellsHint:
       "O'quvchi kompyuterida mavjud bo'lganlari ko'rinadi. Har birida ruxsat tekshiruvi o'sha shell sintaksisi bilan ishlaydi (zanjirlash, yo'naltirish, eval va boshqa shell'ni chaqirish bloklanadi).",
