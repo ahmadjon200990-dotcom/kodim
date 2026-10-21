@@ -9,7 +9,7 @@
 
 ## 0. Demo Day talablari (2026-10-20) — quyidagi bo'limlardagi eski qarorlarni ALMASHTIRADI
 
-Ziddiyat bo'lsa shu bo'lim ustun. Ustuvorlik: 0 → 5 → 4 → 3 → 1 → 6 → 2 (bo'lim raqamlari quyida).
+Ziddiyat bo'lsa shu bo'lim ustun (8-band eng yangi — u hammasidan ustun). Ustuvorlik: 0 → 5 → 4 → 3 → 1 → 6 → 2 (bo'lim raqamlari quyida).
 
 **0. Abadiy yuklanish yo'q (panel).** Mavjud bo'lmagan imtihon/ish → "Imtihon topilmadi" + ro'yxatga qaytish. Yaroqsiz/eskirgan token (REST 401 yoki socket `connect_error`) → login sahifasi. Har bir sahifada xato holati bo'lsin.
 
@@ -68,6 +68,16 @@ Ziddiyat bo'lsa shu bo'lim ustun. Ustuvorlik: 0 → 5 → 4 → 3 → 1 → 6 �
 - **Editor guruhlari:** ko'pi bilan 2 (Ctrl+, "Yon tomonda ochish", fayl/tabni editor chetiga sudrash).
 - **Ichki brauzer:** status bar tugmasi → to'liq ekran (editor o'rnida); qayta bosish yoki Esc → yon panel.
 - **Terminal busy aniqlash:** prompt oldida OSC `633;A` belgisi (ConPTY qayta chizishida takrorlanmaydi).
+
+**8. Mahsulotga tayyorlash (2026-10-21) — yuqoridagilarni to'ldiradi/almashtiradi.** Ustuvorlik: 1 → 2 → 3 → 5 → 4 → 6.
+1. **Figma dizaynlari login'siz.**
+   - *Asosiy:* "Dizayn ko'rish" — ichki inspect ko'rinishi. O'qituvchi Sozlamalar sahifasida Figma Personal Access Token saqlaydi (serverda shifrlangan, klientga hech qachon yuborilmaydi). Imtihon saqlanganda / kutish xonasi ochilganda server Figma REST API'dan fayl/tugun daraxtini oladi va freymlarni PNG (2x) eksport qiladi, natija serverda keshlanadi. Desktop: freym rasmi, qatlam ustiga kelish/bosish → ajratish + Dev Mode kabi inspect paneli (x/y, w/h, padding/gap, radius, fill/stroke hex/rgba, opacity, soya, shrift oilasi/o'lchami/qalinligi/line-height/letter-spacing, matn), tanlangan va ustidagi qatlam orasidagi masofalar, qiymatni ichki clipboard'ga nusxalash, zoom/pan, bir nechta freym/sahifa. Eksport rasmlari `dizaynlar/` ga ham tushadi. O'zbekcha xatolar: token yo'q, havola noto'g'ri, fayl ulashilmagan, API limiti.
+   - *Zaxira:* ichki brauzerda Figma login — faqat email/parol kirish va fayl ko'rish uchun kerakli Figma domenlari (Google/Apple OAuth va umumiy domenlar YO'Q). Sessiya faqat joriy imtihon uchun, chiqishda o'chiriladi. Figma havolasi standart to'liq ekranda ochiladi, "Ichki ko'rinish ↔ Jonli Figma" tugmasi.
+2. **Terminal profillari (VS Code kabi):** "+" yonida ▾ — PowerShell, Command Prompt, Git Bash (standart yo'llar), WSL (o'rnatilgan bo'lsa); faqat mavjudlari; oxirgi tanlov eslab qolinadi. Nomlash/o'chirish/bo'lish, tozalash, aylantirish, ichki clipboard. Ruxsat tekshiruvi har shell sintaksisi bilan (bash: `; && || | & $( ) \` > < eval exec source sh -c bash -c`; cmd: `& && || | cmd /c start call`; PowerShell — mavjud qoidalar) + uchala shell uchun testlar. O'qituvchi imtihonda ruxsat etilgan shell'larni tanlaydi (`Exam.allowedShells`, standart — hammasi).
+3. **Dizayn tizimi va UX sayqali:** panel uchun yagona token to'plami (rang, tipografiya, oraliq, radius, soya); desktop qat'iy VS Code Dark Modern tokenlari. Bir xil tugma/input/badge/modal/toast/bo'sh/yuklanish/xato holatlari. Panel — Linear/Vercel darajasi, telefon kengligi. Oldin/keyin skrinshotlar `docs/screenshots/`.
+4. **Ommaviy ishga tushirish:** `apps/landing` (statik, o'zbekcha) — `https://kodim.uz`; panel + API — `https://teacher.kodim.uz` (domen — konfiguratsiya). Google OAuth bilan o'qituvchi kirishi/ro'yxatdan o'tishi (birinchi kirish → TEACHER); admin o'qituvchilarni ko'radi, o'chiradi (disable), ko'taradi; seed admin email/parol kirishi qoladi. Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PUBLIC_URL`. Desktop standart server `https://teacher.kodim.uz`, login ekranidagi sozlama belgisi orqali o'zgartiriladi (lokal saqlanadi; localhost/LAN). Production: HTTPS, xavfsiz sarlavhalar, qat'iy CORS, rate limit (login, Google callback, o'quvchi join — IP va kod bo'yicha + bloklash), so'rov hajmi, maxfiy kalit almashtirish hujjati, tuzilgan loglar, SQLite doimiy volume + kunlik zaxira. Docker + docker-compose + Caddy, `DEPLOY.md`.
+5. **Windows o'rnatuvchi:** electron-builder NSIS (nom/ikonka brand.ts), node-pty to'g'ri paketlangan, production'da DevTools to'liq o'chiq, bitta nusxa. `.exe` landing'dan yuklanadi (versiya fayli bilan).
+6. **Yakuniy to'liq sinov va demo to'plami:** to'liq oqim o'qituvchi + 2 o'quvchi; `AUDIT.md`; `DEMO.md` (5 daqiqalik ssenariy, zaxira reja, 10 ta hakam savoli).
 
 ---
 
