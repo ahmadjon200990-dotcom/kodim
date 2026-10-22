@@ -521,3 +521,10 @@ Ustuvorlik 1 → 2 → 3 → 5 → 4 → 6; har qism alohida commit; typecheck +
 - **4 Ommaviy ishga tushirish:** `apps/landing` (`build.mjs` → dist), Google OAuth (`routes/auth.ts`: `/api/auth/google`, `/callback`, state cookie; panel `/auth/callback` fragment token), admin PATCH (disable/rol), `lib/security.ts` (sarlavhalar, CSP, CORS), `lib/rateLimit.ts` (login, Google, o'quvchi kodi), bodyLimit 1 MB / imtihon 40 MB, JSON loglar, production'da zaif JWT_SECRET bilan ishga tushmaydi, seed namuna o'qituvchini faqat `SEED_DEMO=1` da. `Dockerfile` (server/web target), `docker-compose.yml` (server, Caddy, backup), `deploy/Caddyfile`, `deploy/backup.sh`, `DEPLOY.md`, `.env.production.example`. Migratsiyalar: `figma_cache`, `allowed_shells`, `teacher_google_disabled`.
 - **6:** to'liq sinov — AUDIT.md; `DEMO.md`; `QOLDA-SINASH.md` to'ldirildi; sinov vositasi `apps/desktop/scripts/cdp.mjs`.
 - **Ochiq:** haqiqiy Figma token, Google client, Docker — foydalanuvchi muhitida sinalishi kerak (bu kompyuterda yo'q); WSL o'rnatilmagan; kod imzosi yo'q; AI baholash (keyingi versiya).
+
+### Supabase'ga ko'chish (2026-10-22) — boshlandi
+
+- Qaror: backend to'liq Supabase'ga (Postgres + RLS, Auth Google, Realtime, Edge Functions, Storage, pg_cron), panel va landing Vercel'da; domen hozircha yo'q. Supabase loyihasi "kodim" (Free, Singapur), ref `prkrhitgkjyuwyipqimw`.
+- Lokal versiya tag `v1-local` (d79583e) bilan muzlatildi; ish `supabase` branch'ida. `apps/server` ko'chish davomida namuna sifatida qoladi, yangi tizim to'liq sinalgach o'chiriladi.
+- Supabase MCP: `.mcp.json` (project scope, http, OAuth — faylda maxfiy kalit yo'q). `claude` CLI bu kompyuterda PATH'da yo'q, fayl qo'lda yozildi.
+- Keyingi qadam: `MIGRATION-PLAN.md` (foydalanuvchi tasdiqlagach kod yoziladi).
