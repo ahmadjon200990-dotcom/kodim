@@ -22,3 +22,11 @@ Thumbs.db
 
 # panel build chiqishi (server beradi)
 apps/server/public/
+
+# deploy
+deploy/downloads/*
+!deploy/downloads/.gitkeep
+deploy/backups/*
+!deploy/backups/.gitkeep
+!.env.production.example
+apps/landing/dist/

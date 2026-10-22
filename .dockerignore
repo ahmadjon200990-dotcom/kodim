@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/out
+**/release
+apps/server/public
+apps/landing/dist
+**/*.db
+**/*.db-journal
+.env
+.env.*
+deploy/backups
+deploy/downloads
+docs/screenshots/before
+.git

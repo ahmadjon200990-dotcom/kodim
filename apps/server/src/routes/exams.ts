@@ -64,7 +64,9 @@ export async function examRoutes(app: FastifyInstance) {
     }),
   );
 
-  app.post("/api/exams", async (req, reply) => {
+  const bigBody = { bodyLimit: 40 * 1024 * 1024 };
+
+  app.post("/api/exams", bigBody, async (req, reply) => {
     const input = ExamInput.parse(req.body);
     const exam = await prisma.exam.create({
       data: { ...examData(input), teacherId: req.teacher.id, tasks: { create: taskData(input) } },
@@ -81,7 +83,7 @@ export async function examRoutes(app: FastifyInstance) {
     return prisma.exam.findUniqueOrThrow({ where: { id }, include: withTasks });
   });
 
-  app.put("/api/exams/:id", async (req) => {
+  app.put("/api/exams/:id", bigBody, async (req) => {
     const { id } = IdParams.parse(req.params);
     const exam = await getOwnedExam(req.teacher, id);
     if (exam.status !== "DRAFT") throw new HttpError(409, uz.examNotEditable);

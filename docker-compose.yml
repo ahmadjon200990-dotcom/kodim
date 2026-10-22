@@ -1,0 +1,52 @@
+# Kodim — production (VPS) va lokal sinov. Qo'llanma: DEPLOY.md
+#   cp .env.production.example .env && docker compose up -d --build
+services:
+  server:
+    build: { context: ., target: server }
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY: "1"
+      DATABASE_URL: file:/data/kodim.db
+      PUBLIC_URL: https://teacher.${DOMAIN:-localhost}
+    volumes:
+      - kodim-data:/data
+    expose:
+      - "8080"
+
+  web:
+    build: { context: ., target: web }
+    restart: unless-stopped
+    depends_on: [server]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@kodim.uz}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/downloads:/srv/downloads:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # Har kuni 03:00 da SQLite zaxirasi → ./deploy/backups (14 kun saqlanadi).
+  backup:
+    image: alpine:3.20
+    restart: unless-stopped
+    volumes:
+      - kodim-data:/data:ro
+      - ./deploy/backups:/backups
+      - ./deploy/backup.sh:/backup.sh:ro
+    environment:
+      BACKUP_KEEP_DAYS: "14"
+    command: >
+      sh -c "apk add --no-cache sqlite >/dev/null &&
+             echo '0 3 * * * sh /backup.sh' | crontab - &&
+             crond -f -l 8"
+
+volumes:
+  kodim-data:
+  caddy-data:
+  caddy-config:

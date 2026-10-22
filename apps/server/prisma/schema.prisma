@@ -66,6 +66,11 @@ model Teacher {
   figmaToken   String?
   /// Token egasining Figma nomi (tekshirilganda /v1/me dan)
   figmaHandle  String?
+  /// Google akkaunti (OAuth "sub"); Google orqali kirgan o'qituvchilarda passwordHash bo'sh
+  googleId     String?     @unique
+  /// Admin o'chirib qo'ygan akkaunt kira olmaydi (ma'lumotlari saqlanadi)
+  disabled     Boolean     @default(false)
+  lastLoginAt  DateTime?
   exams        Exam[]
   penalties    Penalty[]
   figmaCaches  FigmaCache[]

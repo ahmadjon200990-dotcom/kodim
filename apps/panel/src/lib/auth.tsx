@@ -13,6 +13,8 @@ interface AuthState {
   me: Me | null;
   ready: boolean;
   login(email: string, password: string): Promise<void>;
+  /** Google OAuth'dan qaytgan token bilan kirish. */
+  loginWithToken(token: string): Promise<void>;
   logout(): void;
 }
 
@@ -53,6 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe(res.teacher);
   }, []);
 
-  const value = useMemo<AuthState>(() => ({ me, ready, login, logout }), [me, ready, login, logout]);
+  const loginWithToken = useCallback(async (token: string) => {
+    tokenStore.set(token);
+    setMe(await api.get<Me>("/me"));
+  }, []);
+
+  const value = useMemo<AuthState>(() => ({ me, ready, login, loginWithToken, logout }), [me, ready, login, loginWithToken, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1864,3 +1864,32 @@ button {
   display: inline-block;
   vertical-align: -3px;
 }
+.btn-google {
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+  font-weight: var(--weight-medium);
+  margin-top: var(--space-5);
+}
+.login-or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.login-or::before,
+.login-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.login-hint {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  text-align: center;
+}

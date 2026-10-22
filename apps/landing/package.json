@@ -1,0 +1,11 @@
+{
+  "name": "@exam-ide/landing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "kodim.uz — statik landing sahifa",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "node --check build.mjs"
+  }
+}

@@ -33,10 +33,10 @@ export async function requireAuth(req: FastifyRequest, _reply: FastifyReply): Pr
   }
   const teacher = await prisma.teacher.findUnique({
     where: { id: req.user.sub },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, disabled: true },
   });
-  if (!teacher) throw new HttpError(401, uz.unauthorized);
-  req.teacher = teacher;
+  if (!teacher || teacher.disabled) throw new HttpError(401, uz.unauthorized);
+  req.teacher = { id: teacher.id, name: teacher.name, email: teacher.email, role: teacher.role };
 }
 
 export async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<void> {

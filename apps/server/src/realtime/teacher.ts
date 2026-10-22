@@ -17,10 +17,10 @@ export function registerTeacherHandlers(nsp: TeacherNsp, app: FastifyInstance): 
       const { sub } = app.jwt.verify<{ sub: string }>(token);
       const teacher = await prisma.teacher.findUnique({
         where: { id: sub },
-        select: { id: true, name: true, email: true, role: true },
+        select: { id: true, name: true, email: true, role: true, disabled: true },
       });
-      if (!teacher) throw new Error();
-      socket.data.teacher = teacher;
+      if (!teacher || teacher.disabled) throw new Error();
+      socket.data.teacher = { id: teacher.id, name: teacher.name, email: teacher.email, role: teacher.role };
     })().then(
       () => next(),
       () => next(new Error(uz.unauthorized)),

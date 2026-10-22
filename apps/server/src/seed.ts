@@ -99,6 +99,11 @@ async function main() {
     throw new Error("ADMIN_EMAIL va ADMIN_PASSWORD .env faylida bo'lishi kerak");
   }
   const admin = await upsertTeacher("Administrator", env.ADMIN_EMAIL.toLowerCase(), env.ADMIN_PASSWORD, "ADMIN");
+  // Production'da ma'lum parolli namuna o'qituvchi yaratilmaydi (faqat SEED_DEMO=1 bo'lsa).
+  if (env.NODE_ENV === "production" && process.env.SEED_DEMO !== "1") {
+    console.log(`Admin: ${admin.email} (namuna ma'lumotlar o'tkazib yuborildi)`);
+    return;
+  }
   const teacher = await upsertTeacher(DEMO_TEACHER.name, DEMO_TEACHER.email, DEMO_TEACHER.password, "TEACHER");
 
   // Qayta ishga tushirilganda demo imtihon yangidan yaratiladi.

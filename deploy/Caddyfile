@@ -1,0 +1,42 @@
+# Kodim — Caddy (avtomatik HTTPS, Let's Encrypt). DOMAIN=kodim.uz (lokal sinovda DOMAIN=localhost).
+{
+	email {$ACME_EMAIL:admin@kodim.uz}
+}
+
+# Landing: https://kodim.uz
+{$DOMAIN:localhost} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+		-Server
+	}
+	# Windows o'rnatuvchisi va versiya fayli (deploy/downloads ga yuklanadi, DEPLOY.md).
+	handle_path /downloads/* {
+		root * /srv/downloads
+		header /latest.json Cache-Control "no-cache"
+		file_server
+	}
+	handle {
+		root * /srv/landing
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+www.{$DOMAIN:localhost} {
+	redir https://{$DOMAIN:localhost}{uri} permanent
+}
+
+# O'qituvchi paneli + API + socket: https://teacher.kodim.uz
+teacher.{$DOMAIN:localhost} {
+	encode zstd gzip
+	request_body {
+		max_size 45MB
+	}
+	header -Server
+	reverse_proxy server:8080
+}

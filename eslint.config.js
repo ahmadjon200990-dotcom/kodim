@@ -16,6 +16,15 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },
   {
+    // Landing: brauzer skripti.
+    files: ["apps/landing/src/**/*.js"],
+    languageOptions: { globals: { document: "readonly", fetch: "readonly", window: "readonly" } },
+  },
+  {
+    files: ["apps/landing/*.mjs"],
+    languageOptions: { globals: { process: "readonly", console: "readonly" } },
+  },
+  {
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],

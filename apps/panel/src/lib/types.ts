@@ -7,6 +7,10 @@ export interface Teacher {
   email: string;
   role: TeacherRole;
   createdAt?: string;
+  disabled?: boolean;
+  google?: boolean;
+  lastLoginAt?: string | null;
+  examCount?: number;
 }
 
 export interface ExamListItem {

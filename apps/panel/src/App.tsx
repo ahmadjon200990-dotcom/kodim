@@ -10,11 +10,14 @@ import { Submissions } from "./pages/Submissions";
 import { AttemptDetailPage } from "./pages/AttemptDetail";
 import { Teachers } from "./pages/Teachers";
 import { SettingsPage } from "./pages/Settings";
+import { AuthCallback } from "./pages/AuthCallback";
 import { uz } from "./uz";
 
 export function App() {
   const { me, ready } = useAuth();
 
+  // Google OAuth qaytishi — kirishdan oldin ham ishlashi kerak.
+  if (window.location.pathname === "/auth/callback") return <AuthCallback />;
   if (!ready) return <div className="center muted">{uz.common.loading}</div>;
   if (!me) return <Login />;
 

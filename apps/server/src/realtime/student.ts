@@ -27,6 +27,8 @@ import { notifyAttempt, notifyLobby, recordEvent, updateEventDetails } from "../
 import { beginEnding, isEnding } from "../services/runtime.js";
 import { examReadonlyFiles, mergeStudentFiles, starterFiles } from "../services/workspace.js";
 import { uz } from "../uz.js";
+import { env } from "../env.js";
+import { joinByCode, joinByIp, joinFailByDevice, joinFailByIp, joinFailGlobal } from "../lib/rateLimit.js";
 import { rooms, type StudentNsp, type StudentSocketData } from "./io.js";
 import { respond, serialize } from "./util.js";
 
@@ -56,10 +58,28 @@ function phaseOf(status: string): StudentPhase {
   return "SUBMITTED";
 }
 
+/** Ulanish IP manzili (Caddy ortida — X-Forwarded-For'ning birinchisi). */
+function clientIp(socket: StudentSocket): string {
+  const fwd = socket.handshake.headers["x-forwarded-for"];
+  if (env.TRUST_PROXY && typeof fwd === "string" && fwd) return fwd.split(",")[0]!.trim();
+  return socket.handshake.address;
+}
+
 async function join(nsp: StudentNsp, socket: StudentSocket, payload: unknown): Promise<StudentJoinOk> {
   const input = StudentJoinInput.parse(payload);
+  const ip = clientIp(socket);
+  // Kodni taxmin qilib topishdan himoya: IP bo'yicha xato urinishlar bloklanadi, umumiy xatolar ko'paysa — hammaga sekinlashadi.
+  const device = `${ip} ${input.deviceId}`;
+  const blocked = joinFailByDevice.blocked(device) || joinFailByIp.blocked(ip) || joinFailGlobal.blocked("all");
+  if (blocked) throw new HttpError(429, uz.joinTooMany(Math.max(1, Math.ceil(blocked / 60))));
+  if (!joinByIp.hit(ip).ok || !joinByCode.hit(input.code).ok) throw new HttpError(429, uz.tooManyAttempts(1));
   const exam = await prisma.exam.findUnique({ where: { code: input.code }, include: { tasks: true } });
-  if (!exam || (exam.status !== "LOBBY" && exam.status !== "RUNNING")) throw new HttpError(404, uz.badExamCode);
+  if (!exam || (exam.status !== "LOBBY" && exam.status !== "RUNNING")) {
+    joinFailByDevice.hit(device);
+    joinFailByIp.hit(ip);
+    joinFailGlobal.hit("all");
+    throw new HttpError(404, uz.badExamCode);
+  }
 
   // 1) token bo'yicha, 2) ism bo'yicha (token yo'qolgan bo'lsa), 3) yangi o'quvchi.
   let attempt = input.token ? await prisma.attempt.findUnique({ where: { token: input.token } }) : null;

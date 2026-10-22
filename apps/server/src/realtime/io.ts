@@ -10,6 +10,7 @@ import {
   type TeacherServerToClient,
 } from "@exam-ide/shared";
 import type { AuthTeacher } from "../lib/auth.js";
+import { corsOrigin } from "../lib/security.js";
 
 export interface StudentSocketData {
   attemptId?: string;
@@ -45,7 +46,7 @@ export function teachers(): TeacherNsp {
 
 export function createRealtime(app: FastifyInstance) {
   const io = new Server(app.server, {
-    cors: { origin: true },
+    cors: { origin: corsOrigin },
     // attempt:sync bir nechta 1 MB gacha faylni olib kelishi mumkin.
     maxHttpBufferSize: 25 * 1024 * 1024,
   });

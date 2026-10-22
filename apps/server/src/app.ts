@@ -13,6 +13,7 @@ import { teacherRoutes } from "./routes/teachers.js";
 import { examRoutes } from "./routes/exams.js";
 import { attemptRoutes } from "./routes/attempts.js";
 import { settingsRoutes } from "./routes/settings.js";
+import { corsOrigin, registerSecurityHeaders } from "./lib/security.js";
 import { createRealtime } from "./realtime/io.js";
 import { registerStudentHandlers } from "./realtime/student.js";
 import { registerTeacherHandlers } from "./realtime/teacher.js";
@@ -20,10 +21,20 @@ import { startRuntime } from "./services/runtime.js";
 import { uz } from "./uz.js";
 
 export async function buildApp() {
-  const app = Fastify({ logger: true, bodyLimit: 50 * 1024 * 1024 });
+  const app = Fastify({
+    // Tuzilgan (JSON) loglar; maxfiy sarlavhalar yashiriladi.
+    logger: {
+      level: env.LOG_LEVEL,
+      redact: { paths: ["req.headers.authorization", "req.headers.cookie", "res.headers['set-cookie']"], remove: true },
+    },
+    trustProxy: env.TRUST_PROXY,
+    // Oddiy so'rovlar 1 MB; imtihon (tayyor papka, rasmlar) — routes/exams.ts da 40 MB.
+    bodyLimit: 1024 * 1024,
+  });
 
-  // Panel dev rejimida (Vite) boshqa portda ishlaydi.
-  await app.register(cors, { origin: true });
+  // CORS: faqat panel domeni (dev'da Vite porti ham). Desktop socket'i Node'dan — Origin'siz.
+  await app.register(cors, { origin: corsOrigin, credentials: false });
+  registerSecurityHeaders(app);
   await app.register(fastifyJwt, { secret: env.JWT_SECRET, sign: { expiresIn: "12h" } });
   app.decorateRequest("teacher");
 
