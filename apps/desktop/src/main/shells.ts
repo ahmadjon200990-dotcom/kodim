@@ -69,6 +69,12 @@ function posixPath(win: string, prefix: "" | "/mnt"): string {
   return `${prefix}/${m[1]!.toLowerCase()}/${m[2]!.replace(/\\/g, "/")}`;
 }
 
+/**
+ * Bash: har prompt oldidan stdin'dagi qolgan qatorlarni tashlab yuborish — jarayon ishlayotganda yozilgan
+ * (ruxsat tekshiruvisiz o'tgan) qatorlar jarayon tugagach shell'ga buyruq bo'lib tushmasin.
+ */
+const DRAIN = "while read -r -t 0.05 _kodim_junk; do :; done";
+
 /** Bash prompt'i: OSC 633;A + ish papkasiga nisbatan yo'l ("~/src $"). To'liq yo'l ko'rinmaydi. */
 function bashPrompt(root: string): string {
   return `\\[\\e]633;A\\a\\]\\[\\e[32m\\]$(p="$PWD"; r="${root}"; case "$p" in "$r"*) echo "~\${p#$r}";; *) echo "$p";; esac)\\[\\e[0m\\] \\$ `;
@@ -76,11 +82,12 @@ function bashPrompt(root: string): string {
 
 export function shellProfile(kind: ShellKind, cwd: string): ShellProfile | null {
   if (process.platform !== "win32") {
-    return { kind, file: process.env.SHELL ?? "bash", args: ["--noprofile", "--norc", "-i"], env: { PS1: bashPrompt(cwd) } };
+    return { kind, file: process.env.SHELL ?? "bash", args: ["--noprofile", "--norc", "-i"], env: { PS1: bashPrompt(cwd), PROMPT_COMMAND: DRAIN } };
   }
   if (kind === "powershell") {
     const prompt =
-      "function global:prompt { $p = (Get-Location).Path; $r = $env:KODIM_ROOT; " +
+      // FlushInputBuffer: jarayon ishlayotganda yozilgan (tekshiruvsiz) qatorlar shell'ga buyruq bo'lib tushmasin.
+      "function global:prompt { try { $Host.UI.RawUI.FlushInputBuffer() } catch {}; $p = (Get-Location).Path; $r = $env:KODIM_ROOT; " +
       "if ($p.StartsWith($r)) { $p = '~' + $p.Substring($r.Length) }; \"$([char]27)]633;A$([char]7)PS $p> \" }";
     return {
       kind,
@@ -101,7 +108,7 @@ export function shellProfile(kind: ShellKind, cwd: string): ShellProfile | null 
       kind,
       file: bash,
       args: ["--noprofile", "--norc", "-i"],
-      env: { PS1: bashPrompt(posixPath(cwd, "")), CHERE_INVOKING: "1", MSYSTEM: "MINGW64", HISTFILE: "/dev/null" },
+      env: { PS1: bashPrompt(posixPath(cwd, "")), PROMPT_COMMAND: DRAIN, CHERE_INVOKING: "1", MSYSTEM: "MINGW64", HISTFILE: "/dev/null" },
     };
   }
   // WSL: o'zgaruvchilar WSLENV orqali o'tkaziladi.
@@ -109,6 +116,6 @@ export function shellProfile(kind: ShellKind, cwd: string): ShellProfile | null 
     kind,
     file: join(sys32(), "wsl.exe"),
     args: ["--cd", cwd, "--exec", "bash", "--noprofile", "--norc", "-i"],
-    env: { PS1: bashPrompt(posixPath(cwd, "/mnt")), HISTFILE: "/dev/null", WSLENV: "PS1/u:HISTFILE/u:BROWSER/u" },
+    env: { PS1: bashPrompt(posixPath(cwd, "/mnt")), PROMPT_COMMAND: DRAIN, HISTFILE: "/dev/null", WSLENV: "PS1/u:PROMPT_COMMAND/u:HISTFILE/u:BROWSER/u" },
   };
 }

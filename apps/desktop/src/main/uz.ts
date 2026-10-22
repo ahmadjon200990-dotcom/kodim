@@ -16,6 +16,8 @@ export const uz = {
   serverChangeLocked: "Server manzilini faqat kirishdan oldin o'zgartirish mumkin",
   serverInvalid: "Manzil noto'g'ri. Masalan: https://teacher.kodim.uz yoki http://192.168.1.10:8080",
   serverUnreachable: "Bu manzilda Kodim serveri javob bermadi",
+  cmdBusyBlocked:
+    "Jarayon ishlayotganda Command Prompt'ga faqat ruxsat etilgan buyruq yoki qisqa javob (y, n, 1) yozish mumkin. Interaktiv dasturlar uchun PowerShell yoki Git Bash'dan foydalaning.",
   shellMissing: "Bu terminal kompyuterda topilmadi",
   urlNotAllowed: "Bu manzil ruxsat etilmagan. Faqat localhost va Figma ochiladi",
   packageBlocked: (pkgs: string[]) =>

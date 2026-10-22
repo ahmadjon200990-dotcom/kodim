@@ -11,7 +11,7 @@ export default tseslint.config(
     // Sinov skriptlari (Node, ESM).
     files: ["**/scripts/**/*.mjs", "**/scripts/**/*.cjs"],
     languageOptions: {
-      globals: { process: "readonly", console: "readonly", fetch: "readonly", WebSocket: "readonly", setTimeout: "readonly", require: "readonly", __dirname: "readonly", module: "readonly", Buffer: "readonly" },
+      globals: { process: "readonly", console: "readonly", fetch: "readonly", WebSocket: "readonly", setTimeout: "readonly", setInterval: "readonly", clearInterval: "readonly", require: "readonly", __dirname: "readonly", module: "readonly", Buffer: "readonly" },
     },
     rules: { "@typescript-eslint/no-require-imports": "off" },
   },

@@ -125,12 +125,25 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
     }
   });
 
-  handle(IPC.termSubmit, (idArg, lineArg): TerminalSubmit => {
+  handle(IPC.termSubmit, async (idArg, lineArg): Promise<TerminalSubmit> => {
     const id = num(idArg);
     const line = str(lineArg);
     if (session.state.locked) return { ok: false, error: uz.locked };
     // Jarayon ishlayotganda (busy) kiritma interaktiv javob sifatida to'g'ridan-to'g'ri o'tadi.
-    if (terminals.isBusy(id)) {
+    // Jarayon stdin'ni o'qimasa, qator konsol buferida qolib, jarayon tugagach shell'ga buyruq bo'lib tushardi —
+    // buni PowerShell (FlushInputBuffer) va bash (PROMPT_COMMAND) prompt'da tozalaydi (shells.ts). cmd'da bunday
+    // imkon yo'q: busy paytida ham qator tekshiriladi (bitta harf/raqamli javoblar — y, n, 1 — o'tadi).
+    if (terminals.isBusy(id) && (await terminals.confirmBusy(id))) {
+      const kind = terminals.kind(id) ?? "powershell";
+      if (kind === "cmd" && line.trim() && !/^[a-z0-9]$/i.test(line.trim())) {
+        const v = checkCommand(line, session.allowedCommands(), "cmd");
+        if (!v.ok) {
+          terminals.echo(id, `\r\n\x1b[33m${uz.cmdBusyBlocked}\x1b[0m\r\n`);
+          session.reportEvent("BLOCKED_COMMAND", { line, reason: "TYPEAHEAD", shell: kind });
+          return { ok: true, forwarded: false, blocked: uz.cmdBusyBlocked };
+        }
+      }
+      if (line.trim()) session.reportEvent("TERMINAL_COMMAND", { line, terminalId: id, input: true });
       terminals.raw(id, `${line}\r`);
       return { ok: true, forwarded: true };
     }

@@ -9,6 +9,8 @@ import { Buffer } from "node:buffer";
 import { writeFileSync } from "node:fs";
 
 const CDP = process.env.CDP_URL ?? "http://localhost:9222";
+// Uzoq eval paytida jarayon "bo'sh" deb chiqib ketmasin.
+const keepAlive = setInterval(() => {}, 1000);
 const [cmd, ...args] = process.argv.slice(2);
 
 const list = await fetch(`${CDP}/json/list`).then((r) => r.json());
@@ -70,3 +72,4 @@ if (cmd === "eval") {
   console.log("buyruqlar: eval | shot | type | key | click | move");
 }
 ws.close();
+clearInterval(keepAlive);
