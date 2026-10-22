@@ -143,7 +143,11 @@ export class ExamBrowser {
 
   navigate(input: string): boolean {
     const url = normalize(input);
-    if (!isAllowedBrowserUrl(url) || url.startsWith("data:") || url.startsWith("blob:")) return false;
+    if (!isAllowedBrowserUrl(url) || url.startsWith("data:") || url.startsWith("blob:")) {
+      // Manzil satriga yozilgan ruxsatsiz sayt ham o'qituvchiga yetkaziladi (avval faqat sahifa ichidagi o'tishlar).
+      if (!url.startsWith("data:") && !url.startsWith("blob:")) this.reportBlocked(url);
+      return false;
+    }
     void this.ensure().webContents.loadURL(url).catch(() => undefined);
     return true;
   }

@@ -158,3 +158,39 @@ Har birini chaqirib, **panel jonli oqimida** ism bilan, o'zbekcha, to'g'ri rangd
 - AI baholash bu versiyada o'chiq — baholashni o'qituvchi "Topshirilgan ishlar"da qiladi.
 - Fayl ikonkalari — VS Code'ga yaqin yengil to'plam (to'liq vscode-icons shrifti emas).
 - `.exe` build va deploy — 10-bosqich.
+
+---
+
+# Mahsulotga tayyorlash (2026-10-22) — qo'shimcha tekshiruvlar
+
+Lokal ishga tushirish: `node apps/server/dist/index.js`; Figma'ni internetsiz sinash uchun soxta API:
+`node apps/server/dist/dev/fake-figma.js` + serverni `FIGMA_API_BASE=http://127.0.0.1:8090` bilan ishga tushiring,
+Sozlamalarda token `figd_kodim_test_token_0000000000`, Figma havolasi `https://www.figma.com/design/TESTFILE0001/Sinov?node-id=0-1`.
+
+## A. Figma "Dizayn ko'rish"
+- [ ] Panel → Sozlamalar → token saqlash (noto'g'ri token → aniq xato; to'g'ri → "Ulangan: …").
+- [ ] Imtihon tahririda "Figma dizaynlari: Tayyor · N freym", freym rasmlari; "Yangilash".
+- [ ] O'quvchi: `dizaynlar/1-….md` → "Dizayn ko'rish" → element bosish → o'lcham/rang/shrift/CSS; boshqasiga olib borish → masofa; qiymatni bosish → "Nusxalandi" va editorga Ctrl+V.
+- [ ] "Jonli Figma" → brauzer to'liq ekranda; "Ichki ko'rinish" bilan qaytish; Google bilan kirish ishlamaydi (bloklangan).
+
+## B. Terminal profillari
+- [ ] "+" yonidagi ▾ → PowerShell / Command Prompt / Git Bash (WSL o'rnatilgan bo'lsa); tanlangani standart bo'lib qoladi.
+- [ ] Ikki marta bosish → nomlash; ◫ bo'lish; tozalash; o'ng tugma → nusxalash/qo'yish (ichki clipboard).
+- [ ] Har shell'da: `node -v` ishlaydi; `curl …`, `node -v; …`, `node -e x`, (bash) `eval …`, `$(…)`, (cmd) `%COMSPEC%`, `start` — bloklanadi.
+- [ ] **Type-ahead:** `node sekin.js` (5 s kutadigan fayl) ishlayotganda `curl https://example.com` yozing → jarayon tugagach curl BAJARILMAYDI.
+- [ ] Imtihonda faqat ba'zi terminallar ruxsat etilsa — ro'yxatda faqat ular.
+- [ ] `pnpm test` — 18 ta test o'tadi.
+
+## C. Panel dizayni va admin
+- [ ] Telefon kengligida (390 px) gorizontal aylantirish yo'q; yon menyu yuqoriga o'tadi.
+- [ ] O'qituvchilar (admin): bloklash → u kira olmaydi ("Akkauntingiz … o'chirilgan"); faollashtirish; admin qilish; o'zini o'zgartira olmaydi.
+- [ ] Google sozlangan bo'lsa login sahifasida "Google orqali kirish".
+
+## D. O'rnatuvchi
+- [ ] `pnpm --filter @exam-ide/desktop dist` → `apps/desktop/release/Kodim-Setup-1.0.0.exe` va `latest.json`.
+- [ ] O'rnatish → ish stolida "Kodim"; login ekrani ⚙ → `http://localhost:8080` → kirish, imtihon, terminal ishlaydi.
+- [ ] `Kodim.exe --remote-debugging-port=9333` → ilova ochilmaydi.
+
+## E. Xavfsizlik (production rejimi)
+- [ ] `NODE_ENV=production JWT_SECRET=<32+ belgi>` bilan server: javoblarda CSP/X-Frame-Options; begona Origin'ga CORS yo'q.
+- [ ] 10 marta noto'g'ri parol → 429; o'quvchi ilovasida 11 marta noto'g'ri kod → "Juda ko'p noto'g'ri kod…".

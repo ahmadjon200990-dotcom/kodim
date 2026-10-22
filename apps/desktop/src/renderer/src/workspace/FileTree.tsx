@@ -5,6 +5,7 @@ import { useDialog } from "../Dialog";
 import { INTERNAL_DRAG_TYPE } from "../guard";
 import { saveAll } from "../models";
 import { uz } from "../uz";
+import { Codicon } from "./Codicon";
 import { FileIcon, FolderIcon } from "./icons";
 
 const parentOf = (path: string) => (path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "");
@@ -264,16 +265,16 @@ export function FileTree({ version, locked, activePath, onOpen, onOpenToSide, on
         <span>{uz.tree.title}</span>
         <div className="pane-actions">
           <button className="icon-btn" title={uz.tree.newFile} disabled={locked} onClick={() => void create("file", selected)}>
-            ＋
+            <Codicon name="newFile" />
           </button>
           <button className="icon-btn" title={uz.tree.newFolder} disabled={locked} onClick={() => void create("dir", selected)}>
-            ▣
+            <Codicon name="newFolder" />
           </button>
           <button className="icon-btn" title={uz.tree.collapse} onClick={() => setExpanded(new Set())}>
-            ⊟
+            <Codicon name="collapse" />
           </button>
           <button className="icon-btn" title={uz.tree.refresh} onClick={() => void refreshAll()}>
-            ⟳
+            <Codicon name="refresh" />
           </button>
         </div>
       </div>

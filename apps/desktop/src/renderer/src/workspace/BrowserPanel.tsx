@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { BrowserState } from "../../../common/api";
 import { useDialogOpen } from "../Dialog";
 import { uz } from "../uz";
+import { Codicon } from "./Codicon";
 
 interface Props {
   /** To'liq ekran (editor o'rnida) yoki yon panel. */
@@ -71,7 +72,7 @@ export function BrowserPanel({ full, onToggleFull, onClose, inspectFor, onInspec
           →
         </button>
         <button className="icon-btn" title={uz.browser.reload} onClick={() => window.kodim.browser.reload()}>
-          {state.loading ? "◌" : "⟳"}
+          {state.loading ? <Codicon name="close" /> : <Codicon name="refresh" />}
         </button>
         <form className="browser-form" onSubmit={(e) => void submit(e)}>
           <input

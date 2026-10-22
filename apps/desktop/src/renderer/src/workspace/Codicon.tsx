@@ -8,6 +8,10 @@ const PATHS = {
   clear: "M3 4.5h10 M3 8h7 M3 11.5h5 M11 10l3 3 M14 10l-3 3",
   trash: "M3 4h10 M6 4V2.5h4V4 M4.5 4l.6 9.5h5.8l.6-9.5 M7 6.5v5 M9 6.5v5",
   close: "M4 4l8 8 M12 4l-8 8",
+  newFile: "M9.5 1.5h-6v13h9v-10z M9.5 1.5v3h3 M8 8v4 M6 10h4",
+  newFolder: "M1.5 3.5h5l1.5 1.5h6.5v8.5h-13z M8 7.5v4 M6 9.5h4",
+  collapse: "M3.5 3.5h9v9h-9z M5.5 8h5",
+  refresh: "M13 8a5 5 0 1 1-1.5-3.6 M13 2.5v2.5h-2.5",
 } as const;
 
 export type CodiconName = keyof typeof PATHS;

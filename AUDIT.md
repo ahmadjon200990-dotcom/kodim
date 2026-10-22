@@ -143,3 +143,61 @@ baholash, zip, Excel.
 - **KICHIK:** ko'chirish/nusxalash watcher'da soxta EXTERNAL_FILE_CHANGE berishi mumkin edi (`markTree`). ✅
 - **Kuzatuvda:** terminal orqali o'chirilgan fayl tabi ochiq qoladi; yozilsa fayl qayta yaratiladi (VS Code ham shunday).
 - **Sinov vositasi:** bir vaqtda ikkita CDP sinov skripti ishlasa, kiritmalar aralashadi — ketma-ket ishga tushiring.
+
+---
+
+## Mahsulotga tayyorlash (2026-10-21/22) — yakuniy to'liq sinov (6-qism)
+
+Sinov: server (dev + production rejimi) + soxta Figma API (`apps/server/src/dev/fake-figma.ts`) + panel (ichki brauzer) +
+desktop (dev build, CDP) + o'rnatilgan `Kodim-Setup-1.0.0.exe` (SendKeys bilan) + 3 o'quvchi (desktop "Ali Valiyev",
+soxta "Bobur Toshev", kech kirgan "Kamola Rahimova"). Imtihon: JS mashq + Figma dizayn (inspect) + tayyor papka (CUSTOM, binar logo).
+
+### Oqim natijasi
+| Qadam | Natija |
+|---|---|
+| Admin/o'qituvchi email+parol kirishi, Google tugmasi (sozlangan bo'lsa), OAuth state tekshiruvi | ✅ |
+| Imtihon yaratish (CUSTOM papka + Figma) → Figma holati READY, 2 freym | ✅ |
+| Kutish xonasi → qoidalar → boshlash; 2 o'quvchi bir vaqtda | ✅ |
+| Emmet (`div.karta>h2+p`), dizayn inspect (masofa, rang, shrift, CSS, nusxalash) | ✅ |
+| PowerShell: `node -v` ✓; `npm i lodash` → UNKNOWN_PACKAGE+BLOCKED; `node -v; iwr x` → CHAINING; `node -e x` → INLINE_CODE | ✅ |
+| Git Bash: `ls`, `node -v` ✓; `eval`, `$(…)`, `bash -c` → bloklandi; node REPL ishlaydi | ✅ |
+| cmd: jarayon paytida `curl` → TYPEAHEAD bloklandi | ✅ |
+| Jarima −10, vaqt +5 (hammaga) va +3 (bitta o'quvchiga) — desktop taymeri yangilandi | ✅ |
+| Panel "Imtihonni tugatish" (o'z modal oynasi) → 15 s → hammasi SUBMITTED → desktop "topshirildi" → 10 s → login, ish papkasi o'chdi | ✅ |
+| Baholash 85/70, yakuniy 85 − 10 = 75, baholanmagan ajratilgan; .zip (har o'quvchi papkasi, binar bilan, savollar.md/dizaynlar yo'q); Excel | ✅ |
+| O'rnatilgan .exe: ishga tushdi, debug flag → darhol chiqdi (CDP yopiq), RunAsNode ishlamadi, kirish → terminal (node-pty) → yozish → sync → F12 → topshirish | ✅ |
+
+### Ogohlantirishlar (shu sinovda)
+✅ FORBIDDEN_PROCESS, PASTE_BLOCKED, DROP_BLOCKED, EXTERNAL_FILE_CHANGE, READONLY_TAMPER (fayl tiklandi), BROWSER_BLOCKED,
+WINDOW_MINIMIZED (davomiylik bilan), FOCUS_LOST, BLOCKED_COMMAND, UNKNOWN_PACKAGE, TERMINAL_COMMAND, APP_CLOSED, DEVICE_CHANGED,
+RECONNECTED, LATE_JOIN, DEVTOOLS_ATTEMPT (o'rnatilgan .exe'da F12). ➖ SCREENSHOT_ATTEMPT va EXTRA_DISPLAY — avtomatik sinab bo'lmaydi
+(tizim tugmasi / ikkinchi monitor); COPY_OUT_ATTEMPT — avtomatik sinovda oyna fokusini ushlab bo'lmadi (mantiq o'zgarmagan, Demo Day 2 da sinalgan).
+
+### Topilgan va tuzatilgan
+- **KRITIK — terminal "type-ahead" aylanib o'tish.** Jarayon ishlayotganda (masalan `node -v` sekin ishga tushganda) yozilgan qator
+  "interaktiv javob" sifatida tekshiruvsiz yuborilardi; jarayon stdin'ni o'qimasa, qator konsol buferida qolib, jarayon tugagach
+  shell uni **buyruq sifatida bajarardi** — sinovda `curl https://chatgpt.com` shunday ishladi va o'qituvchiga hech narsa bormadi.
+  Tuzatish: PowerShell prompt'ida `FlushInputBuffer()`, bash'da `PROMPT_COMMAND` bilan stdin bo'shatiladi, cmd'da busy paytida ham
+  `checkCommand` (faqat `y`/`n`/`1` kabi qisqa javoblar o'tadi); busy belgisi jarayonlar daraxti bilan tasdiqlanadi (doimiy PowerShell
+  yordamchisi, ~0.5 s) — prompt belgisi kechiksa ham qator tekshiruvdan o'tadi; jarayonga yuborilgan kiritma ham TERMINAL_COMMAND
+  (`input: true`) bo'lib o'qituvchiga ko'rinadi. Sinaldi: uchala shell'da `node sekin.js` paytida `curl` → bajarilmadi; REPL ishlaydi.
+- **MUHIM:** ichki brauzer manzil satriga yozilgan ruxsatsiz sayt (chatgpt.com) rad etilardi, lekin `BROWSER_BLOCKED` yuborilmasdi. ✅
+- **MUHIM:** o'quvchi kodi bo'yicha bloklash IP bo'yicha edi — bitta sinf NAT ortida bo'lsa, bir o'quvchining 10 ta xato kodi butun
+  sinfni 30 daqiqaga bloklardi. Endi qurilma (IP+deviceId) bo'yicha 10, IP bo'yicha 50, server bo'yicha 300/daq. ✅
+- **MUHIM:** production'da seed ma'lum parolli namuna o'qituvchini (`demo12345`) yaratardi — endi faqat `SEED_DEMO=1` bo'lsa. ✅
+- **MUHIM:** o'qituvchi materiallari (savollar.md, dizaynlar, Figma PNG'lar) har o'quvchi ishida bazada nusxalanardi — endi faqat
+  o'quvchi fayllari saqlanadi, materiallar yuborishda qo'shiladi (keshlanadi). ✅
+- **MUHIM:** terminal bloklash xabari stili faqat bo'lingan (split) terminalda ishlardi (CSS selektor xatosi). ✅
+- **MUHIM:** panel telefon kengligida gorizontal toshardi (grid `1fr` min-content). ✅
+- **KICHIK:** desktop Explorer/brauzer tugmalarida unicode belgilar (＋ ▣ ⊟ ⟳) — codicon SVG. ✅ Panelda emoji ikonkalar — SVG. ✅
+- **KICHIK:** tahrirlab bo'lmaydigan (ochilgan) imtihonda "Saqlash" faol edi va server xatosi chiqardi — endi oldindan ogohlantirish. ✅
+- **Build:** electron-builder ikonka konvertori (WASM) bu kompyuterda xotira xatosi berdi — `.ico` o'zimiz yaratamiz (`scripts/make-icon.cjs`). ✅
+
+### Ma'lum cheklovlar / sinab bo'lmaganlar
+- Haqiqiy Figma API faqat xato formati bo'yicha tekshirildi (haqiqiy token yo'q) — oqim soxta Figma API bilan to'liq sinaldi.
+- Docker/Caddy bu kompyuterda yo'q — `docker compose` sinab bo'lmadi; production rejimi (sarlavhalar, CORS, rate limit, CSP) Node'da sinaldi.
+- Haqiqiy Google OAuth (client yo'q) — yo'naltirish, state va xato oqimi sinaldi; token almashish qismi haqiqiy client bilan sinalishi kerak.
+- WSL bu kompyuterda o'rnatilmagan — profil faqat mavjud bo'lsa chiqadi; ruxsat qoidalari testlarda.
+- cmd'da interaktiv dasturlar (node REPL, `npm create vite` savollari) cheklangan — PowerShell yoki Git Bash tavsiya etiladi; cmd prompt'ida to'liq yo'l ko'rinadi.
+- Kod imzosi yo'q — Windows SmartScreen ogohlantiradi.
+- Sinov paytida kompyuter uyqu rejimiga o'tganda topshirish kechikdi (ikkala ish bir xil millisekundda) — server taymeri alohida 1 daqiqalik imtihonda aniq ishladi (+15 s).

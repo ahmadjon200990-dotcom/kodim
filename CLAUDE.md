@@ -382,6 +382,8 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 
 ## 10. Holat (har bosqichdan keyin yangilanadi)
 
+> **Mahsulotga tayyorlash (2026-10-22):** 8-band (0-bo'lim) talablari bajarildi — qarang eng oxiridagi "Mahsulotga tayyorlash" yozuvi.
+>
 > **Demo Day 2 (2026-10-20):** 0-bo'limdagi yangi talablar bajarildi — qarang quyidagi "Demo Day 2" yozuvi (eng oxirida). Barcha paketlar `pnpm -r typecheck` + `pnpm -r build` + `eslint` toza; desktop real Electron'da CDP orqali sinaldi.
 
 - [x] 0. Monorepo asosi
@@ -394,8 +396,8 @@ Ustunlar: №, Ism, AI ball, O'qituvchi ball, Jarimalar, Yakuniy ball, Holat (to
 - [x] 7. Panel: kirish, imtihon yaratish, kutish/jonli kuzatuv, jarimalar
 - [ ] 8. AI baholash
 - [ ] 9. Panel: natijalar, batafsil sahifa, qo'lda baholash, Excel
-- [ ] 10. Windows .exe build, serverni deploy, to'liq sinov
-- [ ] 11. Demo tayyorlash
+- [x] 10. Windows .exe build (NSIS), deploy fayllari (Docker/Caddy/DEPLOY.md), to'liq sinov — haqiqiy VPS deploy foydalanuvchi qiladi
+- [x] 11. Demo tayyorlash (DEMO.md)
 
 Oxirgi qilingan ish / keyingi qadam / ochiq muammolar:
 - 0-bosqich tayyor: pnpm monorepo, `tsconfig.base.json` (strict, NodeNext), ESLint 9 (flat config + typescript-eslint), `.gitignore`, `.env.example`.
@@ -508,3 +510,14 @@ Ustuvorlik 1 → 3 → 2 → 6 → 5 → 4 → 7 → 8; har qism alohida commit;
 - **7:** UI kodida "Demo" yo'q; seed o'qituvchi "Namuna o'qituvchi", imtihon "JavaScript va Figma" (login `demo@kodim.uz` o'zgarmadi — hujjatlarda shu).
 - **8 (audit, AUDIT.md "Demo Day 3"):** topildi va tuzatildi — tahrirlanmagan model faylni bo'sh matn bilan bosib ketish xavfi (faqat dirty yoziladi), imtihonlar orasida eski modellar, terminal busy noto'g'ri (node REPL kiritmasi bloklanardi), >1 MB fayllar sync'da "o'chirildi" hisoblanardi, panel kod ko'rishda rasmlar yashirin edi, qayta ulanishda faol tab almashardi.
 - **Ochiq:** AI baholash (keyingi versiya), .exe build/deploy, bitta sinovda index.html bo'sh bo'lib qolgani takrorlanmadi (ehtimoliy sabablar dirty-guard bilan yopildi; AUDIT.md da).
+
+### Mahsulotga tayyorlash (2026-10-21/22) — 0-bo'lim 8-band
+
+Ustuvorlik 1 → 2 → 3 → 5 → 4 → 6; har qism alohida commit; typecheck + build + lint + `pnpm test` toza; real Electron (CDP), o'rnatilgan .exe va panelda sinaldi. Batafsil: `AUDIT.md` → "Mahsulotga tayyorlash".
+- **1 Figma:** `shared/figma.ts` (havola tahlili, tiplar), server `services/figma.ts` (REST: `/v1/files` yoki `/nodes` + `/v1/images` PNG 2x/1x, kesh `FigmaCache`/`FigmaImage`, o'zbekcha xato kodlari), token `Teacher.figmaToken` AES-256-GCM (`lib/crypto.ts`, `DATA_ENCRYPTION_KEY`), `routes/settings.ts` (`/api/settings/figma`, `/api/exams/:id/figma`, refresh, freym rasmi). Imtihon saqlanganda fonda, kutish xonasi ochilganda kutib olinadi. O'quvchi papkasida `dizaynlar/<n>-<slug>/figma/design.json` + PNG'lar; desktop `DesignView.tsx` (inspect). **O'qituvchi materiallari endi `Attempt.files` da saqlanmaydi** — `examReadonlyFiles` (5 daq kesh) + `mergeStudentFiles`. Zaxira: ichki brauzer Figma email login (figma.com + arkoselabs.com captcha; Google/Apple yo'q), sessiya xotirada va imtihon tugaganda tozalanadi. Sinov: `dev/fake-figma.ts` (8090).
+- **2 Terminal profillari:** `main/shells.ts` (aniqlash: PowerShell, cmd, Git Bash yo'llari, WSL distro), `checkCommand(line, allowed, shell)` har shell qoidalari + `INLINE_CODE`, `packages/shared/test/commands.test.ts` (`pnpm test`, 18 test). `Exam.allowedShells`. TerminalPanel: profil menyusi, nomlash, bo'lish (2), tozalash, o'chirish, kontekst menyu. **Type-ahead himoyasi** (AUDIT KRITIK): PowerShell `FlushInputBuffer`, bash `PROMPT_COMMAND` drenaji, cmd'da busy paytida tekshiruv, busy jarayonlar daraxti bilan tasdiqlanadi (`processLister` — doimiy PowerShell).
+- **3 Dizayn tizimi:** `packages/shared/design/tokens.css` (panel va landing), panel hex ranglarsiz, yorug' yon menyu, SVG ikonkalar (`components/Icon.tsx`); desktop Dark Modern tokenlari (izohlarda colorCustomizations nomlari), `workspace/Codicon.tsx`. Skrinshotlar `docs/screenshots/{before,after}` (`scripts/panel-screenshots.cjs`).
+- **5 O'rnatuvchi:** `apps/desktop/electron-builder.config.mjs` (NSIS, brand.ts, fuses), `scripts/dist.mjs` (SERVER_URL standart `https://teacher.kodim.uz`, `release/latest.json`), ikonka `scripts/make-icon.cjs` → `apps/desktop/build/icon.{png,ico}`. Login ekranida ⚙ server manzili (`store.serverUrl`, /api/health bilan tekshiriladi). O'rnatilgan .exe bilan to'liq imtihon o'tkazildi (SendKeys).
+- **4 Ommaviy ishga tushirish:** `apps/landing` (`build.mjs` → dist), Google OAuth (`routes/auth.ts`: `/api/auth/google`, `/callback`, state cookie; panel `/auth/callback` fragment token), admin PATCH (disable/rol), `lib/security.ts` (sarlavhalar, CSP, CORS), `lib/rateLimit.ts` (login, Google, o'quvchi kodi), bodyLimit 1 MB / imtihon 40 MB, JSON loglar, production'da zaif JWT_SECRET bilan ishga tushmaydi, seed namuna o'qituvchini faqat `SEED_DEMO=1` da. `Dockerfile` (server/web target), `docker-compose.yml` (server, Caddy, backup), `deploy/Caddyfile`, `deploy/backup.sh`, `DEPLOY.md`, `.env.production.example`. Migratsiyalar: `figma_cache`, `allowed_shells`, `teacher_google_disabled`.
+- **6:** to'liq sinov — AUDIT.md; `DEMO.md`; `QOLDA-SINASH.md` to'ldirildi; sinov vositasi `apps/desktop/scripts/cdp.mjs`.
+- **Ochiq:** haqiqiy Figma token, Google client, Docker — foydalanuvchi muhitida sinalishi kerak (bu kompyuterda yo'q); WSL o'rnatilmagan; kod imzosi yo'q; AI baholash (keyingi versiya).
