@@ -13,6 +13,9 @@ export const uz = {
   tooManyTerminals: "Terminallar soni 5 tadan oshmasligi kerak",
   terminalFailed: "Terminalni ochib bo'lmadi",
   shellNotAllowed: "Bu terminal turi imtihonda ruxsat etilmagan",
+  serverChangeLocked: "Server manzilini faqat kirishdan oldin o'zgartirish mumkin",
+  serverInvalid: "Manzil noto'g'ri. Masalan: https://teacher.kodim.uz yoki http://192.168.1.10:8080",
+  serverUnreachable: "Bu manzilda Kodim serveri javob bermadi",
   shellMissing: "Bu terminal kompyuterda topilmadi",
   urlNotAllowed: "Bu manzil ruxsat etilmagan. Faqat localhost va Figma ochiladi",
   packageBlocked: (pkgs: string[]) =>

@@ -8,3 +8,5 @@ allowBuilds:
   esbuild: true
   electron: true
   node-pty: true
+  # Squirrel o'rnatuvchisi ishlatilmaydi (NSIS)
+  electron-winstaller: false

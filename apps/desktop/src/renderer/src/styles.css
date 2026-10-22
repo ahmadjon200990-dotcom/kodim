@@ -1679,3 +1679,36 @@ button {
 .btn:focus-visible {
   outline-offset: 2px;
 }
+.login {
+  position: relative;
+}
+.login-gear {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+.login-server {
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  display: inline-block;
+}
+.dot-on {
+  background: #89d185;
+}
+.server-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 8px;
+}

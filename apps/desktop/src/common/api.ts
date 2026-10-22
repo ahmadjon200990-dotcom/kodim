@@ -68,6 +68,12 @@ export interface KodimApi {
   /** Renderer aniqlagan qoidabuzarlik (screenshot tugmasi, DevTools tugmasi, tashqariga nusxalash). */
   reportEvent(type: string, details?: Record<string, unknown>): void;
   join(code: string, name: string): Promise<Result>;
+  /** Server manzili (login ekranidagi sozlama). */
+  server: {
+    get(): Promise<{ url: string; defaultUrl: string }>;
+    /** Manzilni tekshiradi (/api/health) va saqlaydi; `null` — standartga qaytarish. */
+    set(url: string | null): Promise<Result>;
+  };
   submit(): Promise<Result>;
   /** Ichki clipboard (tizim clipboard'i ishlatilmaydi). */
   clipboard: {
@@ -144,6 +150,8 @@ export const IPC = {
   reportEvent: "monitor:event",
   lastName: "store:last-name",
   join: "session:join",
+  serverGet: "server:get",
+  serverSet: "server:set",
   submit: "session:submit",
   clipboardWrite: "clipboard:write",
   clipboardPaste: "clipboard:paste",

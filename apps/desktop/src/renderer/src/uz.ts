@@ -11,6 +11,16 @@ export const uz = {
     badName: "Ism va familiyangizni to'liq yozing",
     connecting: "Serverga ulanmoqda…",
   },
+  server: {
+    title: "Server sozlamasi",
+    label: "Server",
+    text: "Imtihon serverining manzili. Odatda o'zgartirish shart emas — o'qituvchi boshqacha aytgan bo'lsa kiriting.",
+    main: "Asosiy server",
+    local: "Shu kompyuter (localhost:8080)",
+    lanHint: "Internetsiz sinfda: o'qituvchi kompyuterining IP manzili, masalan http://192.168.1.10:8080",
+    save: "Tekshirish va saqlash",
+    checking: "Tekshirilmoqda…",
+  },
   lobby: {
     title: "Kutish xonasi",
     wait: "O'qituvchi imtihonni boshlashini kuting",

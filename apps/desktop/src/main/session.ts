@@ -63,7 +63,9 @@ export class ExamSession {
   state: ClientState = { ...initialState };
   workspace: Workspace | null = null;
 
-  private readonly socket: StudentSocket;
+  private socket!: StudentSocket;
+  /** Joriy server manzili (login ekranidagi sozlama yoki build vaqtidagi standart). */
+  serverUrl = store.serverUrl() ?? __SERVER_URL__;
   private creds: { code: string; name: string } | null = null;
   /** Serverga oxirgi yuborilgan holat: yo'l → sha1. */
   private synced = new Map<string, string>();
@@ -98,7 +100,24 @@ export class ExamSession {
   }
 
   constructor(private readonly hooks: SessionHooks) {
-    this.socket = io(`${__SERVER_URL__}${STUDENT_NAMESPACE}`, {
+    this.connect();
+    void detectRuntime().then((runtime) => this.set({ runtime }));
+  }
+
+  /** Server manzilini almashtirish (faqat login ekranida): eski ulanish yopiladi, yangisiga ulanadi. */
+  setServerUrl(url: string | null): Result {
+    if (this.creds || this.state.screen !== "login") return { ok: false, error: uz.serverChangeLocked };
+    store.setServerUrl(url ?? undefined);
+    this.serverUrl = url ?? __SERVER_URL__;
+    this.socket.removeAllListeners();
+    this.socket.disconnect();
+    this.set({ connected: false });
+    this.connect();
+    return { ok: true };
+  }
+
+  private connect(): void {
+    this.socket = io(`${this.serverUrl}${STUDENT_NAMESPACE}`, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelayMax: 5000,
@@ -119,7 +138,6 @@ export class ExamSession {
       void this.startWorking(this.lastAttemptId, p.files, p);
     });
     this.socket.on("exam:ended", () => void this.end());
-    void detectRuntime().then((runtime) => this.set({ runtime }));
   }
 
   private set(patch: Partial<ClientState>): void {

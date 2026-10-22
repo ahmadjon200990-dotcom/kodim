@@ -21,6 +21,10 @@ const api: KodimApi = {
   reportEvent: (type, details) => ipcRenderer.send(IPC.reportEvent, type, details ?? {}),
   join: (code, name) => ipcRenderer.invoke(IPC.join, code, name),
   submit: () => ipcRenderer.invoke(IPC.submit),
+  server: {
+    get: () => ipcRenderer.invoke(IPC.serverGet),
+    set: (url) => ipcRenderer.invoke(IPC.serverSet, url),
+  },
   clipboard: {
     write: (text) => ipcRenderer.invoke(IPC.clipboardWrite, text),
     paste: (source) => ipcRenderer.invoke(IPC.clipboardPaste, source),

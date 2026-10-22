@@ -1,4 +1,4 @@
-import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from "electron";
+import { ipcMain, net, type IpcMainEvent, type IpcMainInvokeEvent, type WebContents } from "electron";
 import { checkCommand, isShellAllowed, SHELL_KINDS, SHELL_LABELS, type ShellKind } from "@exam-ide/shared";
 import { EventType } from "@exam-ide/shared";
 import { IPC, type Rect, type Result, type TerminalProfiles, type TerminalSubmit } from "../common/api";
@@ -64,6 +64,27 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
   handle(IPC.lastName, () => store.lastName());
   handle(IPC.join, (code, name) => session.join(str(code).trim(), str(name).trim()));
   handle(IPC.submit, () => session.submit());
+  handle(IPC.serverGet, () => ({ url: session.serverUrl, defaultUrl: __SERVER_URL__ }));
+  handle(IPC.serverSet, async (urlArg): Promise<Result> => {
+    if (urlArg === null) return session.setServerUrl(null);
+    let url: URL;
+    try {
+      url = new URL(str(urlArg).trim());
+    } catch {
+      return { ok: false, error: uz.serverInvalid };
+    }
+    if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, error: uz.serverInvalid };
+    const base = url.origin;
+    // Haqiqatan Kodim serveri ekanini tekshiramiz (noto'g'ri manzil bilan qolib ketmaslik uchun).
+    try {
+      const res = await net.fetch(`${base}/api/health`, { signal: AbortSignal.timeout(6000) });
+      const body = (await res.json()) as { ok?: boolean };
+      if (!body.ok) return { ok: false, error: uz.serverUnreachable };
+    } catch {
+      return { ok: false, error: uz.serverUnreachable };
+    }
+    return session.setServerUrl(base === new URL(__SERVER_URL__).origin ? null : base);
+  });
   handle(IPC.clipboardWrite, (text) => writeInternal(str(text)));
   handle(IPC.clipboardPaste, (source) => {
     const src = source === "editor" || source === "terminal" ? source : "input";
