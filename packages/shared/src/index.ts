@@ -8,3 +8,5 @@ export * from "./workspace.js";
 export * from "./monitoring.js";
 export * from "./commands.js";
 export * from "./figma.js";
+export * from "./templates.js";
+export * from "./examFiles.js";

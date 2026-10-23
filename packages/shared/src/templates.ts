@@ -1,6 +1,6 @@
-import type { FileEntry } from "@exam-ide/shared";
+import type { FileEntry } from "./types.js";
 
-// Boshlang'ich papka shablonlari (CLAUDE.md 5.2). REACT_VITE node_modules siz — o'quvchi `npm install` qiladi.
+// Boshlang'ich papka shablonlari (CLAUDE.md 0.2): panel imtihonni saqlashda va server (eski) ishlatadi.
 
 const html: FileEntry[] = [
   {
@@ -201,7 +201,7 @@ const node: FileEntry[] = [
 
 const python: FileEntry[] = [{ path: "main.py", content: `print("Salom!")\n` }];
 
-export const TEMPLATES = {
+export const TEMPLATE_FILES = {
   EMPTY: [],
   HTML: html,
   REACT_VITE: reactVite,
