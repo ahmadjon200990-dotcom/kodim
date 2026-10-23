@@ -59,5 +59,5 @@ Bajarilganini ✅ bilan belgilang (yoki Claude'ga ayting).
 | 7 | `supabase/migrations/20261023075345_student_rpcs_editor.sql` (`sync_files`) — **o'quvchi avtosaqlashi shusiz ishlamaydi** | SQL Editor | ⏳ |
 | 8 | `supabase/tests/sync.test.sql` (7-qadamdan keyin) | SQL Editor | ⏳ |
 | 9 | `supabase/scripts/cleanup-test-data.sql` (`[TEST] E2E` sinov ma'lumotlari; oxirgi qatorni `commit;` qiling) — xohlagan payt | SQL Editor | ⏳ |
-| 10 | `supabase/migrations/20261023090002_cron_cleanup_editor.sql` (har kecha eski `cron.job_run_details` ni tozalash — 2 s tick kuniga ~43 ming qator) | SQL Editor | ⏳ |
+| 10 | `supabase/migrations/20261023082415_cron_cleanup_editor.sql` (har kecha eski `cron.job_run_details` ni tozalash — 2 s tick kuniga ~43 ming qator) | SQL Editor | ⏳ |
 | 11 | `supabase/tests/tick.test.sql`, `realtime.test.sql` haqiqiy bazada (ixtiyoriy; realtime testida xabar ketma-ketligi qismi faqat lokal ma'noli) | SQL Editor | ⏳ |
