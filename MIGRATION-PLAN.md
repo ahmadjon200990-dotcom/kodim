@@ -1,6 +1,6 @@
 # Kodim → Supabase: ko'chirish rejasi
 
-> Holat: **QORALAMA — foydalanuvchi tasdig'ini kutmoqda.** Tasdiqlanmaguncha kod yozilmaydi.
+> Holat: **TASDIQLANDI (2026-10-22)** — 12-bo'limdagi qarorlar bilan.
 > Branch: `supabase`. Eski versiya: tag `v1-local` (d79583e). Supabase loyihasi: `kodim`, ref `prkrhitgkjyuwyipqimw`, Free, Singapur.
 > Ushbu reja va CLAUDE.md o'rtasida ziddiyat bo'lsa, ko'chish davomida shu reja ustun (keyin CLAUDE.md yangilanadi).
 
@@ -211,10 +211,13 @@ Bog'liqliklar: 1 → 2 → (3, 4) → 5 → 6 → 7 → 8 → (9, 10) → 11 →
 | Free loyiha pauzasi / zaxira yo'q | Demo kunida ishlamasligi, ma'lumot yo'qolishi | ogohlantirish, GitHub Actions pg_dump, kerak bo'lsa Pro |
 | Ikki tilda takrorlangan qoidalar (TS va SQL: sync cheklovlari, event darajalari) | Nomuvofiqlik | generatsiya skripti + moslik testlari |
 
-## 12. Ochiq savollar (tasdiqlashda javob kerak)
+## 12. Qarorlar (foydalanuvchi javoblari, 2026-10-22)
 
-1. **Sinov muhiti.** Tavsiya: hozircha bitta `kodim` loyihasi (foydalanuvchi yo'q), 12-fazadan oldin ma'lumotlar tozalanadi. Alternativa: ikkinchi bepul loyiha `kodim-dev`.
-2. **GitHub repo.** `.exe` (119 MB) uchun GitHub Releases va kunlik zaxira (Actions) uchun GitHub repo kerak — hozir remote yo'q. Tavsiya: private repo `kodim` + relizlar uchun alohida public repo `kodim-releases` (yoki repo'ning o'zi public).
-3. **Vercel nomlari.** Masalan `kodim-panel.vercel.app` va `kodim.vercel.app` (bandligi tekshiriladi). Vercel akkaunti bormi?
-4. **Google OAuth client.** Google Cloud Console'da siz yaratasiz (redirect URI: `https://prkrhitgkjyuwyipqimw.supabase.co/auth/v1/callback`), Client ID/Secret'ni Supabase Dashboard → Auth → Google ga o'zingiz kiritasiz (maxfiy kalitlarni men kiritmayman).
-5. **Eski SQLite ma'lumotlari** ko'chirilmaydi (faqat sinov ma'lumotlari) — rozimisiz?
+1. **Bitta loyiha `kodim`**, alohida dev loyiha yo'q (Free: tashkilotga 2 ta faol loyiha).
+   - Barcha sinov ma'lumotlari **aniq belgilanadi**: o'qituvchi email'lari `*@test.kodim.uz`, imtihon nomlari `[TEST] …`, o'quvchi ismlari `TEST …`; jadvallarda belgi yo'q joyda bog'liqlik orqali (imtihon → attempt → event/fayl/jarima) topiladi.
+   - `supabase/scripts/cleanup-test-data.sql` — faqat shu belgili ma'lumotlarni o'chiradi (Auth foydalanuvchilari, Storage obyektlari, Vault sirlari, `figma_*`, `audit_log` ham). Avval `dry run` (nima o'chishini sanab ko'rsatadi), keyin o'chirish. 2-fazada yoziladi, 12-faza oxirida ishga tushiriladi va qolgan qatorlar soni tekshiriladi.
+2. **GitHub private repo** (`kodim`). `.exe` relizlari — shu repo'ning **GitHub Releases** (private repo relizi faqat ruxsati borlarga ochiladi — landing ommaviy yuklab olishi uchun 11-fazada yo'l tanlanadi: alohida public `kodim-releases` repo yoki repo'ni public qilish; o'shanda foydalanuvchidan so'raladi). Kunlik zaxira — GitHub Actions. Ulash yo'riqnomasi: `GITHUB.md`. Push'dan oldin maxfiy fayllar tekshirildi (`.env`, `*.db`, `release/` ignore'da; tarixda yo'q).
+3. **Vercel** — akkaunt GitHub bilan ochiladi. Loyihalar: landing **`kodim`** (`kodim.vercel.app`), panel **`kodim-panel`** (`kodim-panel.vercel.app`). Nom band bo'lsa, foydalanuvchi bilan kelishiladi.
+4. **Google OAuth client** — foydalanuvchi o'zi yaratadi. 4-fazada aniq yo'riqnoma beriladi (Google Cloud Console qadamlari, Authorized redirect URI `https://prkrhitgkjyuwyipqimw.supabase.co/auth/v1/callback`, JavaScript origins, Supabase → Auth → URL Configuration: Site URL `https://kodim-panel.vercel.app`, Redirect URLs `https://kodim-panel.vercel.app/auth/callback` va `http://localhost:5273/auth/callback`). Client ID/Secret'ni Supabase Dashboard'ga foydalanuvchi o'zi kiritadi.
+5. **Eski SQLite ma'lumotlari ko'chirilmaydi.**
+6. **DEPLOY-SUPABASE.md** da Dashboard yo'riqnomalari bo'ladi: anonim kirishni yoqish (Authentication → Sign In / Providers → "Allow anonymous sign-ins") va limitni oshirish (Authentication → Rate Limits → anonim kirishlar soni, bitta sinf bitta IP'dan kirishini hisobga olib), Google provider, URL Configuration, pauzadan tiklash, zaxira.

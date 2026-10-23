@@ -30,3 +30,8 @@ deploy/backups/*
 !deploy/backups/.gitkeep
 !.env.production.example
 apps/landing/dist/
+
+# Vercel va Supabase CLI lokal holati
+.vercel/
+supabase/.temp/
+supabase/.branches/

@@ -527,4 +527,6 @@ Ustuvorlik 1 → 2 → 3 → 5 → 4 → 6; har qism alohida commit; typecheck +
 - Qaror: backend to'liq Supabase'ga (Postgres + RLS, Auth Google, Realtime, Edge Functions, Storage, pg_cron), panel va landing Vercel'da; domen hozircha yo'q. Supabase loyihasi "kodim" (Free, Singapur), ref `prkrhitgkjyuwyipqimw`.
 - Lokal versiya tag `v1-local` (d79583e) bilan muzlatildi; ish `supabase` branch'ida. `apps/server` ko'chish davomida namuna sifatida qoladi, yangi tizim to'liq sinalgach o'chiriladi.
 - Supabase MCP: `.mcp.json` (project scope, http, OAuth — faylda maxfiy kalit yo'q). `claude` CLI bu kompyuterda PATH'da yo'q, fayl qo'lda yozildi.
-- Keyingi qadam: `MIGRATION-PLAN.md` (foydalanuvchi tasdiqlagach kod yoziladi).
+- `MIGRATION-PLAN.md` **tasdiqlandi** (2026-10-22). Qarorlar — o'sha faylning 12-bo'limi: bitta loyiha (sinov ma'lumotlari `@test.kodim.uz` / `[TEST]` / `TEST` belgili + `supabase/scripts/cleanup-test-data.sql`), GitHub private repo `kodim` (ulash: `GITHUB.md`, foydalanuvchi o'zi qiladi; `.exe` — GitHub Releases), Vercel loyihalari `kodim` (landing) va `kodim-panel` (panel), Google OAuth client'ni foydalanuvchi yaratadi (4-fazada yo'riqnoma), SQLite ma'lumotlari ko'chirilmaydi.
+- Maxfiy fayllar tekshirildi: `.env`, `*.db`, `release/` git'da va tarixda yo'q; `.gitignore` ga `.vercel/`, `supabase/.temp/` qo'shildi.
+- **Keyingi qadam (yangi sessiya):** Supabase MCP ulanishini tekshirish (faqat o'qish: URL, region, jadvallar, `pg_cron`/`pg_net`, migratsiyalar, Edge Functions) → keyin **1-faza (spike'lar)**, MIGRATION-PLAN.md 10-bo'lim.
