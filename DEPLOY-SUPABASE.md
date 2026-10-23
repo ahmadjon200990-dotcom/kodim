@@ -55,4 +55,7 @@ Bajarilganini ✅ bilan belgilang (yoki Claude'ga ayting).
 | 3 | `supabase/migrations/20261023072849_exam_rpcs_editor.sql` (`save_exam`, `delete_penalty` — ichida `delete` bor) | SQL Editor | ⏳ |
 | 4 | Admin foydalanuvchi (3-bo'lim) + `make-admin.sql` | Authentication → Users, SQL Editor | ⏳ |
 | 5 | Google OAuth (2-bo'lim) | Google Cloud + Authentication | ⏳ |
-| 6 | `supabase/tests/rpc.test.sql` va `views.test.sql` haqiqiy bazada (3-qadamdan keyin) | SQL Editor | ⏳ |
+| 6 | `supabase/tests/rpc.test.sql`, `views.test.sql`, `student.test.sql` haqiqiy bazada (3-qadamdan keyin) | SQL Editor | ⏳ |
+| 7 | `supabase/migrations/20261023075345_student_rpcs_editor.sql` (`sync_files`) — **o'quvchi avtosaqlashi shusiz ishlamaydi** | SQL Editor | ⏳ |
+| 8 | `supabase/tests/sync.test.sql` (7-qadamdan keyin) | SQL Editor | ⏳ |
+| 9 | `supabase/scripts/cleanup-test-data.sql` (`[TEST] E2E` sinov ma'lumotlari; oxirgi qatorni `commit;` qiling) — xohlagan payt | SQL Editor | ⏳ |
