@@ -16,7 +16,7 @@ app.whenReady().then(async () => {
     console.log("anon uid", data.user.id);
     await sb.realtime.setAuth();
   }
-  const topic = mode === "private" ? "spike:private" : "spike:public";
+  const topic = process.argv.find((a) => a.startsWith("topic="))?.slice(6) ?? (mode === "private" ? "spike:private" : "spike:public");
   const got = [];
   const ch = sb.channel(topic, { config: { private: mode === "private" } });
   ch.on("broadcast", { event: "tick" }, ({ payload }) => {

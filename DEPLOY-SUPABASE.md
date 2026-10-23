@@ -7,8 +7,8 @@ Bu fayl ko'chish davomida to'ldirib boriladi (MIGRATION-PLAN.md 12-bo'lim, 6-qar
 
 ## 1. Anonim kirish (o'quvchilar uchun)
 
-1. Authentication → Sign In / Providers → **"Allow anonymous sign-ins"** — yoqing, Save.
-2. Authentication → Rate Limits → **anonim kirishlar soni** (standart 30/soat bitta IP'dan) — kamida **300** qiling.
+1. ✅ (2026-10-23) Authentication → Sign In / Providers → **"Allow anonymous sign-ins"** — yoqing, Save.
+2. ✅ (300) Authentication → Rate Limits → **anonim kirishlar soni** (standart 30/soat bitta IP'dan) — kamida **300** qiling.
    Sabab: bitta sinf bitta NAT IP'dan chiqadi; har imtihonda har o'quvchi yangi anonim foydalanuvchi.
 
 ## 2. Google bilan kirish (o'qituvchilar)
