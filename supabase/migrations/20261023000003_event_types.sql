@@ -1,0 +1,27 @@
+-- Kodim: event turlari va darajalari. supabase/scripts/gen-event-types.mjs bilan generatsiya qilingan (qo'lda tahrirlamang).
+insert into public.event_types (type, severity, client_allowed) values
+  ('FOCUS_LOST', 'WARN', true),
+  ('FORBIDDEN_PROCESS', 'DANGER', true),
+  ('EXTRA_DISPLAY', 'WARN', true),
+  ('DANGEROUS_COMMAND', 'DANGER', true),
+  ('UNKNOWN_PACKAGE', 'WARN', true),
+  ('EXTERNAL_FILE_CHANGE', 'DANGER', true),
+  ('LARGE_INSERT', 'WARN', true),
+  ('READONLY_TAMPER', 'WARN', true),
+  ('PASTE_BLOCKED', 'WARN', true),
+  ('DISCONNECTED', 'WARN', false),
+  ('RECONNECTED', 'INFO', false),
+  ('APP_CLOSED', 'DANGER', false),
+  ('AI_INJECTION', 'DANGER', false),
+  ('TERMINAL_COMMAND', 'INFO', true),
+  ('DEVICE_CHANGED', 'DANGER', false),
+  ('LATE_JOIN', 'INFO', false),
+  ('WINDOW_MINIMIZED', 'WARN', true),
+  ('SCREENSHOT_ATTEMPT', 'WARN', true),
+  ('COPY_OUT_ATTEMPT', 'WARN', true),
+  ('DROP_BLOCKED', 'WARN', true),
+  ('BLOCKED_COMMAND', 'DANGER', true),
+  ('DEVTOOLS_ATTEMPT', 'WARN', true),
+  ('BROWSER_BLOCKED', 'WARN', true),
+  ('ENV_MISSING', 'WARN', true)
+on conflict (type) do update set severity = excluded.severity, client_allowed = excluded.client_allowed;

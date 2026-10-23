@@ -16,9 +16,11 @@
     "start:desktop": "pnpm --filter @exam-ide/desktop build && pnpm --filter @exam-ide/desktop start",
     "dev:panel": "pnpm --filter @exam-ide/panel dev",
     "build:panel": "pnpm --filter @exam-ide/panel build",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test && pnpm test:db",
+    "test:db": "node --import ./packages/shared/test/ts-resolve.mjs --test supabase/tests/db.test.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@eslint/js": "^9.39.1",
     "@types/node": "^22.19.1",
     "eslint": "^9.39.1",
