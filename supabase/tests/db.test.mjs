@@ -63,7 +63,8 @@ describe("migratsiyalar", () => {
         ('00000000-0000-4000-a000-0000000000e2', null, true);
       insert into public.teachers (id, name, email) values
         ('00000000-0000-4000-a000-00000000000a', 'TEST', 'a@test.kodim.uz'),
-        ('00000000-0000-4000-a000-00000000000b', 'Real', 'real@kodim.uz');
+        ('00000000-0000-4000-a000-00000000000b', 'Real', 'real@kodim.uz')
+      on conflict (id) do nothing;
       insert into public.exams (id, teacher_id, title, duration_min) values
         ('00000000-0000-4000-b000-0000000000a1', '00000000-0000-4000-a000-00000000000a', 'Oddiy nom', 10),
         ('00000000-0000-4000-b000-0000000000b1', '00000000-0000-4000-a000-00000000000b', 'Haqiqiy imtihon', 10),

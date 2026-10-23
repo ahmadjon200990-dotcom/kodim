@@ -12,6 +12,7 @@ create table auth.users (
   email text,
   is_anonymous boolean not null default false,
   raw_user_meta_data jsonb not null default '{}',
+  last_sign_in_at timestamptz,
   created_at timestamptz not null default now()
 );
 
