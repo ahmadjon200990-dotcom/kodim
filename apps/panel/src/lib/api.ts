@@ -1,66 +1,14 @@
-// REST klient. JWT localStorage'da. 401 bo'lsa chiqib ketadi.
-const TOKEN_KEY = "kodim.token";
+// Panel ma'lumot qatlami. Sahifalar eski REST yo'llari bilan chaqiradi (`api.get("/exams")`) — ular Supabase'ga
+// lib/backend.ts da o'giriladi (RLS, view'lar, RPC'lar). Sessiya — supabase-js (lib/supabase.ts).
+import { ApiError, forceLogout, route, setUnauthorizedHandler } from "./backend";
 
-export class ApiError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-    readonly issues?: unknown,
-  ) {
-    super(message);
-  }
-}
+export { ApiError, forceLogout, setUnauthorizedHandler };
 
-export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
-};
-
-let onUnauthorized: () => void = () => {};
-export function setUnauthorizedHandler(fn: () => void): void {
-  onUnauthorized = fn;
-}
-
-/** Token yaroqsiz (REST 401 yoki socket rad etdi) — login sahifasiga. */
-export function forceLogout(): void {
-  onUnauthorized();
-}
-
-function parseJson(text: string): unknown {
-  try {
-    return text ? JSON.parse(text) : null;
-  } catch {
-    return null;
-  }
-}
+/** Vaqtinchalik: eski socket (7-faza) va Figma rasm (9-faza) kodi uchun — shu fazalarda olib tashlanadi. */
+export const tokenStore = { get: (): string | null => null };
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = tokenStore.get();
-  let res: Response;
-  try {
-    res = await fetch(`/api${path}`, {
-      method,
-      headers: {
-        ...(token && { authorization: `Bearer ${token}` }),
-        ...(body !== undefined && { "content-type": "application/json" }),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-  } catch {
-    throw new ApiError(0, "Server bilan aloqa yo'q");
-  }
-  if (res.status === 401) {
-    onUnauthorized();
-    throw new ApiError(401, "Avtorizatsiya kerak");
-  }
-  if (res.status === 204) return undefined as T;
-  const data = parseJson(await res.text());
-  if (!res.ok) {
-    const msg = typeof data === "object" && data !== null && "error" in data ? String((data as { error: unknown }).error) : "Xatolik";
-    throw new ApiError(res.status, msg, (data as { issues?: unknown })?.issues);
-  }
-  return data as T;
+  return (await route(method, path, body)) as T;
 }
 
 export const api = {
@@ -71,23 +19,8 @@ export const api = {
   del: <T>(path: string) => request<T>("DELETE", path),
 };
 
-/** Fayl yuklab olish (JWT bilan): Excel, .zip. Nom server Content-Disposition'idan, bo'lmasa `fallback`. */
-export async function downloadFile(path: string, fallback: string): Promise<void> {
-  let res: Response;
-  try {
-    res = await fetch(`/api${path}`, { headers: { authorization: `Bearer ${tokenStore.get() ?? ""}` } });
-  } catch {
-    throw new ApiError(0, "Server bilan aloqa yo'q");
-  }
-  if (res.status === 401) {
-    onUnauthorized();
-    throw new ApiError(401, "Avtorizatsiya kerak");
-  }
-  if (!res.ok) throw new ApiError(res.status, "Yuklab bo'lmadi");
-  const cd = res.headers.get("content-disposition") ?? "";
-  const star = /filename\*=UTF-8''([^;]+)/i.exec(cd)?.[1];
-  const name = star ? decodeURIComponent(star) : fallback;
-  const blob = await res.blob();
+/** Brauzerda yaratilgan faylni yuklab berish. */
+export function saveBlob(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -96,4 +29,17 @@ export async function downloadFile(path: string, fallback: string): Promise<void
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export const downloadExport = (examId: string, filename: string) => downloadFile(`/exams/${examId}/export.xlsx`, filename);
+/** .zip yuklab olish: `/exams/:id/download.zip` (hamma ishlar) yoki `/attempts/:id/download.zip` (bitta o'quvchi). */
+export async function downloadFile(path: string, fallback: string): Promise<void> {
+  const { attemptZip, examZip } = await import("./exports");
+  const exam = /^\/exams\/([^/]+)\/download\.zip$/.exec(path)?.[1];
+  const attempt = /^\/attempts\/([^/]+)\/download\.zip$/.exec(path)?.[1];
+  const file = exam ? await examZip(exam) : attempt ? await attemptZip(attempt) : null;
+  if (!file) throw new ApiError(404, fallback);
+  saveBlob(file.blob, `${file.name}.zip`);
+}
+
+export async function downloadExport(examId: string, filename: string): Promise<void> {
+  const { resultsWorkbook } = await import("./exports");
+  saveBlob(await resultsWorkbook(examId), filename);
+}

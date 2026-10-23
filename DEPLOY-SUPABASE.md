@@ -42,3 +42,17 @@ Birinchi Google kirishi avtomatik `TEACHER` rolini beradi (`supabase/migrations/
 
 - 1 hafta faolsizlikda loyiha **pauza** bo'ladi: Dashboard → loyiha → **Restore project**. Demo/imtihondan 1 kun oldin tekshiring.
 - Avtomatik zaxira yo'q — kunlik `pg_dump` GitHub Actions orqali (repo ulangach sozlanadi, `GITHUB.md`).
+
+## 5. Qo'lda bajariladigan qadamlar (MCP qila olmaydi) — ro'yxat
+
+Supabase MCP `drop`/`delete` va `auth.users` ga yozishni avtomatik rad etadi; Dashboard sozlamalari ham sizda.
+Bajarilganini ✅ bilan belgilang (yoki Claude'ga ayting).
+
+| # | Nima | Qayerda | Holat |
+|---|---|---|---|
+| 1 | `supabase/scripts/sql-editor-once.sql` (tasks_write, spike qoldiqlari) | SQL Editor | ✅ 2026-10-23 |
+| 2 | `supabase/tests/rls.test.sql` haqiqiy bazada | SQL Editor | ✅ 2026-10-23 |
+| 3 | `supabase/migrations/20261023072849_exam_rpcs_editor.sql` (`save_exam`, `delete_penalty` — ichida `delete` bor) | SQL Editor | ⏳ |
+| 4 | Admin foydalanuvchi (3-bo'lim) + `make-admin.sql` | Authentication → Users, SQL Editor | ⏳ |
+| 5 | Google OAuth (2-bo'lim) | Google Cloud + Authentication | ⏳ |
+| 6 | `supabase/tests/rpc.test.sql` va `views.test.sql` haqiqiy bazada (3-qadamdan keyin) | SQL Editor | ⏳ |

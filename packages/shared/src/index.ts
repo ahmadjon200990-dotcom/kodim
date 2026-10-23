@@ -10,4 +10,5 @@ export * from "./commands.js";
 export * from "./figma.js";
 export * from "./templates.js";
 export * from "./examFiles.js";
-export type { Database } from "./db.types.js";
+export type { Database, Json } from "./db.types.js";
+export * from "./supabaseConfig.js";

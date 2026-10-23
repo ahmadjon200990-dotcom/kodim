@@ -20,6 +20,7 @@ $$;
 create function pg_temp.login(p_uid uuid) returns void language sql as $$
   select set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
 $$;
+grant execute on function pg_temp.expect_error(text, text), pg_temp.login(uuid) to authenticated, anon;
 
 
 -- ---------- Ma'lumotlar (postgres sifatida) ----------

@@ -1,5 +1,5 @@
 // GENERATSIYA QILINGAN — Supabase MCP `generate_typescript_types` (loyiha prkrhitgkjyuwyipqimw). Qo'lda tahrirlamang:
-// migratsiyadan keyin qayta generatsiya qiling.
+// migratsiyadan keyin qayta generatsiya qiling. (2026-10-23: view/RPC bo'limlari generator chiqishiga mos qisqartirilgan.)
 export type Json =
   | string
   | number
@@ -30,7 +30,7 @@ export type Database = {
           content: string
           encoding?: string | null
           path: string
-          sha1: string
+          sha1?: string
           updated_at?: string
         }
         Update: {
@@ -476,13 +476,65 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      attempt_summaries: {
+        Row: {
+          ai_error: string | null
+          ai_score: number | null
+          connected: boolean | null
+          created_at: string | null
+          exam_id: string | null
+          extra_minutes: number | null
+          final_score: number | null
+          graded_by: Database["public"]["Enums"]["graded_by"] | null
+          id: string | null
+          last_seen_at: string | null
+          penalty_total: number | null
+          status: Database["public"]["Enums"]["attempt_status"] | null
+          student_name: string | null
+          submitted_at: string | null
+          teacher_comment: string | null
+          teacher_criteria: Json | null
+          teacher_score: number | null
+          warning_count: number | null
+        }
+        Relationships: []
+      }
+      exam_list: {
+        Row: {
+          attempt_count: number | null
+          code: string | null
+          created_at: string | null
+          duration_min: number | null
+          ends_at: string | null
+          id: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["exam_status"] | null
+          task_count: number | null
+          teacher_id: string | null
+          teacher_name: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      add_penalty: {
+        Args: { p_attempt_id: string; p_event_id?: string; p_points: number; p_reason: string }
+        Returns: Database["public"]["Tables"]["penalties"]["Row"]
+      }
+      annul_attempt: { Args: { p_attempt_id: string }; Returns: Database["public"]["Tables"]["attempts"]["Row"] }
+      delete_penalty: { Args: { p_penalty_id: string }; Returns: undefined }
+      extend_exam: { Args: { p_attempt_id?: string; p_exam_id: string; p_minutes: number }; Returns: Json }
       final_score: {
         Args: { a: Database["public"]["Tables"]["attempts"]["Row"] }
         Returns: number
       }
+      finish_exam: { Args: { p_exam_id: string }; Returns: Database["public"]["Tables"]["exams"]["Row"] }
+      grade_attempt: { Args: { p_attempt_id: string; p_input: Json }; Returns: Database["public"]["Tables"]["attempts"]["Row"] }
+      open_exam: { Args: { p_exam_id: string }; Returns: string }
+      save_exam: { Args: { p_exam: Json; p_exam_id: string | null; p_tasks: Json }; Returns: string }
+      start_exam: { Args: { p_exam_id: string }; Returns: Database["public"]["Tables"]["exams"]["Row"] }
+      unannul_attempt: { Args: { p_attempt_id: string }; Returns: Database["public"]["Tables"]["attempts"]["Row"] }
     }
     Enums: {
       attempt_status: "JOINED" | "WORKING" | "SUBMITTED" | "ANNULLED"

@@ -205,6 +205,13 @@ Har faza oxirida: `pnpm -r typecheck`, `pnpm -r build`, lint, `pnpm test`, MCP `
 - **Deno + shared:** `supabase/scripts/build-shared.mjs` (esbuild) har modulni alohida minified ESM ga (`supabase/functions/_shared/<modul>.js`) — Edge Function `../_shared/*.js` dan import qiladi; Edge Runtime 1.77.7 (Deno 2.1.4) da ishladi, `verify_jwt` tokensiz 401. Butun index (zod bilan) ~770 KB — shuning uchun faqat kerakli modullar.
 - Lokal migratsiya fayllari nomi masofaviy versiyalarga moslandi (`list_migrations`).
 
+### 5-faza qarorlari (2026-10-23)
+- **Rasmlar va CUSTOM fayllar hozircha bazada (jsonb), Storage emas** — eski SQLite bilan bir xil limitlar (rasm ≤ 2 MB × 10, CUSTOM ≤ 20 MB). Sabab: o'quvchi papkasi RPC orqali bitta javobda keladi, desktop o'zgarmaydi; Storage keyinchalik hajm muammosi chiqsa.
+- Shablon fayllari saqlashda `exams.starter_files` ga tayyor yoziladi (panel, `TEMPLATE_FILES`); o'qituvchi materiallari `exams.readonly_files` (`shared/examFiles.ts`). `start_exam` ularni `attempt_files` ga nusxalaydi.
+- Panel sahifalari o'zgarmadi: `lib/api.ts` eski REST yo'llarini `lib/backend.ts` dagi jadval orqali supabase-js'ga o'giradi (view'lar `exam_list`, `attempt_summaries`; RPC'lar). Excel va .zip brauzerda (`lib/exports.ts`, exceljs dinamik import).
+- Advisor `authenticated_security_definer_function_executable` — o'qituvchi RPC'lari ataylab chaqiriladi (har biri `private.owns_exam` tekshiradi, anon'ga yopiq). Istisno.
+- Postgres'da PUBLIC uchun EXECUTE global standart — `alter default privileges for role postgres revoke execute on functions from public` (exam_rpcs), har funksiyaga aniq GRANT.
+
 Bog'liqliklar: 1 → 2 → (3, 4) → 5 → 6 → 7 → 8 → (9, 10) → 11 → 12 → 13. 9 va 10 parallel bo'lishi mumkin.
 
 ## 11. Xavflar

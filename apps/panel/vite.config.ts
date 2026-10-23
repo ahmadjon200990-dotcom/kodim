@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Panel server tomonidan statik beriladi (build → apps/server/public). Dev'da proxy orqali API va socket.
+// Panel — statik SPA (Vercel, MIGRATION-PLAN.md 7-bo'lim); backend — Supabase (lib/supabase.ts).
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -12,14 +12,10 @@ export default defineConfig({
     ],
   },
   build: {
-    outDir: resolve(__dirname, "../server/public"),
+    outDir: resolve(__dirname, "dist"),
     emptyOutDir: true,
   },
   server: {
     port: 5273,
-    proxy: {
-      "/api": { target: "http://localhost:8080", changeOrigin: true },
-      "/socket.io": { target: "http://localhost:8080", ws: true, changeOrigin: true },
-    },
   },
 });

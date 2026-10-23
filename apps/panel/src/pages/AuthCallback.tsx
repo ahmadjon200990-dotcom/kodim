@@ -1,27 +1,26 @@
 import { useEffect } from "react";
-import { useAuth } from "../lib/auth";
+import { getMe } from "../lib/backend";
+import { supabase } from "../lib/supabase";
 import { OAUTH_ERROR_KEY } from "./Login";
 import { uz } from "../uz";
 
-/** Google OAuth'dan qaytish: `#token=...` yoki `#error=...` (fragment — serverga va loglarga bormaydi). */
+/** Google OAuth'dan qaytish: supabase-js `?code=` ni sessiyaga almashtiradi (PKCE); xato — `?error_description=`. */
 export function AuthCallback() {
-  const { loginWithToken } = useAuth();
   useEffect(() => {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    window.history.replaceState(null, "", "/");
-    const token = params.get("token");
-    if (token) {
-      void loginWithToken(token).then(
+    const params = new URLSearchParams(window.location.search);
+    const fail = (kind: string) => {
+      sessionStorage.setItem(OAUTH_ERROR_KEY, kind);
+      void supabase.auth.signOut().finally(() => window.location.replace("/"));
+    };
+    if (params.get("error")) return fail("google");
+    const code = params.get("code");
+    const exchange = code ? supabase.auth.exchangeCodeForSession(code) : supabase.auth.getSession();
+    void exchange
+      .then(() => getMe())
+      .then(
         () => window.location.replace("/"),
-        () => {
-          sessionStorage.setItem(OAUTH_ERROR_KEY, "google");
-          window.location.replace("/");
-        },
+        (e: unknown) => fail(e instanceof Error && /bloklangan|disabled/i.test(e.message) ? "disabled" : "google"),
       );
-    } else {
-      sessionStorage.setItem(OAUTH_ERROR_KEY, params.get("error") ?? "google");
-      window.location.replace("/");
-    }
-  }, [loginWithToken]);
+  }, []);
   return <div className="center muted">{uz.common.loading}</div>;
 }

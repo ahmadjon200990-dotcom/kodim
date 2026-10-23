@@ -1,20 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { TeacherRole } from "@exam-ide/shared";
-import { api, setUnauthorizedHandler, tokenStore } from "./api";
-
-interface Me {
-  id: string;
-  name: string;
-  email: string;
-  role: TeacherRole;
-}
+import { getMe, setUnauthorizedHandler, type Me } from "./backend";
+import { supabase } from "./supabase";
 
 interface AuthState {
   me: Me | null;
   ready: boolean;
+  /** Seed admin: email + parol (Supabase Auth). */
   login(email: string, password: string): Promise<void>;
-  /** Google OAuth'dan qaytgan token bilan kirish. */
-  loginWithToken(token: string): Promise<void>;
+  /** Google OAuth (Supabase) — `/auth/callback` ga qaytadi. */
+  loginWithGoogle(): Promise<void>;
   logout(): void;
 }
 
@@ -31,35 +25,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   const logout = useCallback(() => {
-    tokenStore.clear();
     setMe(null);
+    void supabase.auth.signOut();
   }, []);
 
   useEffect(() => {
     setUnauthorizedHandler(logout);
-    if (!tokenStore.get()) {
-      setReady(true);
-      return;
-    }
-    api
-      .get<Me>("/me")
-      .then(setMe)
-      // 401 — token eskirgan (api.ts o'zi tozalaydi). Server o'chiq bo'lsa ham login ekrani — abadiy yuklanish yo'q.
-      .catch(() => tokenStore.clear())
+    // Sessiya bor bo'lsa o'qituvchi qatori o'qiladi; yo'q/bloklangan/o'qituvchi emas — login ekrani (abadiy yuklanish yo'q).
+    const load = () =>
+      getMe().then(
+        (m) => setMe(m),
+        () => setMe(null),
+      );
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => (data.session ? load() : undefined))
       .finally(() => setReady(true));
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") setMe(null);
+      if (event === "SIGNED_IN") void load();
+    });
+    return () => data.subscription.unsubscribe();
   }, [logout]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ token: string; teacher: Me }>("/auth/login", { email, password });
-    tokenStore.set(res.token);
-    setMe(res.teacher);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    try {
+      setMe(await getMe());
+    } catch (e) {
+      await supabase.auth.signOut();
+      throw e;
+    }
   }, []);
 
-  const loginWithToken = useCallback(async (token: string) => {
-    tokenStore.set(token);
-    setMe(await api.get<Me>("/me"));
+  const loginWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) throw error;
   }, []);
 
-  const value = useMemo<AuthState>(() => ({ me, ready, login, loginWithToken, logout }), [me, ready, login, loginWithToken, logout]);
+  const value = useMemo<AuthState>(() => ({ me, ready, login, loginWithGoogle, logout }), [me, ready, login, loginWithGoogle, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

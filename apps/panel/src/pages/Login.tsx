@@ -8,7 +8,7 @@ import { uz } from "../uz";
 export const OAUTH_ERROR_KEY = "kodim.oauthError";
 
 export function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [google, setGoogle] = useState(false);
   useEffect(() => {
     void api.get<{ google: boolean }>("/auth/config").then((c) => setGoogle(c.google), () => setGoogle(false));
@@ -37,7 +37,8 @@ export function Login() {
     try {
       await login(email.trim(), password);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 0 ? uz.common.network : uz.login.failed);
+      const network = (err instanceof ApiError && err.status === 0) || (err instanceof Error && /fetch|network/i.test(err.message));
+      setError(network ? uz.common.network : err instanceof ApiError && err.status === 403 ? (uz.login.googleErrors.disabled ?? uz.login.failed) : uz.login.failed);
     } finally {
       setBusy(false);
     }
@@ -52,7 +53,7 @@ export function Login() {
         <div className="login-slogan">{BRAND.slogan}</div>
         {google && (
           <>
-            <a className="btn btn-google btn-block" href="/api/auth/google">
+            <button type="button" className="btn btn-google btn-block" onClick={() => void loginWithGoogle().catch(() => setError(uz.login.googleErrors.google ?? uz.common.error))}>
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
                 <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
@@ -60,7 +61,7 @@ export function Login() {
                 <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
               </svg>
               {uz.login.google}
-            </a>
+            </button>
             <div className="login-or">{uz.login.or}</div>
           </>
         )}
