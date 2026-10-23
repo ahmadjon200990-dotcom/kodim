@@ -197,6 +197,12 @@ Har faza oxirida: `pnpm -r typecheck`, `pnpm -r build`, lint, `pnpm test`, MCP `
 | 12 | To'liq sinov | o'qituvchi + 2 o'quvchi (o'rnatilgan .exe + fake-student) butun oqim; AUDIT.md, QOLDA-SINASH.md yangilanadi |
 | 13 | Tozalash | `apps/server`, Docker/Caddy, `DEPLOY.md` o'chiriladi (v1-local tagida qoladi); `DEPLOY-SUPABASE.md`; CLAUDE.md 3/4/6-bo'limlar Supabase'ga qayta yoziladi; `main` ga merge — foydalanuvchi ruxsati bilan |
 
+### 1-faza natijalari (2026-10-23)
+- **Electron main + Realtime:** Electron 44.9 / Node 24.22 da global `WebSocket` bor; supabase-js 2.118 public kanalga obuna bo'ldi, trigger'dan `realtime.send` xabarlari keldi (`apps/desktop/scripts/spike-realtime.cjs`). Kompyuter soati serverdan ~0.4 s oldinda edi — `server_now()` ofseti zarurligi tasdiqlandi. **Private kanal** (anonim sessiya + `realtime.messages` RLS) — anonim kirish yoqilgach sinaladi (`… spike-realtime.cjs private`).
+- **pg_cron:** `'2 seconds'` jadvali Free'da ishlaydi, o'rtacha oraliq 2.01 s (103 tick). `pg_cron` migratsiya bilan yoqildi.
+- **Deno + shared:** `supabase/scripts/build-shared.mjs` (esbuild) har modulni alohida minified ESM ga (`supabase/functions/_shared/<modul>.js`) — Edge Function `../_shared/*.js` dan import qiladi; Edge Runtime 1.77.7 (Deno 2.1.4) da ishladi, `verify_jwt` tokensiz 401. Butun index (zod bilan) ~770 KB — shuning uchun faqat kerakli modullar.
+- Lokal migratsiya fayllari nomi masofaviy versiyalarga moslandi (`list_migrations`).
+
 Bog'liqliklar: 1 → 2 → (3, 4) → 5 → 6 → 7 → 8 → (9, 10) → 11 → 12 → 13. 9 va 10 parallel bo'lishi mumkin.
 
 ## 11. Xavflar

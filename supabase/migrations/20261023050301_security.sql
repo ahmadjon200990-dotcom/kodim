@@ -61,6 +61,9 @@ grant execute on function public.final_score(public.attempts) to authenticated;
 -- ---------- Jadval huquqlari (Supabase standart "grant all" o'rniga aniq ro'yxat) ----------
 
 revoke all on all tables in schema public from anon, authenticated;
+-- Keyingi jadval/funksiyalar ham avtomatik ochilmasin — har migratsiya aniq GRANT beradi.
+alter default privileges for role postgres in schema public revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public revoke execute on functions from public, anon, authenticated;
 
 grant select on public.teachers to authenticated;
 grant update (name) on public.teachers to authenticated;

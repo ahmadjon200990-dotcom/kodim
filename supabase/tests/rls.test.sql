@@ -158,7 +158,7 @@ select set_config('request.jwt.claims', '', true);
 set local role anon;
 select pg_temp.expect_error($$select * from public.exams$$, '42501');
 select pg_temp.expect_error($$select * from public.attempts$$, '42501');
-select pg_temp.expect_error($$select public.is_admin()$$, '42501');
+select pg_temp.expect_error($$select private.is_admin()$$, '42501');
 reset role;
 
 rollback;

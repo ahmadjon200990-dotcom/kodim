@@ -10,9 +10,10 @@
     "dist": "node scripts/dist.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "chokidar": "^4.0.3",
     "node-pty": "^1.1.0",
-    "socket.io-client": "^4.8.4",
-    "chokidar": "^4.0.3"
+    "socket.io-client": "^4.8.4"
   },
   "main": "./out/main/index.js",
   "devDependencies": {
