@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type RealtimeChannel, type SupabaseClient } from "@supabase/supabase-js";
 import { isReadonlyPath, SYNC_LIMITS, TEMPLATE_RUNTIME } from "@exam-ide/shared";
 import type { Database, EventType, ExamPublic, FileEntry, StudentState } from "@exam-ide/shared";
 import type { ClientState, Result, RuntimeInfo } from "../common/api";
@@ -9,7 +9,7 @@ import { sha1, Workspace } from "./workspace";
 
 // Transport — Supabase (MIGRATION-PLAN.md 4-bo'lim): o'quvchi = anonim sessiya, holat o'zgartirish — RPC'lar
 // (student_join, heartbeat, sync_files, report_event, submit_attempt, report_app_closed). Har 5 s heartbeat
-// vaqtni sinxronlaydi va holat o'zgarishlarini (boshlandi / tugadi) beradi; Realtime (7-faza) ularni tezlashtiradi.
+// vaqtni sinxronlaydi va holat o'zgarishlarini (boshlandi / tugadi) beradi; Realtime "nudge" xabari uni darhol chaqiradi.
 
 type Client = SupabaseClient<Database>;
 
@@ -84,6 +84,8 @@ export class ExamSession {
   private syncTimer: NodeJS.Timeout | null = null;
   private syncing: Promise<void> | null = null;
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  /** Realtime private kanallari: attempt:<id> va exam:<id>:students (nudge → darhol heartbeat). */
+  private channels: RealtimeChannel[] = [];
   private pingTimer: NodeJS.Timeout | null = null;
   /** Serverda tasdiqlangan join bormi (eventlar shundan keyin yuboriladi). */
   private joined = false;
@@ -213,6 +215,7 @@ export class ExamSession {
     this.set({ connected: true });
     await this.apply(j.attemptId, j.exam, j.state);
     this.startHeartbeat();
+    void this.subscribe(j.attemptId, j.exam.id);
     this.flushEvents();
     return { ok: true };
   }
@@ -230,6 +233,31 @@ export class ExamSession {
       // Topshirish jarayonida qayta kirdi — oxirgi sync va qulflash.
       if (state.ending) void this.end();
     } else this.set({ screen: "submitted", locked: true });
+  }
+
+  /** Jonli xabarlar: holat o'zgarsa server "nudge" yuboradi — heartbeat darhol (5 s kutmasdan). */
+  private async subscribe(attemptId: string, examId: string): Promise<void> {
+    await this.unsubscribe();
+    await this.sb.realtime.setAuth();
+    const nudge = () => void this.heartbeat();
+    this.channels = [
+      this.sb.channel(`attempt:${attemptId}`, { config: { private: true } }).on("broadcast", { event: "nudge" }, nudge),
+      this.sb
+        .channel(`exam:${examId}:students`, { config: { private: true } })
+        .on("broadcast", { event: "nudge" }, nudge)
+        .on("broadcast", { event: "lobby:count" }, ({ payload }) => {
+          const n = (payload as { joinedCount?: unknown }).joinedCount;
+          if (typeof n === "number") this.set({ joinedCount: n });
+        }),
+    ];
+    // Qayta ulanganda (internet qaytdi) o'tkazib yuborilgan o'zgarish bo'lishi mumkin — holatni so'raymiz.
+    for (const ch of this.channels) ch.subscribe((status) => status === "SUBSCRIBED" && nudge());
+  }
+
+  private async unsubscribe(): Promise<void> {
+    const list = this.channels;
+    this.channels = [];
+    await Promise.all(list.map((ch) => this.sb.removeChannel(ch).catch(() => undefined)));
   }
 
   private startHeartbeat(): void {
@@ -385,6 +413,7 @@ export class ExamSession {
     await this.syncing;
     await this.sync();
     this.stopHeartbeat();
+    void this.unsubscribe();
     this.set({ screen: "submitted" });
     // 10 soniyadan so'ng kod+ism ekraniga qaytamiz va lokal izlarni o'chiramiz.
     this.autoReturnTimer ??= setTimeout(() => void this.resetToLogin(), AUTO_RETURN_MS);
@@ -408,6 +437,7 @@ export class ExamSession {
     this.pendingEvents = [];
     this.envReported = false;
     if (code) store.clearSession(code);
+    await this.unsubscribe();
     // Keyingi imtihonda — yangi anonim foydalanuvchi (MIGRATION-PLAN.md 4-bo'lim, 8-band).
     await this.sb.auth.signOut({ scope: "local" }).catch(() => undefined);
     await ws?.destroy().catch(() => undefined);

@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-import { io, type Socket } from "socket.io-client";
-import { TEACHER_NAMESPACE, WATCH_EVENTS_LIMIT } from "@exam-ide/shared";
-import type {
-  AttemptSummary,
-  EventDto,
-  EventWithStudent,
-  ExamLive,
-  TeacherClientToServer,
-  TeacherServerToClient,
-} from "@exam-ide/shared";
-import { forceLogout, tokenStore } from "./api";
+import { WATCH_EVENTS_LIMIT } from "@exam-ide/shared";
+import type { AttemptSummary, EventDto, EventWithStudent, ExamLive } from "@exam-ide/shared";
+import { api, ApiError, forceLogout } from "./api";
+import { supabase } from "./supabase";
 
-type TeacherSocket = Socket<TeacherServerToClient, TeacherClientToServer>;
+// Jonli kuzatuv — Supabase Realtime private kanal `exam:<id>` (MIGRATION-PLAN.md 7-faza). Xabarlarni DB trigger'lari
+// yuboradi (eski socket /teacher bilan bir xil shakl): attempt:update, event:new, exam:update. Har (qayta) obunada
+// holat qayta o'qiladi — uzilish paytidagi o'zgarishlar yo'qolmaydi.
 
 export interface LiveAlert {
   key: string;
@@ -32,12 +27,9 @@ export interface ExamLiveState {
   error: { kind: "notFound" | "network"; message: string } | null;
 }
 
-/** Server socket middleware'i rad etganda qaytaradigan matn (apps/server/src/uz.ts → unauthorized). */
-const UNAUTHORIZED = "Avval tizimga kiring";
-
 const byNewest = (a: LiveAlert, b: LiveAlert) => b.event.createdAt.localeCompare(a.event.createdAt);
 
-/** Tarix (watch javobi) va jonli eventlarni id bo'yicha birlashtiradi — hech narsa yo'qolmaydi. */
+/** Tarix va jonli eventlarni id bo'yicha birlashtiradi — hech narsa yo'qolmaydi. */
 function merge(current: LiveAlert[], incoming: LiveAlert[]): LiveAlert[] {
   const map = new Map(current.map((a) => [a.key, a]));
   for (const a of incoming) {
@@ -50,7 +42,43 @@ function merge(current: LiveAlert[], incoming: LiveAlert[]): LiveAlert[] {
 const fromHistory = (rows: EventWithStudent[]): LiveAlert[] =>
   rows.map((r) => ({ key: r.event.id, studentName: r.studentName, event: r.event, fresh: false }));
 
-/** O'qituvchi paneli uchun jonli imtihon holati (socket). Qayta ulanishda tarix qayta yuklanadi. */
+/** Boshlang'ich holat: imtihon, o'quvchilar, oxirgi eventlar (eski `exam:watch` javobi). */
+async function loadWatch(examId: string): Promise<{ exam: ExamLive; attempts: AttemptSummary[]; events: EventWithStudent[] }> {
+  const { data: e, error } = await supabase.from("exams").select("*").eq("id", examId).maybeSingle();
+  if (error) throw new ApiError(/jwt/i.test(error.message) ? 401 : 500, error.message);
+  if (!e) throw new ApiError(404, "Imtihon topilmadi");
+  const attempts = await api.get<AttemptSummary[]>(`/exams/${examId}/attempts`);
+  const { data: rows } = await supabase
+    .from("events")
+    .select("id, attempt_id, type, severity, details, created_at, attempt:attempts(student_name)")
+    .eq("exam_id", examId)
+    .order("created_at", { ascending: false })
+    .limit(WATCH_EVENTS_LIMIT);
+  const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  return {
+    exam: {
+      id: e.id,
+      title: e.title,
+      durationMin: e.duration_min,
+      template: e.template,
+      status: e.status,
+      allowedPackages: strings(e.allowed_packages),
+      allowedCommands: strings(e.allowed_commands),
+      allowedShells: strings(e.allowed_shells) as ExamLive["allowedShells"],
+      code: e.code,
+      startedAt: e.started_at,
+      endsAt: e.ends_at,
+      aiEnabled: e.ai_enabled,
+    },
+    attempts,
+    events: (rows ?? []).map((r) => ({
+      studentName: (r.attempt as { student_name: string } | null)?.student_name ?? "",
+      event: { id: r.id, attemptId: r.attempt_id, type: r.type, severity: r.severity, details: r.details, createdAt: r.created_at },
+    })),
+  };
+}
+
+/** O'qituvchi paneli uchun jonli imtihon holati. Qayta ulanishda holat va tarix qayta yuklanadi. */
 export function useExamSocket(examId: string | undefined): ExamLiveState {
   const [state, setState] = useState<ExamLiveState>({
     exam: null,
@@ -63,10 +91,7 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
 
   useEffect(() => {
     if (!examId) return;
-    const socket: TeacherSocket = io(TEACHER_NAMESPACE, {
-      transports: ["websocket"],
-      auth: { token: tokenStore.get() ?? "" },
-    });
+    let alive = true;
 
     const upsert = (attempts: AttemptSummary[], a: AttemptSummary) => {
       const i = attempts.findIndex((x) => x.id === a.id);
@@ -76,52 +101,63 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
       return next;
     };
 
-    socket.on("connect", () => {
-      setState((s) => ({ ...s, connected: true }));
-      void socket
-        .timeout(15_000)
-        .emitWithAck("exam:watch", { examId })
-        .then((res) => {
-        if (!res.ok) {
-          setState((s) => ({ ...s, error: { kind: "notFound", message: res.error } }));
-          return;
-        }
-        setState((s) => ({
-          ...s,
-          error: null,
-          exam: res.exam,
-          attempts: res.attempts,
-          alerts: merge(s.alerts, fromHistory(res.events)),
-        }));
-        })
-        .catch(() => setState((s) => ({ ...s, error: s.exam ? s.error : { kind: "network", message: "" } })));
-    });
-    socket.on("connect_error", (err) => {
-      // Token eskirgan yoki o'qituvchi o'chirilgan — login sahifasiga.
-      if (err.message === UNAUTHORIZED) {
-        socket.close();
-        forceLogout();
-        return;
-      }
-      // Birinchi yuklanishda server javob bermasa — abadiy "Yuklanmoqda…" emas, xabar.
-      setState((s) => (s.exam ? s : { ...s, error: { kind: "network", message: err.message } }));
-    });
-    socket.on("disconnect", () => setState((s) => ({ ...s, connected: false })));
-    socket.on("lobby:update", ({ attempts }) => setState((s) => ({ ...s, attempts })));
-    socket.on("attempt:update", ({ attempt }) => setState((s) => ({ ...s, attempts: upsert(s.attempts, attempt) })));
-    socket.on("exam:update", ({ exam }) => setState((s) => ({ ...s, exam })));
-    socket.on("event:new", ({ studentName, event }) => {
-      setState((s) => {
-        const known = s.alerts.some((a) => a.key === event.id);
-        const alert: LiveAlert = { key: event.id, studentName, event, fresh: true };
-        // Yangilanish (masalan FOCUS_LOST davomiyligi) qayta signal bermaydi.
-        const loud = !known && event.severity !== "INFO";
-        return { ...s, alerts: merge(s.alerts, [alert]), lastLoud: loud ? alert : s.lastLoud };
+    const reload = () =>
+      loadWatch(examId).then(
+        (res) => {
+          if (!alive) return;
+          setState((s) => ({ ...s, error: null, exam: res.exam, attempts: res.attempts, alerts: merge(s.alerts, fromHistory(res.events)) }));
+        },
+        (err: unknown) => {
+          if (!alive) return;
+          if (err instanceof ApiError && err.status === 401) return forceLogout();
+          const notFound = err instanceof ApiError && err.status === 404;
+          setState((s) =>
+            notFound
+              ? { ...s, error: { kind: "notFound", message: err.message } }
+              : s.exam
+                ? s
+                : { ...s, error: { kind: "network", message: err instanceof Error ? err.message : "" } },
+          );
+        },
+      );
+
+    const channel = supabase
+      .channel(`exam:${examId}`, { config: { private: true } })
+      .on("broadcast", { event: "attempt:update" }, ({ payload }) => {
+        const { attempt } = payload as { attempt: AttemptSummary | null };
+        if (attempt) setState((s) => ({ ...s, attempts: upsert(s.attempts, attempt) }));
+      })
+      .on("broadcast", { event: "exam:update" }, ({ payload }) => {
+        const { exam } = payload as { exam: ExamLive };
+        setState((s) => ({ ...s, exam }));
+      })
+      .on("broadcast", { event: "event:new" }, ({ payload }) => {
+        const { studentName, event } = payload as { studentName: string; event: EventDto };
+        setState((s) => {
+          const known = s.alerts.some((a) => a.key === event.id);
+          const alert: LiveAlert = { key: event.id, studentName, event, fresh: true };
+          // Yangilanish (masalan FOCUS_LOST davomiyligi) qayta signal bermaydi.
+          const loud = !known && event.severity !== "INFO";
+          return { ...s, alerts: merge(s.alerts, [alert]), lastLoud: loud ? alert : s.lastLoud };
+        });
       });
-    });
+
+    void reload();
+    void supabase.realtime.setAuth().then(() =>
+      channel.subscribe((status) => {
+        if (!alive) return;
+        if (status === "SUBSCRIBED") {
+          setState((s) => ({ ...s, connected: true }));
+          void reload();
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          setState((s) => ({ ...s, connected: false }));
+        }
+      }),
+    );
 
     return () => {
-      socket.close();
+      alive = false;
+      void supabase.removeChannel(channel);
     };
   }, [examId]);
 

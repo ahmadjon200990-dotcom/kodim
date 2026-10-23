@@ -81,6 +81,10 @@ begin
     raise exception 'NOT_FOUND' using errcode = 'P0002';
   end if;
   delete from public.penalties where id = p_penalty_id;
+  -- Panel kartasi yangilansin (realtime migratsiyasidagi yordamchi; jarima qo'shilganda — trigger).
+  perform realtime.send(jsonb_build_object('examId', e.exam_id, 'attempt', private.attempt_summary_json(v_attempt)),
+    'attempt:update', 'exam:' || e.exam_id, true)
+  from public.attempts e where e.id = v_attempt;
 end;
 $$;
 
