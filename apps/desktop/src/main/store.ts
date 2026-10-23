@@ -4,10 +4,9 @@ import { join } from "node:path";
 import { app } from "electron";
 import { SHELL_KINDS, type ShellKind } from "@exam-ide/shared";
 
-// userData dagi kichik doimiy ma'lumotlar: qurilma ID, oxirgi ism, imtihon tokenlari.
+// userData dagi kichik doimiy ma'lumotlar: qurilma ID, oxirgi ism, imtihon sessiyalari, Supabase auth sessiyasi.
 
 interface SavedSession {
-  token: string;
   attemptId: string;
   name: string;
 }
@@ -15,8 +14,10 @@ interface SavedSession {
 interface StoreData {
   deviceId: string;
   lastName: string;
-  /** Imtihon kodi → shu kompyuterdagi ish tokeni (qayta kirish uchun). */
+  /** Imtihon kodi → shu kompyuterdagi ish (qayta kirish uchun; kimligi — anonim Supabase sessiyasi). */
   sessions: Record<string, SavedSession>;
+  /** supabase-js auth storage (anonim o'quvchi sessiyasi: access/refresh token). */
+  auth?: Record<string, string>;
   /** Oxirgi tanlangan terminal profili (VS Code "default profile"). */
   terminalProfile?: ShellKind;
   /** Server manzili (login ekranidagi sozlama). Bo'lmasa — build vaqtidagi standart. */
@@ -32,9 +33,10 @@ function load(): StoreData {
       return {
         deviceId: data.deviceId,
         lastName: data.lastName ?? "",
-        sessions: data.sessions ?? {},
+        sessions: Object.fromEntries(Object.entries(data.sessions ?? {}).filter(([, v]) => typeof v?.attemptId === "string").map(([k, v]) => [k, { attemptId: v.attemptId, name: v.name }])),
         ...(data.terminalProfile && (SHELL_KINDS as readonly string[]).includes(data.terminalProfile) && { terminalProfile: data.terminalProfile }),
         ...(typeof data.serverUrl === "string" && data.serverUrl && { serverUrl: data.serverUrl }),
+        ...(data.auth && typeof data.auth === "object" && { auth: data.auth }),
       };
     }
   } catch {
@@ -77,6 +79,21 @@ export const store = {
     if (url) d.serverUrl = url;
     else delete d.serverUrl;
     save();
+  },
+  /** supabase-js uchun saqlash adapteri (sinxron fayl, kichik hajm). */
+  authStorage: {
+    getItem: (key: string): string | null => get().auth?.[key] ?? null,
+    setItem(key: string, value: string): void {
+      const d = get();
+      d.auth = { ...d.auth, [key]: value };
+      save();
+    },
+    removeItem(key: string): void {
+      const d = get();
+      if (d.auth?.[key] === undefined) return;
+      delete d.auth[key];
+      save();
+    },
   },
   clearSession(code: string): void {
     const d = get();

@@ -7,8 +7,10 @@ import type { Plugin } from "vite";
 const alias = { "@exam-ide/shared": resolve(__dirname, "../../packages/shared/src/index.ts") };
 const externalizeDeps = { exclude: ["@exam-ide/shared"] };
 
-// Server manzili build vaqtida beriladi: SERVER_URL=https://... pnpm --filter @exam-ide/desktop build
-const SERVER_URL = process.env.SERVER_URL ?? "http://localhost:8080";
+// Supabase manzili va publishable kaliti build vaqtida (MIGRATION-PLAN.md 4-bo'lim): SUPABASE_URL=... SUPABASE_PUBLISHABLE_KEY=...
+// Standart — shared/supabaseConfig.ts (loyiha "kodim").
+const SERVER_URL = process.env.SUPABASE_URL ?? "https://prkrhitgkjyuwyipqimw.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_SrliT3-Dc98IWucZ1Zt_hg_5AXtIOQf";
 
 /** Production'da qat'iy CSP (dev'da Vite HMR inline skript ishlatadi). */
 function contentSecurityPolicy(): Plugin {
@@ -35,7 +37,7 @@ function contentSecurityPolicy(): Plugin {
 export default defineConfig({
   main: {
     resolve: { alias },
-    define: { __SERVER_URL__: JSON.stringify(SERVER_URL) },
+    define: { __SERVER_URL__: JSON.stringify(SERVER_URL), __SUPABASE_KEY__: JSON.stringify(SUPABASE_KEY) },
     build: { externalizeDeps },
   },
   preload: {

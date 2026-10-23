@@ -1,4 +1,4 @@
-// Windows .exe build: electron-vite build (SERVER_URL bilan) → electron-builder (NSIS) → release/latest.json.
+// Windows .exe build: electron-vite build (SUPABASE_URL bilan) → electron-builder (NSIS) → release/latest.json.
 //   node scripts/dist.mjs [server-url]     standart: https://teacher.kodim.uz
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -8,13 +8,13 @@ import { fileURLToPath } from "node:url";
 import { BRAND } from "../../../packages/shared/src/brand.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const serverUrl = process.argv[2] ?? process.env.SERVER_URL ?? `https://teacher.${BRAND.domain}`;
+const serverUrl = process.argv[2] ?? process.env.SUPABASE_URL ?? "https://prkrhitgkjyuwyipqimw.supabase.co";
 const bin = (name) => join(root, "node_modules", ".bin", process.platform === "win32" ? `${name}.CMD` : name);
 const run = (cmd, args, env = {}) =>
   execFileSync(cmd, args, { cwd: root, stdio: "inherit", shell: process.platform === "win32", env: { ...process.env, ...env } });
 
 console.log(`Server: ${serverUrl}`);
-run(bin("electron-vite"), ["build"], { SERVER_URL: serverUrl, NODE_ENV: "production" });
+run(bin("electron-vite"), ["build"], { SUPABASE_URL: serverUrl, NODE_ENV: "production" });
 run(bin("electron-builder"), ["--win", "--config", "electron-builder.config.mjs", "--publish", "never"]);
 
 // Landing "Yuklab olish" tugmasi uchun versiya fayli.

@@ -132,6 +132,8 @@ export interface StudentState {
   serverNow: string;
   /** Faqat WORKING holatida: ish papkasi tarkibi (oxirgi snapshot). */
   files: FileEntry[] | null;
+  /** 15 s topshirish jarayoni boshlangan (Supabase: attempts.ending_at) — klient oxirgi sync'ni yuborib qulflanadi. */
+  ending?: boolean;
 }
 
 export interface StudentJoinOk {

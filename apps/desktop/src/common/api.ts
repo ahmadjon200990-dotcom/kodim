@@ -71,7 +71,7 @@ export interface KodimApi {
   /** Server manzili (login ekranidagi sozlama). */
   server: {
     get(): Promise<{ url: string; defaultUrl: string }>;
-    /** Manzilni tekshiradi (/api/health) va saqlaydi; `null` — standartga qaytarish. */
+    /** Manzilni tekshiradi (Supabase /auth/v1/health) va saqlaydi; `null` — standartga qaytarish. */
     set(url: string | null): Promise<Result>;
   };
   submit(): Promise<Result>;

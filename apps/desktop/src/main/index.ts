@@ -130,11 +130,16 @@ void app.whenReady().then(() => {
   createWindow();
 });
 
-app.on("before-quit", () => {
+let quitting = false;
+app.on("before-quit", (e) => {
+  if (quitting) return;
+  // O'qituvchiga APP_CLOSED yuborilishini kutamiz (ko'pi bilan 1 s), keyin chiqamiz.
+  e.preventDefault();
+  quitting = true;
   monitor.stop();
   void watcher.stop();
   terminals.killAll();
   void live.stop();
-  session.disconnect();
+  void session.disconnect().finally(() => app.quit());
 });
 app.on("window-all-closed", () => app.quit());

@@ -533,7 +533,14 @@ export type Database = {
       grade_attempt: { Args: { p_attempt_id: string; p_input: Json }; Returns: Database["public"]["Tables"]["attempts"]["Row"] }
       open_exam: { Args: { p_exam_id: string }; Returns: string }
       save_exam: { Args: { p_exam: Json; p_exam_id: string | null; p_tasks: Json }; Returns: string }
+      heartbeat: { Args: { p_attempt_id: string }; Returns: Json }
+      report_app_closed: { Args: { p_attempt_id: string }; Returns: undefined }
+      report_event: { Args: { p_attempt_id: string; p_details?: Json; p_event_id?: string; p_type: string }; Returns: string }
       start_exam: { Args: { p_exam_id: string }; Returns: Database["public"]["Tables"]["exams"]["Row"] }
+      student_join: { Args: { p_code: string; p_device_id: string; p_name: string }; Returns: Json }
+      student_state: { Args: { p_attempt_id: string; p_with_files?: boolean }; Returns: Json }
+      submit_attempt: { Args: { p_attempt_id: string }; Returns: Json }
+      sync_files: { Args: { p_attempt_id: string; p_deleted?: Json; p_files?: Json }; Returns: Json }
       unannul_attempt: { Args: { p_attempt_id: string }; Returns: Database["public"]["Tables"]["attempts"]["Row"] }
     }
     Enums: {

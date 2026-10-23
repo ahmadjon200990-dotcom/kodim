@@ -75,11 +75,10 @@ export function registerIpc({ session, terminals, browser, live, monitor, getRen
     }
     if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, error: uz.serverInvalid };
     const base = url.origin;
-    // Haqiqatan Kodim serveri ekanini tekshiramiz (noto'g'ri manzil bilan qolib ketmaslik uchun).
+    // Haqiqatan Supabase loyihasi ekanini tekshiramiz (Auth health, publishable kalit bilan).
     try {
-      const res = await net.fetch(`${base}/api/health`, { signal: AbortSignal.timeout(6000) });
-      const body = (await res.json()) as { ok?: boolean };
-      if (!body.ok) return { ok: false, error: uz.serverUnreachable };
+      const res = await net.fetch(`${base}/auth/v1/health`, { headers: { apikey: __SUPABASE_KEY__ }, signal: AbortSignal.timeout(6000) });
+      if (!res.ok) return { ok: false, error: uz.serverUnreachable };
     } catch {
       return { ok: false, error: uz.serverUnreachable };
     }
