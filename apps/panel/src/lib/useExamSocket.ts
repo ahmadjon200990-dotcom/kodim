@@ -123,6 +123,18 @@ export function useExamSocket(examId: string | undefined): ExamLiveState {
 
     const channel = supabase
       .channel(`exam:${examId}`, { config: { private: true } })
+      .on("postgres_changes", { event: "*", schema: "public", table: "exams", filter: `id=eq.${examId}` }, () => {
+        void reload();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "attempts", filter: `exam_id=eq.${examId}` }, () => {
+        void reload();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "events", filter: `exam_id=eq.${examId}` }, () => {
+        void reload();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "penalties" }, () => {
+        void reload();
+      })
       .on("broadcast", { event: "attempt:update" }, ({ payload }) => {
         const { attempt } = payload as { attempt: AttemptSummary | null };
         if (attempt) setState((s) => ({ ...s, attempts: upsert(s.attempts, attempt) }));

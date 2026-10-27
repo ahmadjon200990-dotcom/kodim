@@ -14,6 +14,20 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "dist"),
     emptyOutDir: true,
+    target: "es2022",
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("monaco-editor")) return "monaco";
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("react-router") || id.includes("react-dom") || id.includes("react")) return "react-vendor";
+          if (id.includes("exceljs") || id.includes("jszip")) return "data-vendor";
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port: 5273,

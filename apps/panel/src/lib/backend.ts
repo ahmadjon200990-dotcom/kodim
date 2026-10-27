@@ -331,12 +331,163 @@ async function listTeachers(): Promise<Teacher[]> {
   }));
 }
 
+async function createTeacher(body: unknown): Promise<Teacher> {
+  const parsed = z
+    .object({
+      name: z.string().trim().min(1).max(100),
+      email: z.string().trim().email().transform((v) => v.toLowerCase()),
+      password: z.string().min(8).max(200),
+      role: z.enum(["TEACHER", "ADMIN"]).default("TEACHER"),
+    })
+    .parse(body);
+
+  const { data, error } = await supabase.auth.signUp({
+    email: parsed.email,
+    password: parsed.password,
+    options: {
+      data: {
+        full_name: parsed.name,
+        name: parsed.name,
+      },
+    },
+  });
+  if (error) fail(error);
+  const uid = data.user?.id;
+  if (!uid) throw new ApiError(500, uz.common.error);
+
+  const teacher = await call(
+    supabase
+      .from("teachers")
+      .update({ name: parsed.name, email: parsed.email, role: parsed.role, disabled: false })
+      .eq("id", uid)
+      .select("id, name, email, role, disabled, created_at, last_login_at")
+      .single(),
+  );
+
+  return {
+    id: teacher.id,
+    name: teacher.name,
+    email: teacher.email,
+    role: teacher.role,
+    disabled: teacher.disabled,
+    createdAt: teacher.created_at,
+    lastLoginAt: teacher.last_login_at,
+  };
+}
+
+async function patchTeacher(id: string, body: unknown): Promise<Teacher> {
+  const parsed = z
+    .object({
+      disabled: z.boolean().optional(),
+      role: z.enum(["TEACHER", "ADMIN"]).optional(),
+    })
+    .parse(body);
+
+  const patch: { disabled?: boolean; role?: "TEACHER" | "ADMIN" } = {};
+  if (parsed.disabled !== undefined) patch.disabled = parsed.disabled;
+  if (parsed.role) patch.role = parsed.role;
+
+  const row = await call(
+    supabase
+      .from("teachers")
+      .update(patch)
+      .eq("id", id)
+      .select("id, name, email, role, disabled, created_at, last_login_at")
+      .single(),
+  );
+
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+    disabled: row.disabled,
+    createdAt: row.created_at,
+    lastLoginAt: row.last_login_at,
+  };
+}
+
+async function deleteTeacher(id: string): Promise<void> {
+  const exists = await call(supabase.from("teachers").select("id").eq("id", id).maybeSingle());
+  if (!exists) throw new ApiError(404, uz.backend.notFound);
+  await callVoid(supabase.from("teachers").delete().eq("id", id));
+}
+
+async function getSettings(): Promise<{ figma: { configured: boolean; handle: string | null } }> {
+  const session = await supabase.auth.getSession();
+  const uid = session.data.session?.user.id;
+  if (!uid) throw new ApiError(401, uz.backend.unauthorized);
+
+  const { data, error } = await supabase.functions.invoke<{ figma: { configured: boolean; handle: string | null } }>("figma-settings", {
+    body: { action: "get" },
+  });
+  if (error) fail(error as never);
+  return data ?? { figma: { configured: false, handle: null } };
+}
+
+async function saveFigmaToken(body: unknown): Promise<{ figma: { configured: boolean; handle: string | null } }> {
+  const parsed = z.object({ token: z.string().trim().min(20).max(500) }).parse(body);
+  const token = parsed.token;
+  const session = await supabase.auth.getSession();
+  const uid = session.data.session?.user.id;
+  if (!uid) throw new ApiError(401, uz.backend.unauthorized);
+
+  const { data, error } = await supabase.functions.invoke<{ figma: { configured: boolean; handle: string | null } }>("figma-settings", {
+    body: { action: "save", token },
+  });
+  if (error) fail(error as never);
+  return data ?? { figma: { configured: false, handle: null } };
+}
+
+async function clearFigmaToken(): Promise<{ figma: { configured: boolean; handle: string | null } }> {
+  const session = await supabase.auth.getSession();
+  const uid = session.data.session?.user.id;
+  if (!uid) throw new ApiError(401, uz.backend.unauthorized);
+
+  const { data, error } = await supabase.functions.invoke<{ figma: { configured: boolean; handle: string | null } }>("figma-settings", {
+    body: { action: "delete" },
+  });
+  if (error) fail(error as never);
+  return data ?? { figma: { configured: false, handle: null } };
+}
+
+async function getExamFigmaStatus(examId: string): Promise<Array<{ url: string; status: "PENDING" | "READY" | "ERROR" | "MISSING"; error: string | null; errorText: string | null; fileName: string | null; frames: { id: string; name: string; width: number; height: number; hasImage: boolean }[]; fetchedAt: string | null; cacheId: string | null }>> {
+  const exam = await call(supabase.from("exams").select("id").eq("id", examId).maybeSingle());
+  if (!exam) throw new ApiError(404, uz.backend.notFound);
+
+  const { data, error } = await supabase.functions.invoke<Array<{ url: string; status: "PENDING" | "READY" | "ERROR" | "MISSING"; error: string | null; errorText: string | null; fileName: string | null; frames: { id: string; name: string; width: number; height: number; hasImage: boolean }[]; fetchedAt: string | null; cacheId: string | null }>>("figma-settings", {
+    body: { action: "refresh", examId },
+  });
+  if (error) fail(error as never);
+  return data ?? [];
+}
+
+async function refreshExamFigma(examId: string): Promise<Array<{ url: string; status: "PENDING" | "READY" | "ERROR" | "MISSING"; error: string | null; errorText: string | null; fileName: string | null; frames: { id: string; name: string; width: number; height: number; hasImage: boolean }[]; fetchedAt: string | null; cacheId: string | null }>> {
+  const exam = await call(supabase.from("exams").select("id").eq("id", examId).maybeSingle());
+  if (!exam) throw new ApiError(404, uz.backend.notFound);
+
+  const { data, error } = await supabase.functions.invoke<Array<{ url: string; status: "PENDING" | "READY" | "ERROR" | "MISSING"; error: string | null; errorText: string | null; fileName: string | null; frames: { id: string; name: string; width: number; height: number; hasImage: boolean }[]; fetchedAt: string | null; cacheId: string | null }>>("figma-settings", {
+    body: { action: "refresh", examId },
+  });
+  if (error) fail(error as never);
+  return data ?? [];
+}
+
+async function getFigmaFrameImage(cacheId: string, frameId: string): Promise<Blob> {
+  void cacheId;
+  void frameId;
+  throw new ApiError(404, uz.backend.notFound);
+}
+
 // ---------- Yo'llar jadvali ----------
 
 type Handler = (params: string[], body: unknown) => Promise<unknown>;
 const ROUTES: [method: string, pattern: RegExp, handler: Handler][] = [
   ["GET", /^\/me$/, () => getMe()],
   ["GET", /^\/auth\/config$/, async () => ({ google: true })],
+  ["GET", /^\/settings$/, () => getSettings()],
+  ["PUT", /^\/settings\/figma$/, (_, body) => saveFigmaToken(body)],
+  ["DELETE", /^\/settings\/figma$/, () => clearFigmaToken()],
   ["GET", /^\/exams$/, () => listExams()],
   ["POST", /^\/exams$/, (_, body) => saveExam(null, body)],
   ["GET", /^\/exams\/([^/]+)$/, ([id]) => getExam(id!)],
@@ -368,15 +519,20 @@ const ROUTES: [method: string, pattern: RegExp, handler: Handler][] = [
   ["POST", /^\/attempts\/([^/]+)\/unannul$/, ([id]) => call(supabase.rpc("unannul_attempt", { p_attempt_id: id! }))],
   ["PUT", /^\/attempts\/([^/]+)\/grade$/, ([id], body) => call(supabase.rpc("grade_attempt", { p_attempt_id: id!, p_input: body as Json }))],
   ["POST", /^\/attempts\/([^/]+)\/regrade$/, async () => { throw new ApiError(409, uz.backend.aiDisabled); }],
+  ["POST", /^\/teachers$/, (_, body) => createTeacher(body)],
+  ["PATCH", /^\/teachers\/([^/]+)$/, ([id], body) => patchTeacher(id!, body)],
+  ["DELETE", /^\/teachers\/([^/]+)$/, ([id]) => deleteTeacher(id!)],
   ["GET", /^\/teachers$/, () => listTeachers()],
+  ["GET", /^\/exams\/([^/]+)\/figma$/, ([id]) => getExamFigmaStatus(id!)],
+  ["POST", /^\/exams\/([^/]+)\/figma\/refresh$/, ([id]) => refreshExamFigma(id!)],
+  ["GET", /^\/figma\/([^/]+)\/frames\/([^/]+)$/, ([cacheId, frameId]) => getFigmaFrameImage(cacheId!, frameId!)],
 ];
 
 
-/** Hali ko'chirilmagan bo'limlar (Figma — 9-faza, o'qituvchilarni boshqarish — 10-faza). */
+/** Hali ko'chirilmagan qoldiqlar (foydalanmayapti). */
 const LATER: [string, RegExp, string][] = [
-  ["*", /^\/settings/, uz.backend.laterFigma],
-  ["*", /\/figma/, uz.backend.laterFigma],
-  ["*", /^\/teachers/, uz.backend.laterAdmin],
+  ["*", /^\/settings\/legacy/, uz.backend.laterFigma],
+  ["*", /\/figma\/legacy/, uz.backend.laterFigma],
 ];
 
 export async function route(method: string, path: string, body?: unknown): Promise<unknown> {

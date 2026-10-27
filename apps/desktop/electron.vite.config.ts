@@ -56,5 +56,20 @@ export default defineConfig({
   renderer: {
     resolve: { alias },
     plugins: [react(), contentSecurityPolicy()],
+    build: {
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (id.includes("monaco-editor")) return "monaco";
+            if (id.includes("@supabase")) return "supabase";
+            if (id.includes("@xterm") || id.includes("node-pty")) return "terminal";
+            if (id.includes("react-router") || id.includes("react-dom") || id.includes("react")) return "react-vendor";
+            return "vendor";
+          },
+        },
+      },
+    },
   },
 });

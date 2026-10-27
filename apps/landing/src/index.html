@@ -1,185 +1,234 @@
 <!doctype html>
 <html lang="uz">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{NAME}} — dasturlash imtihonlari uchun himoyalangan muharrir</title>
-    <meta
-      name="description"
-      content="{{NAME}}: o'quv markazlari uchun dasturlash imtihoni tizimi. VS Code'ga o'xshash muharrir, copy-paste va AI'dan himoya, o'qituvchiga jonli ogohlantirishlar, ishlarni yig'ish va baholash."
-    />
-    <meta property="og:title" content="{{NAME}} — {{SLOGAN}}" />
-    <meta property="og:description" content="Dasturlash imtihonlari: halol, nazoratli, qulay." />
-    <meta property="og:image" content="/icon.png" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <header class="nav">
-      <div class="container nav-inner">
-        <a class="logo" href="/"><img src="/favicon.png" alt="" width="28" height="28" />{{NAME}}</a>
-        <nav class="nav-links">
-          <a href="#imkoniyatlar">Imkoniyatlar</a>
-          <a href="#qanday">Qanday ishlaydi</a>
-          <a href="#savollar">Savollar</a>
-        </nav>
-        <a class="btn btn-ghost" href="{{PANEL_URL}}">O'qituvchi paneli</a>
-      </div>
-    </header>
 
-    <main>
-      <section class="hero">
-        <div class="container hero-inner">
-          <span class="eyebrow">Dasturlash imtihonlari uchun</span>
-          <h1>{{SLOGAN}}</h1>
-          <p class="lead">
-            {{NAME}} — o'quv markazlari uchun imtihon tizimi. O'quvchi VS Code'ga o'xshash muharrirda ishlaydi, nusxa ko'chirish va AI
-            yordamchilar yopiq, har qanday qoidabuzarlik o'qituvchiga darhol yetib boradi.
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{NAME}} — dasturlash imtihonlari uchun himoyalangan muharrir</title>
+  <meta name="description"
+    content="{{NAME}}: o'quv markazlari uchun dasturlash imtihoni tizimi. VS Code'ga o'xshash muharrir, copy-paste va AI'dan himoya, o'qituvchiga jonli ogohlantirishlar, ishlarni yig'ish va baholash." />
+  <meta property="og:title" content="{{NAME}} — {{SLOGAN}}" />
+  <meta property="og:description" content="Dasturlash imtihonlari: halol, nazoratli, qulay." />
+  <meta property="og:image" content="/icon.png" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+
+<body>
+
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="logo" href="/" aria-label="Kodim bosh sahifasi">
+        <img src="/favicon.png" alt="" width="34" height="34" />
+        <span>Kodim</span>
+      </a>
+
+      <div class="nav-actions">
+        <a class="btn btn-download" data-download href="#">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="m7 10 5 5 5-5M12 15V3" />
+          </svg>
+          Yuklab olish
+        </a>
+
+        <a class="btn btn-primary" href="{{PANEL_URL}}">
+          Imtihonni boshlash
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <span class="eyebrow">Dasturlash imtihonlari uchun</span>
+        <h1>{{SLOGAN}}</h1>
+        <p class="lead">
+          {{NAME}} — o'quv markazlari uchun imtihon tizimi. O'quvchi VS Code'ga o'xshash muharrirda ishlaydi, nusxa
+          ko'chirish va AI
+          yordamchilar yopiq, har qanday qoidabuzarlik o'qituvchiga darhol yetib boradi.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" data-download href="#">Windows uchun yuklab olish</a>
+          <a class="btn btn-lg" href="{{PANEL_URL}}">O'qituvchi paneli →</a>
+        </div>
+        <div class="hero-meta" data-download-meta>Windows 10/11 · bepul</div>
+        <figure class="hero-shot">
+          <img src="/img/desktop-workspace.png" alt="{{NAME}} o'quvchi ilovasi: muharrir, fayllar va terminal"
+            loading="eager" />
+        </figure>
+      </div>
+    </section>
+
+    <section class="section problem">
+      <div class="container two-col">
+        <div>
+          <h2>Muammo</h2>
+          <p>
+            Kompyuterda o'tkaziladigan dasturlash imtihonida o'quvchi bir necha soniyada ChatGPT'dan javob nusxalashi,
+            boshqa oynadan kod
+            olib kirishi yoki do'stiga yozib yuborishi mumkin. O'qituvchi 20–30 ta ekranni bir vaqtda kuzata olmaydi,
+            ishlarni yig'ish esa
+            fleshka va Telegram orqali chalkash jarayon.
           </p>
-          <div class="hero-cta">
-            <a class="btn btn-primary btn-lg" data-download href="#">Windows uchun yuklab olish</a>
-            <a class="btn btn-lg" href="{{PANEL_URL}}">O'qituvchi paneli →</a>
-          </div>
-          <div class="hero-meta" data-download-meta>Windows 10/11 · bepul</div>
-          <figure class="hero-shot">
-            <img src="/img/desktop-workspace.png" alt="{{NAME}} o'quvchi ilovasi: muharrir, fayllar va terminal" loading="eager" />
-          </figure>
         </div>
-      </section>
-
-      <section class="section problem">
-        <div class="container two-col">
-          <div>
-            <h2>Muammo</h2>
-            <p>
-              Kompyuterda o'tkaziladigan dasturlash imtihonida o'quvchi bir necha soniyada ChatGPT'dan javob nusxalashi, boshqa oynadan kod
-              olib kirishi yoki do'stiga yozib yuborishi mumkin. O'qituvchi 20–30 ta ekranni bir vaqtda kuzata olmaydi, ishlarni yig'ish esa
-              fleshka va Telegram orqali chalkash jarayon.
-            </p>
-          </div>
-          <div>
-            <h2>Yechim</h2>
-            <p>
-              {{NAME}} o'quvchiga faqat kerakli narsani beradi: muharrir, terminal (faqat ruxsat etilgan buyruqlar) va ichki brauzer
-              (localhost va Figma). Tashqaridan nusxa, ekran rasmi, boshqa dasturlar va oynadan chiqish qayd etiladi; ish har 5 soniyada
-              serverga saqlanadi va vaqt tugashi bilan avtomatik topshiriladi.
-            </p>
-          </div>
+        <div>
+          <h2>Yechim</h2>
+          <p>
+            {{NAME}} o'quvchiga faqat kerakli narsani beradi: muharrir, terminal (faqat ruxsat etilgan buyruqlar) va
+            ichki brauzer
+            (localhost va Figma). Tashqaridan nusxa, ekran rasmi, boshqa dasturlar va oynadan chiqish qayd etiladi; ish
+            har 5 soniyada
+            serverga saqlanadi va vaqt tugashi bilan avtomatik topshiriladi.
+          </p>
         </div>
-      </section>
-
-      <section class="section" id="imkoniyatlar">
-        <div class="container">
-          <h2 class="center">Asosiy imkoniyatlar</h2>
-          <div class="features">
-            <article class="feature">
-              <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.4 8.6 8 9 4.6-.4 8-4 8-9V6zM9 12l2 2 4-4"/></svg></div>
-              <h3>Himoya</h3>
-              <p>Faqat ilova ichida copy-paste, ekran rasmi bloki, DevTools yo'q, terminalda faqat ruxsat etilgan buyruqlar, taqiqlangan dasturlar aniqlanadi.</p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg></div>
-              <h3>Jonli ogohlantirishlar</h3>
-              <p>Boshqa oynaga o'tish, ruxsatsiz buyruq, tashqi fayl — ism bilan, ovozli signal bilan o'qituvchi paneliga real vaqtda keladi.</p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7 3 12l5 5M16 7l5 5-5 5M13.5 4.5l-3 15"/></svg></div>
-              <h3>VS Code'ga o'xshash muharrir</h3>
-              <p>Tablar, Emmet, snippetlar, PowerShell / Git Bash terminal, Go Live va Figma dizaynini login'siz o'lchab ko'rish.</p>
-            </article>
-            <article class="feature">
-              <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 13l2 2 4-4"/></svg></div>
-              <h3>Ishlarni yig'ish va baholash</h3>
-              <p>Har o'quvchi papkasi, fayllar va rasmlar, ball va izoh, jarimalar, .zip va Excel yuklab olish — bir joyda.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section gallery">
-        <div class="container gallery-grid">
-          <figure>
-            <img src="/img/desktop-design-inspect.png" alt="Figma dizaynini o'lchab ko'rish" loading="lazy" />
-            <figcaption>Figma dizayni: o'lcham, rang, shrift va masofalar — Figma akkauntisiz</figcaption>
-          </figure>
-          <figure>
-            <img src="/img/panel-live.png" alt="O'qituvchi paneli: jonli kuzatuv" loading="lazy" />
-            <figcaption>Jonli kuzatuv: kod, o'quvchilar va ogohlantirishlar oqimi</figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section class="section" id="qanday">
-        <div class="container">
-          <h2 class="center">Qanday ishlaydi</h2>
-          <ol class="steps">
-            <li>
-              <span class="step-n">1</span>
-              <h3>O'qituvchi imtihon yaratadi</h3>
-              <p>Topshiriqlar, vaqt, shablon, Figma dizayn yoki tayyor papka, ruxsat etilgan buyruqlar. "Kutish xonasi" 6 xonali kod beradi.</p>
-            </li>
-            <li>
-              <span class="step-n">2</span>
-              <h3>O'quvchilar kod bilan kiradi</h3>
-              <p>Ilovani ochadi, kod va ismini yozadi, qoidalar bilan tanishadi. O'qituvchi "Boshlash"ni bosganda hammada bir vaqtda boshlanadi.</p>
-            </li>
-            <li>
-              <span class="step-n">3</span>
-              <h3>Kuzatuv, topshirish, baholash</h3>
-              <p>Ogohlantirishlar jonli keladi, jarima va vaqt qo'shish mumkin. Vaqt tugaganda ishlar avtomatik topshiriladi — baholang va yuklab oling.</p>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="section faq" id="savollar">
-        <div class="container narrow">
-          <h2 class="center">Ko'p beriladigan savollar</h2>
-          <details>
-            <summary>O'quvchi telefonda ekranni suratga olsa-chi?</summary>
-            <p>Hech qanday dastur telefon kamerasini to'xtata olmaydi — bu o'qituvchi nazorati bilan qoplanadi. Ekran rasmi olish tugmalari esa bloklanadi va qayd etiladi.</p>
-          </details>
-          <details>
-            <summary>Internet uzilsa, ish yo'qolmaydimi?</summary>
-            <p>Yo'q. Ish kompyuterda saqlanadi va har 5 soniyada serverga yuboriladi. Qayta ulanganda davom etadi, vaqt esa server bo'yicha hisoblanadi.</p>
-          </details>
-          <details>
-            <summary>npm, Vite, React, Python ishlaydimi?</summary>
-            <p>Ha. O'qituvchi ruxsat bergan buyruqlar (npm install, npm run dev, node, python …) ishlaydi; boshqa buyruqlar va zanjirlash bloklanadi.</p>
-          </details>
-          <details>
-            <summary>Figma dizayn uchun o'quvchiga akkaunt kerakmi?</summary>
-            <p>Kerak emas. O'qituvchining Figma tokeni bilan server dizaynni oldindan yuklaydi; o'quvchi o'lcham, rang va shriftlarni ilova ichida ko'radi.</p>
-          </details>
-          <details>
-            <summary>Internetsiz sinfda ishlatsa bo'ladimi?</summary>
-            <p>Ha. Serverni o'qituvchi kompyuterida ishga tushirib, o'quvchi ilovasida sozlama orqali lokal tarmoq manzilini (masalan 192.168.1.10:8080) kiritish mumkin.</p>
-          </details>
-          <details>
-            <summary>O'qituvchi qanday ro'yxatdan o'tadi?</summary>
-            <p>O'qituvchi paneliga Google akkaunti bilan kiradi — birinchi kirishda akkaunt avtomatik yaratiladi.</p>
-          </details>
-        </div>
-      </section>
-
-      <section class="section cta">
-        <div class="container cta-inner">
-          <h2>Keyingi imtihoningizni {{NAME}}da o'tkazing</h2>
-          <div class="hero-cta">
-            <a class="btn btn-primary btn-lg" data-download href="#">Windows uchun yuklab olish</a>
-            <a class="btn btn-lg" href="{{PANEL_URL}}">O'qituvchi paneli →</a>
-          </div>
-          <div class="hero-meta" data-download-meta></div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="container footer-inner">
-        <span>© {{YEAR}} {{NAME}} · {{DOMAIN}}</span>
-        <span>{{SLOGAN}}</span>
       </div>
-    </footer>
-    <script src="/app.js" defer></script>
-  </body>
+    </section>
+
+    <section class="section" id="imkoniyatlar">
+      <div class="container">
+        <h2 class="center">Asosiy imkoniyatlar</h2>
+        <div class="features">
+          <article class="feature">
+            <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3 4 6v6c0 5 3.4 8.6 8 9 4.6-.4 8-4 8-9V6zM9 12l2 2 4-4" />
+              </svg></div>
+            <h3>Himoya</h3>
+            <p>Faqat ilova ichida copy-paste, ekran rasmi bloki, DevTools yo'q, terminalda faqat ruxsat etilgan
+              buyruqlar, taqiqlangan dasturlar aniqlanadi.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2 4 14h7l-1 8 9-12h-7z" />
+              </svg></div>
+            <h3>Jonli ogohlantirishlar</h3>
+            <p>Boshqa oynaga o'tish, ruxsatsiz buyruq, tashqi fayl — ism bilan, ovozli signal bilan o'qituvchi paneliga
+              real vaqtda keladi.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 7 3 12l5 5M16 7l5 5-5 5M13.5 4.5l-3 15" />
+              </svg></div>
+            <h3>VS Code'ga o'xshash muharrir</h3>
+            <p>Tablar, Emmet, snippetlar, PowerShell / Git Bash terminal, Go Live va Figma dizaynini login'siz o'lchab
+              ko'rish.</p>
+          </article>
+          <article class="feature">
+            <div class="feature-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 13l2 2 4-4" />
+              </svg></div>
+            <h3>Ishlarni yig'ish va baholash</h3>
+            <p>Har o'quvchi papkasi, fayllar va rasmlar, ball va izoh, jarimalar, .zip va Excel yuklab olish — bir
+              joyda.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section gallery">
+      <div class="container gallery-grid">
+        <figure>
+          <img src="/img/desktop-design-inspect.png" alt="Figma dizaynini o'lchab ko'rish" loading="lazy" />
+          <figcaption>Figma dizayni: o'lcham, rang, shrift va masofalar — Figma akkauntisiz</figcaption>
+        </figure>
+        <figure>
+          <img src="/img/panel-live.png" alt="O'qituvchi paneli: jonli kuzatuv" loading="lazy" />
+          <figcaption>Jonli kuzatuv: kod, o'quvchilar va ogohlantirishlar oqimi</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="qanday">
+      <div class="container">
+        <h2 class="center">Qanday ishlaydi</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-n">1</span>
+            <h3>O'qituvchi imtihon yaratadi</h3>
+            <p>Topshiriqlar, vaqt, shablon, Figma dizayn yoki tayyor papka, ruxsat etilgan buyruqlar. "Kutish xonasi" 6
+              xonali kod beradi.</p>
+          </li>
+          <li>
+            <span class="step-n">2</span>
+            <h3>O'quvchilar kod bilan kiradi</h3>
+            <p>Ilovani ochadi, kod va ismini yozadi, qoidalar bilan tanishadi. O'qituvchi "Boshlash"ni bosganda hammada
+              bir vaqtda boshlanadi.</p>
+          </li>
+          <li>
+            <span class="step-n">3</span>
+            <h3>Kuzatuv, topshirish, baholash</h3>
+            <p>Ogohlantirishlar jonli keladi, jarima va vaqt qo'shish mumkin. Vaqt tugaganda ishlar avtomatik
+              topshiriladi — baholang va yuklab oling.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section faq" id="savollar">
+      <div class="container narrow">
+        <h2 class="center">Ko'p beriladigan savollar</h2>
+        <details>
+          <summary>O'quvchi telefonda ekranni suratga olsa-chi?</summary>
+          <p>Hech qanday dastur telefon kamerasini to'xtata olmaydi — bu o'qituvchi nazorati bilan qoplanadi. Ekran
+            rasmi olish tugmalari esa bloklanadi va qayd etiladi.</p>
+        </details>
+        <details>
+          <summary>Internet uzilsa, ish yo'qolmaydimi?</summary>
+          <p>Yo'q. Ish kompyuterda saqlanadi va har 5 soniyada serverga yuboriladi. Qayta ulanganda davom etadi, vaqt
+            esa server bo'yicha hisoblanadi.</p>
+        </details>
+        <details>
+          <summary>npm, Vite, React, Python ishlaydimi?</summary>
+          <p>Ha. O'qituvchi ruxsat bergan buyruqlar (npm install, npm run dev, node, python …) ishlaydi; boshqa
+            buyruqlar va zanjirlash bloklanadi.</p>
+        </details>
+        <details>
+          <summary>Figma dizayn uchun o'quvchiga akkaunt kerakmi?</summary>
+          <p>Kerak emas. O'qituvchining Figma tokeni bilan server dizaynni oldindan yuklaydi; o'quvchi o'lcham, rang va
+            shriftlarni ilova ichida ko'radi.</p>
+        </details>
+        <details>
+          <summary>Internetsiz sinfda ishlatsa bo'ladimi?</summary>
+          <p>Ha. Serverni o'qituvchi kompyuterida ishga tushirib, o'quvchi ilovasida sozlama orqali lokal tarmoq
+            manzilini (masalan 192.168.1.10:8080) kiritish mumkin.</p>
+        </details>
+        <details>
+          <summary>O'qituvchi qanday ro'yxatdan o'tadi?</summary>
+          <p>O'qituvchi paneliga Google akkaunti bilan kiradi — birinchi kirishda akkaunt avtomatik yaratiladi.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <div class="container cta-inner">
+        <h2>Keyingi imtihoningizni {{NAME}}da o'tkazing</h2>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" data-download href="#">Windows uchun yuklab olish</a>
+          <a class="btn btn-lg" href="{{PANEL_URL}}">O'qituvchi paneli →</a>
+        </div>
+        <div class="hero-meta" data-download-meta></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>© {{YEAR}} {{NAME}} · {{DOMAIN}}</span>
+      <span>{{SLOGAN}}</span>
+    </div>
+  </footer>
+  <script src="/app.js" defer></script>
+</body>
+
 </html>
