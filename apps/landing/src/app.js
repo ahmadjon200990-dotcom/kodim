@@ -1,27 +1,33 @@
-// Yuklab olish tugmasi: oxirgi versiya /downloads/latest.json dan.
-(async () => {
+
+const RELEASE_URL =
+  "https://github.com/ahmadjon200990-dotcom/kodim/releases/download/v1.0.0/Kodim-Setup-1.0.0.exe";
+
+const VERSION = "1.0.0";
+const FILE_SIZE_MB = 114;
+
+(() => {
   const btns = document.querySelectorAll("[data-download]");
   const meta = document.querySelectorAll("[data-download-meta]");
-  try {
-    const res = await fetch("/downloads/latest.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(String(res.status));
-    const latest = await res.json();
-    const mb = (latest.size / 1024 / 1024).toFixed(0);
-    btns.forEach((b) => b.setAttribute("href", latest.url));
-    meta.forEach((m) => (m.textContent = `Versiya ${latest.version} · Windows 10/11 · ${mb} MB`));
-  } catch {
-    btns.forEach((b) => {
-      b.setAttribute("aria-disabled", "true");
-      b.classList.add("is-disabled");
-      b.removeAttribute("href");
-    });
-    meta.forEach((m) => (m.textContent = "Yuklab olish tez orada — o'qituvchingizdan so'rang"));
-  }
+
+  btns.forEach((btn) => {
+    btn.setAttribute("href", RELEASE_URL);
+    btn.setAttribute("download", "Kodim-Setup-1.0.0.exe");
+    btn.removeAttribute("aria-disabled");
+    btn.classList.remove("is-disabled");
+  });
+
+  meta.forEach((el) => {
+    el.textContent = `Versiya ${VERSION} · Windows 10/11 · ${FILE_SIZE_MB} MB`;
+  });
 })();
 
 // FAQ: bittasi ochilsa, qolganlari yopiladi.
 document.querySelectorAll(".faq details").forEach((d) =>
   d.addEventListener("toggle", () => {
-    if (d.open) document.querySelectorAll(".faq details").forEach((o) => o !== d && (o.open = false));
+    if (d.open) {
+      document.querySelectorAll(".faq details").forEach((o) => {
+        if (o !== d) o.open = false;
+      });
+    }
   }),
 );
