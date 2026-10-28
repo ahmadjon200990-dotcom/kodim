@@ -1,5 +1,4 @@
-// Windows o'rnatuvchisi (NSIS). Nom va identifikator — packages/shared/src/brand.ts dan (Node 22.18+/24 TS'ni o'zi o'qiydi).
-// Build: pnpm --filter @exam-ide/desktop dist  (SERVER_URL standart: https://teacher.<BRAND.domain>)
+
 import { BRAND } from "../../packages/shared/src/brand.ts";
 
 /** @type {import("electron-builder").Configuration} */
@@ -8,20 +7,25 @@ export default {
   productName: BRAND.name,
   executableName: BRAND.name,
   copyright: `© ${new Date().getFullYear()} ${BRAND.name}`,
-  directories: { output: "release", buildResources: "build" },
-  // Faqat build natijasi: renderer/preload/main bundle. Renderer kutubxonalari bundle ichida.
+
+  directories: {
+    output: "release",
+    buildResources: "build",
+  },
+
   files: ["out/**", "package.json"],
   asar: true,
-  // node-pty native moduli asar'dan tashqarida bo'lishi shart (conpty.dll, pty.node).
   asarUnpack: ["**/node_modules/node-pty/**"],
-  // node-pty 1.1 N-API prebuild'lari bilan keladi — Electron uchun qayta kompilyatsiya kerak emas.
   npmRebuild: false,
+
+  // Windows
   win: {
     target: [{ target: "nsis", arch: ["x64"] }],
     icon: "build/icon.ico",
     artifactName: `${BRAND.name}-Setup-\${version}.\${ext}`,
     requestedExecutionLevel: "asInvoker",
   },
+
   nsis: {
     oneClick: false,
     perMachine: false,
@@ -32,7 +36,24 @@ export default {
     uninstallDisplayName: BRAND.name,
     deleteAppDataOnUninstall: true,
   },
-  // Production himoyasi: Node rejimi, --inspect, NODE_OPTIONS va asar'dan tashqaridagi kod o'chiriladi.
+
+  // macOS
+  mac: {
+    target: [
+      { target: "dmg", arch: ["x64", "arm64"] },
+    ],
+    category: "public.app-category.developer-tools",
+  },
+
+  // Linux
+  linux: {
+    target: [
+      { target: "AppImage", arch: ["x64"] },
+      { target: "deb", arch: ["x64"] },
+    ],
+    category: "Development",
+  },
+
   electronFuses: {
     runAsNode: false,
     enableCookieEncryption: true,
