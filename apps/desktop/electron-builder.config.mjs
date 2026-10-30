@@ -52,6 +52,7 @@ export default {
       { target: "deb", arch: ["x64"] },
     ],
     category: "Development",
+    artifactName: "Kodim-\${version}-\${arch}.\${ext}",
   },
 
   electronFuses: {
