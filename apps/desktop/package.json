@@ -32,6 +32,9 @@
     "vite": "^8.3.4"
   },
   "description": "Kodim — imtihon uchun kod muharriri (o'quvchi ilovasi)",
-  "author": "Kodim",
+  "author": {
+    "name": "Kodim",
+    "email": "support@kodim.uz"
+  },
   "homepage": "https://github.com/ahmadjon200990-dotcom/kodim"
 }
